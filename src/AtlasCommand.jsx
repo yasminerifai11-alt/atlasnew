@@ -12,6 +12,7 @@ import Sidebar from "./components/Sidebar/Sidebar";
 import DetailPanel from "./components/DetailPanel/DetailPanel";
 import EventMap from "./components/Map/EventMap";
 import EventTimeline from "./components/Timeline/EventTimeline";
+import LeaderRecommendations from "./components/CommandCenter/LeaderRecommendations";
 
 export default function AtlasCommand() {
   const { theme } = useTheme();
@@ -24,6 +25,7 @@ export default function AtlasCommand() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("command"); // "command" | "leader"
   const { addNotification } = useNotifications();
   const playAlert = useSoundAlert();
 
@@ -108,41 +110,50 @@ export default function AtlasCommand() {
         countries={countries}
         onCountryChange={handleCountryChange}
         onOpenQuickSwitcher={() => setQuickSwitcherOpen(true)}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
-      <StatusStrip events={filtered} />
-      <CountryBriefBanner countryCodes={countries} />
-      <DashboardStats events={filtered} />
-      <EventTimeline events={filtered} selected={selected} onSelect={setSelected} />
 
-      <div className="main-layout" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <Sidebar
-          events={filtered}
-          selected={selected}
-          onSelect={setSelected}
-          filter={filter}
-          setFilter={setFilter}
-          search={search}
-          setSearch={setSearch}
-          groupBy={groupBy}
-          setGroupBy={setGroupBy}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          countries={countries}
-          onCountryChange={handleCountryChange}
-        />
+      {viewMode === "leader" ? (
+        <LeaderRecommendations events={filtered} onBack={() => setViewMode("command")} />
+      ) : (
+        <>
+          <StatusStrip events={filtered} />
+          <CountryBriefBanner countryCodes={countries} />
+          <DashboardStats events={filtered} />
+          <EventTimeline events={filtered} selected={selected} onSelect={setSelected} />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <EventMap
-            events={filtered}
-            selected={selected}
-            onSelect={setSelected}
-            collapsed={mapCollapsed}
-            onToggle={() => setMapCollapsed(c => !c)}
-            countryInfo={primaryCountry}
-          />
-          <DetailPanel event={selected} />
-        </div>
-      </div>
+          <div className="main-layout" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+            <Sidebar
+              events={filtered}
+              selected={selected}
+              onSelect={setSelected}
+              filter={filter}
+              setFilter={setFilter}
+              search={search}
+              setSearch={setSearch}
+              groupBy={groupBy}
+              setGroupBy={setGroupBy}
+              isOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+              countries={countries}
+              onCountryChange={handleCountryChange}
+            />
+
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              <EventMap
+                events={filtered}
+                selected={selected}
+                onSelect={setSelected}
+                collapsed={mapCollapsed}
+                onToggle={() => setMapCollapsed(c => !c)}
+                countryInfo={primaryCountry}
+              />
+              <DetailPanel event={selected} />
+            </div>
+          </div>
+        </>
+      )}
 
       {quickSwitcherOpen && (
         <CountryQuickSwitcher

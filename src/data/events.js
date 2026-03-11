@@ -257,6 +257,166 @@ export const COUNTRIES = {
       2: { type: "spillover", reason: "Tehran FIR closure reroutes Gulf-Europe air traffic through Ankara corridor; Turkish ATC capacity under pressure" },
     }
   },
+  // ─── Global Powers & Key Importers ─────────────────────────────────
+  US: {
+    label: "United States", flag: "🇺🇸", lat: 39.8, lng: -98.5, zoom: 4,
+    events: {
+      1: { type: "spillover", reason: "Basra disruption projected to push Brent crude up $8-12/bbl; US gasoline prices face 15-20¢/gal increase within 2 weeks" },
+      4: { type: "spillover", reason: "Red Sea attacks threaten US naval assets in region; CENTCOM force protection elevated; US-bound cargo rerouting adds 10-14 days" },
+      2: { type: "spillover", reason: "Tehran airspace closure signals potential military escalation; US intelligence community assessing Iranian intent" },
+    }
+  },
+  GB: {
+    label: "United Kingdom", flag: "🇬🇧", lat: 55.4, lng: -3.4, zoom: 5,
+    events: {
+      4: { type: "spillover", reason: "Red Sea attacks affect UK-flagged vessels; Royal Navy HMS Diamond deployed; Lloyd's of London re-rating corridor risk premiums" },
+      1: { type: "spillover", reason: "Brent crude benchmark directly affected; UK North Sea pricing under pressure; refinery input costs rising" },
+      2: { type: "spillover", reason: "Gulf-UK air routes rerouting via Ankara corridor adding 90min to flight times; BA and Virgin issuing passenger advisories" },
+    }
+  },
+  CN: {
+    label: "China", flag: "🇨🇳", lat: 35.9, lng: 104.2, zoom: 4,
+    events: {
+      1: { type: "spillover", reason: "China imports ~50% of Iraq's oil exports; Basra disruption threatens 1.5M bbl/day of Chinese crude supply within 30 days" },
+      4: { type: "spillover", reason: "Red Sea rerouting delays Chinese manufacturing supply chains by 10-14 days; container costs to EU spike 25-40%" },
+      3: { type: "spillover", reason: "Jebel Ali congestion delays Chinese exports transshipping through Gulf; $2.3B weekly trade volume at risk" },
+    }
+  },
+  IN: {
+    label: "India", flag: "🇮🇳", lat: 20.6, lng: 79.0, zoom: 4,
+    events: {
+      1: { type: "spillover", reason: "India is Iraq's largest oil customer (~1M bbl/day); Basra disruption forces emergency sourcing from Saudi/Russia at premium" },
+      4: { type: "spillover", reason: "Red Sea attacks disrupt India-Europe trade corridor; Mumbai-Rotterdam container rates up 35%; pharma exports delayed" },
+      3: { type: "spillover", reason: "Jebel Ali congestion impacts India-UAE bilateral trade ($85B/year); food and electronics imports face 5-7 day delays" },
+    }
+  },
+  DE: {
+    label: "Germany", flag: "🇩🇪", lat: 51.2, lng: 10.4, zoom: 5,
+    events: {
+      1: { type: "spillover", reason: "European energy security alert; German industry faces higher input costs as Brent rises; strategic reserves review triggered" },
+      4: { type: "spillover", reason: "Red Sea disruption delays Asia-Europe manufacturing inputs; German automotive sector reports 12-day component delay forecast" },
+      2: { type: "spillover", reason: "Lufthansa rerouting Middle East flights via southern corridor; additional fuel costs estimated at €2.1M/week" },
+    }
+  },
+  FR: {
+    label: "France", flag: "🇫🇷", lat: 46.2, lng: 2.2, zoom: 5,
+    events: {
+      4: { type: "spillover", reason: "CMA CGM (French-owned) rerouting vessels via Cape; French naval assets in Djibouti on heightened alert" },
+      1: { type: "spillover", reason: "TotalEnergies has direct exposure to Basra operations; Paris energy markets pricing in supply disruption" },
+    }
+  },
+  JP: {
+    label: "Japan", flag: "🇯🇵", lat: 36.2, lng: 138.3, zoom: 5,
+    events: {
+      1: { type: "spillover", reason: "Japan imports ~95% of crude oil; Gulf disruption triggers strategic petroleum reserve assessment; yen under pressure" },
+      4: { type: "spillover", reason: "Red Sea rerouting impacts Japan-Europe container trade; Toyota and Honda flagging supply chain delay risk" },
+    }
+  },
+  KR: {
+    label: "South Korea", flag: "🇰🇷", lat: 35.9, lng: 128.0, zoom: 6,
+    events: {
+      1: { type: "spillover", reason: "South Korea imports ~1M bbl/day from Gulf; Basra disruption threatens refinery throughput; SK Innovation contingency activated" },
+      4: { type: "spillover", reason: "Samsung and Hyundai supply chains exposed to Red Sea rerouting delays; semiconductor component shipments affected" },
+    }
+  },
+  IT: {
+    label: "Italy", flag: "🇮🇹", lat: 41.9, lng: 12.6, zoom: 5,
+    events: {
+      4: { type: "spillover", reason: "Mediterranean shipping patterns disrupted; Gioia Tauro transshipment hub seeing volume drops as vessels reroute" },
+      1: { type: "spillover", reason: "ENI operations in Iraq monitoring situation; Zubair field operations continue but security posture elevated" },
+    }
+  },
+  SG: {
+    label: "Singapore", flag: "🇸🇬", lat: 1.35, lng: 103.8, zoom: 10,
+    events: {
+      4: { type: "spillover", reason: "Singapore bunkering hub seeing demand surge as Cape rerouting increases fuel needs; refining margins spiking" },
+      3: { type: "spillover", reason: "As global transshipment hub, Jebel Ali congestion diverts volume to Singapore; PSA terminal utilization at 94%" },
+    }
+  },
+  IL: {
+    label: "Israel", flag: "🇮🇱", lat: 31.0, lng: 34.8, zoom: 7,
+    events: {
+      4: { type: "spillover", reason: "Red Sea missile attacks within range of Eilat port; Israeli navy on heightened alert; Iron Dome batteries repositioned" },
+      2: { type: "spillover", reason: "Tehran FIR closure signals potential Iranian military posturing; IDF intelligence assessing strategic implications" },
+    }
+  },
+  PK: {
+    label: "Pakistan", flag: "🇵🇰", lat: 30.4, lng: 69.3, zoom: 5,
+    events: {
+      1: { type: "spillover", reason: "Pakistan relies on Gulf oil imports; Basra disruption may accelerate fuel price inflation in already strained economy" },
+      3: { type: "spillover", reason: "Karachi port may receive overflow from Jebel Ali congestion; limited capacity to absorb additional volume" },
+    }
+  },
+  AU: {
+    label: "Australia", flag: "🇦🇺", lat: -25.3, lng: 133.8, zoom: 4,
+    events: {
+      4: { type: "spillover", reason: "Australian trade routes to Europe via Suez affected; wool, wine and mineral exports face 14-day delay via Cape rerouting" },
+      1: { type: "spillover", reason: "LNG spot prices spiking as Gulf disruption tightens global energy supply; Australian LNG exporters see windfall pricing" },
+    }
+  },
+  BR: {
+    label: "Brazil", flag: "🇧🇷", lat: -14.2, lng: -51.9, zoom: 4,
+    events: {
+      4: { type: "spillover", reason: "Cape rerouting increases tanker traffic past Brazilian waters; Petrobras monitoring opportunity for additional crude exports to Asia" },
+      1: { type: "spillover", reason: "Global oil price surge benefits Brazilian pre-salt production economics; Bovespa energy sector rallying" },
+    }
+  },
+  GR: {
+    label: "Greece", flag: "🇬🇷", lat: 39.1, lng: 21.8, zoom: 6,
+    events: {
+      4: { type: "spillover", reason: "Greek shipping companies own ~20% of global tanker fleet; multiple Greek-flagged vessels affected by Red Sea rerouting; insurance costs surging" },
+    }
+  },
+  NL: {
+    label: "Netherlands", flag: "🇳🇱", lat: 52.1, lng: 5.3, zoom: 7,
+    events: {
+      4: { type: "spillover", reason: "Rotterdam port — Europe's largest — seeing schedule disruptions as Red Sea rerouting delays Asia-Europe container traffic by 10-14 days" },
+      1: { type: "spillover", reason: "Dutch TTF gas benchmark spiking on Gulf energy disruption fears; Shell monitoring Basra operations" },
+    }
+  },
+  SO: {
+    label: "Somalia", flag: "🇸🇴", lat: 5.2, lng: 46.2, zoom: 5,
+    events: {
+      4: { type: "spillover", reason: "Red Sea instability spills into Gulf of Aden; Somali coastal security strained; humanitarian shipping routes affected" },
+    }
+  },
+  ER: {
+    label: "Eritrea", flag: "🇪🇷", lat: 15.2, lng: 39.8, zoom: 6,
+    events: {
+      4: { type: "spillover", reason: "Missile launches from Yemen pass near Eritrean waters; Massawa port operations monitoring security situation" },
+    }
+  },
+  JO: {
+    label: "Jordan", flag: "🇯🇴", lat: 30.6, lng: 36.2, zoom: 7,
+    events: {
+      1: { type: "spillover", reason: "Jordan depends on Iraqi crude via Kirkuk-Aqaba pipeline discussions; Basra disruption strengthens urgency of energy diversification" },
+      2: { type: "spillover", reason: "Tehran FIR closure reroutes flights over Jordanian airspace; QAIA seeing increased overflight traffic" },
+    }
+  },
+  ET: {
+    label: "Ethiopia", flag: "🇪🇹", lat: 9.1, lng: 40.5, zoom: 5,
+    events: {
+      4: { type: "spillover", reason: "Red Sea disruption threatens Ethiopian import corridors via Djibouti; food and fuel imports face cost increases and delays" },
+    }
+  },
+  SD: {
+    label: "Sudan", flag: "🇸🇩", lat: 12.9, lng: 30.2, zoom: 5,
+    events: {
+      4: { type: "spillover", reason: "Port Sudan operations affected by Red Sea security deterioration; humanitarian aid shipments facing insurance and routing challenges" },
+    }
+  },
+  KE: {
+    label: "Kenya", flag: "🇰🇪", lat: -0.02, lng: 37.9, zoom: 6,
+    events: {
+      4: { type: "spillover", reason: "Mombasa port seeing delayed cargo from Red Sea rerouting; East African supply chains experiencing 7-10 day delays on Asian imports" },
+    }
+  },
+  ZA: {
+    label: "South Africa", flag: "🇿🇦", lat: -30.6, lng: 22.9, zoom: 5,
+    events: {
+      4: { type: "spillover", reason: "Cape of Good Hope seeing 40% increase in vessel traffic from Red Sea rerouting; Durban and Cape Town ports under capacity pressure" },
+    }
+  },
 };
 
 // Helper: get events relevant to a country (or multiple countries) with their relevance type

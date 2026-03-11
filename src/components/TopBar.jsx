@@ -3,7 +3,7 @@ import { useTheme } from "../context/ThemeContext";
 import PulsingDot from "./shared/PulsingDot";
 import CountrySelector from "./Country/CountrySelector";
 
-export default function TopBar({ onMenuToggle, soundEnabled, onToggleSound, countries, onCountryChange, onOpenQuickSwitcher }) {
+export default function TopBar({ onMenuToggle, soundEnabled, onToggleSound, countries, onCountryChange, onOpenQuickSwitcher, viewMode, onViewModeChange }) {
   const time = useClock();
   const { theme, themeName, toggleTheme } = useTheme();
 
@@ -37,6 +37,31 @@ export default function TopBar({ onMenuToggle, soundEnabled, onToggleSound, coun
         </div>
         <span className="topbar-divider" style={{ color: theme.textFaint, fontSize: 18 }}>|</span>
         <CountrySelector value={countries} onChange={onCountryChange} onOpenQuickSwitcher={onOpenQuickSwitcher} />
+        <div style={{ display: "flex", gap: 0, marginLeft: 8 }}>
+          <button
+            onClick={() => onViewModeChange("command")}
+            style={{
+              ...smallBtn,
+              borderRadius: "3px 0 0 3px",
+              background: viewMode === "command" ? "rgba(59,130,246,0.2)" : theme.bgCard,
+              color: viewMode === "command" ? "#60a5fa" : theme.textMuted,
+              borderRight: "none",
+            }}
+          >
+            COMMAND
+          </button>
+          <button
+            onClick={() => onViewModeChange("leader")}
+            style={{
+              ...smallBtn,
+              borderRadius: "0 3px 3px 0",
+              background: viewMode === "leader" ? "rgba(245,158,11,0.2)" : theme.bgCard,
+              color: viewMode === "leader" ? "#f59e0b" : theme.textMuted,
+            }}
+          >
+            LEADER BRIEF
+          </button>
+        </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span className="topbar-time" style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: theme.textFaint }}>
