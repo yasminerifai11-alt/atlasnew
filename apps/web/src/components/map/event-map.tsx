@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useCommandStore } from "@/stores/command-store";
+import { getFilterViewport, GLOBAL_VIEW } from "@/data/regions";
 import type { ApiEvent } from "@/lib/api";
 
 const RISK_COLORS: Record<string, string> = {
@@ -16,9 +17,11 @@ export function EventMap() {
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const events = useCommandStore((s) => s.events);
+  const regionFilter = useCommandStore((s) => s.regionFilter);
   const setSelectedEvent = useCommandStore((s) => s.setSelectedEvent);
   const setActiveSection = useCommandStore((s) => s.setActiveSection);
 
+  // Initialize map
   useEffect(() => {
     import("maplibre-gl").then((maplibregl) => {
       if (!mapContainer.current || mapRef.current) return;
@@ -26,8 +29,8 @@ export function EventMap() {
       const map = new maplibregl.Map({
         container: mapContainer.current,
         style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-        center: [48, 25],
-        zoom: 4,
+        center: GLOBAL_VIEW.center,
+        zoom: GLOBAL_VIEW.zoom,
         attributionControl: false,
       });
 
@@ -39,6 +42,20 @@ export function EventMap() {
       };
     });
   }, []);
+
+  // Pan/zoom map when region filter changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const viewport = getFilterViewport(regionFilter);
+    map.flyTo({
+      center: viewport.center,
+      zoom: viewport.zoom,
+      duration: 1200,
+      essential: true,
+    });
+  }, [regionFilter]);
 
   // Update markers when events change
   useEffect(() => {

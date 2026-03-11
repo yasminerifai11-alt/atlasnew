@@ -3,27 +3,41 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
-import { fetchMorningBrief, generateMorningBrief, type ApiMorningBrief } from "@/lib/api";
+import { fetchRealtimeBrief, generateRealtimeBrief, type ApiRealtimeBrief } from "@/lib/api";
 
-export function MorningBrief() {
+/** Next scheduled generation: 07:00 Gulf Standard Time (03:00 UTC) */
+function getNextScheduledTime(): string {
+  const now = new Date();
+  const next = new Date(now);
+  next.setUTCHours(3, 0, 0, 0); // 07:00 GST = 03:00 UTC
+  if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(11, 16) + " UTC (07:00 GST)";
+}
+
+export function RealtimeBrief() {
   const { t, lang } = useLanguage();
   const events = useCommandStore((s) => s.events);
-  const [brief, setBrief] = useState<ApiMorningBrief | null>(null);
+  const [brief, setBrief] = useState<ApiRealtimeBrief | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [lastGenerated, setLastGenerated] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchMorningBrief()
-      .then(setBrief)
+    fetchRealtimeBrief()
+      .then((data) => {
+        setBrief(data);
+        setLastGenerated(new Date().toISOString());
+      })
       .catch(() => setError(true));
   }, []);
 
-  const handleGenerate = useCallback(async () => {
+  const handleRegenerate = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
-      const result = await generateMorningBrief();
+      const result = await generateRealtimeBrief();
       setBrief(result);
+      setLastGenerated(new Date().toISOString());
     } catch {
       setError(true);
     }
@@ -45,7 +59,7 @@ export function MorningBrief() {
 
   // Build a brief from current events if no API brief exists
   const eventsBrief = !brief && events.length > 0;
-  const topEvents = events.sort((a, b) => b.risk_score - a.risk_score).slice(0, 5);
+  const topEvents = [...events].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5);
   const criticalCount = events.filter((e) => e.risk_level === "CRITICAL").length;
 
   return (
@@ -88,12 +102,18 @@ export function MorningBrief() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Regenerate Now button */}
             <button
-              onClick={handleGenerate}
+              onClick={handleRegenerate}
               disabled={loading}
-              className="px-3 py-1.5 font-mono text-[10px] tracking-wider text-atlas-accent border border-atlas-accent/30 hover:bg-atlas-accent/10 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] tracking-wider text-green-400 border border-green-500/30 hover:bg-green-500/10 disabled:opacity-50 transition-colors"
             >
-              {loading ? t("morning.generating") : t("morning.generate")}
+              <span className={loading ? "animate-spin" : ""}>
+                {loading ? "⟳" : "▶"}
+              </span>
+              {loading
+                ? (isAr ? "جاري التوليد..." : "REGENERATING...")
+                : (isAr ? "توليد الآن" : "REGENERATE NOW")}
             </button>
             <button
               onClick={handlePrint}
@@ -101,6 +121,31 @@ export function MorningBrief() {
             >
               {t("morning.downloadPdf")}
             </button>
+          </div>
+        </div>
+
+        {/* Schedule + last generated info bar */}
+        <div className="flex items-center justify-between border-b border-white/[0.04] bg-white/[0.01] px-6 py-1.5">
+          <div className="flex items-center gap-4 font-mono text-[9px] text-slate-600">
+            <span>
+              {isAr ? "التوليد التلقائي:" : "AUTO-GENERATE:"}{" "}
+              <span className="text-slate-500">{getNextScheduledTime()}</span>
+            </span>
+            {lastGenerated && (
+              <>
+                <span className="text-white/[0.08]">|</span>
+                <span>
+                  {isAr ? "آخر تحديث:" : "LAST UPDATED:"}{" "}
+                  <span className="text-slate-500">
+                    {new Date(lastGenerated).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 font-mono text-[8px] tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-green-500/80">{isAr ? "مباشر" : "LIVE"}</span>
           </div>
         </div>
 

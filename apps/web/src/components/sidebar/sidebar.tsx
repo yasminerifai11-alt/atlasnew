@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore, type RiskFilter } from "@/stores/command-store";
+import { REGION_GROUPS, matchesFilter, getFilterLabel } from "@/data/regions";
 import type { ApiEvent } from "@/lib/api";
 
 const RISK_COLORS: Record<string, { text: string; bg: string; border: string }> = {
@@ -12,26 +14,6 @@ const RISK_COLORS: Record<string, { text: string; bg: string; border: string }> 
 };
 
 const RISK_LEVELS: RiskFilter[] = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"];
-
-const REGION_GROUPS: { key: string; labelKey: string; countries: string[] }[] = [
-  { key: "ALL", labelKey: "region.all", countries: [] },
-  { key: "GCC", labelKey: "region.gcc", countries: ["Kuwait", "Saudi Arabia", "United Arab Emirates", "UAE", "Qatar", "Bahrain", "Oman"] },
-  { key: "LEVANT", labelKey: "region.levant", countries: ["Iraq", "Syria", "Lebanon", "Israel", "Jordan", "Palestine"] },
-  { key: "GULF_WATERS", labelKey: "region.gulfWaters", countries: ["Red Sea", "Persian Gulf", "Gulf of Aden", "Strait of Hormuz"] },
-  { key: "IRAN", labelKey: "region.iran", countries: ["Iran"] },
-  { key: "NORTH_AFRICA", labelKey: "region.northAfrica", countries: ["Egypt", "Libya", "Sudan", "Yemen"] },
-];
-
-function matchesRegion(event: ApiEvent, regionKey: string): boolean {
-  if (regionKey === "ALL") return true;
-  const group = REGION_GROUPS.find((g) => g.key === regionKey);
-  if (!group) return true;
-  return group.countries.some(
-    (c) =>
-      event.country.toLowerCase().includes(c.toLowerCase()) ||
-      event.region.toLowerCase().includes(c.toLowerCase())
-  );
-}
 
 export function Sidebar() {
   const { t, lang } = useLanguage();
@@ -46,9 +28,11 @@ export function Sidebar() {
   const setSelectedEvent = useCommandStore((s) => s.setSelectedEvent);
   const setActiveSection = useCommandStore((s) => s.setActiveSection);
 
+  const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
+
   const filtered = events
     .filter((e) => riskFilter === "ALL" || e.risk_level === riskFilter)
-    .filter((e) => matchesRegion(e, regionFilter))
+    .filter((e) => matchesFilter(e, regionFilter))
     .filter(
       (e) =>
         !searchQuery ||
@@ -63,6 +47,13 @@ export function Sidebar() {
     setSelectedEvent(event);
     setActiveSection("intel");
   };
+
+  const handleRegionSelect = (key: string) => {
+    setRegionFilter(key);
+    setRegionDropdownOpen(false);
+  };
+
+  const isAr = lang === "ar";
 
   return (
     <aside className="flex w-80 shrink-0 flex-col border-r border-white/[0.06] bg-white/[0.01]">
@@ -96,30 +87,92 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Region filter */}
+      {/* Region/Country filter */}
       <div className="border-b border-white/[0.06] p-3">
-        <div className="flex flex-wrap gap-1">
-          {REGION_GROUPS.map((rg) => (
-            <button
-              key={rg.key}
-              onClick={() => setRegionFilter(rg.key)}
-              className={`px-2 py-0.5 font-mono text-[8px] tracking-wider transition-colors border ${
-                regionFilter === rg.key
-                  ? "bg-atlas-accent/10 text-atlas-accent border-atlas-accent/30"
-                  : "text-slate-600 border-white/[0.06] hover:text-slate-400 hover:border-white/[0.12]"
-              }`}
-            >
-              {t(rg.labelKey as any)}
-            </button>
-          ))}
+        <div className="relative">
+          <button
+            onClick={() => setRegionDropdownOpen(!regionDropdownOpen)}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 bg-white/[0.03] border border-white/[0.06] font-mono text-[10px] tracking-wider text-slate-400 hover:border-white/[0.12] transition-colors"
+          >
+            <span className={regionFilter !== "GLOBAL" ? "text-atlas-accent" : ""}>
+              {getFilterLabel(regionFilter, lang)}
+            </span>
+            <span className="text-slate-600 text-[8px]">{regionDropdownOpen ? "▲" : "▼"}</span>
+          </button>
+
+          {/* Dropdown */}
+          {regionDropdownOpen && (
+            <>
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 z-30"
+                onClick={() => setRegionDropdownOpen(false)}
+              />
+              <div className="absolute left-0 right-0 top-full z-40 mt-1 max-h-[50vh] overflow-y-auto border border-white/[0.08] bg-[#0f1219] shadow-2xl">
+                {/* Global option */}
+                <button
+                  onClick={() => handleRegionSelect("GLOBAL")}
+                  className={`w-full text-left px-3 py-2 font-mono text-[10px] tracking-wider transition-colors border-b border-white/[0.04] ${
+                    regionFilter === "GLOBAL"
+                      ? "bg-atlas-accent/10 text-atlas-accent"
+                      : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+                  }`}
+                >
+                  {isAr ? "عالمي — جميع المناطق" : "GLOBAL — All Regions"}
+                </button>
+
+                {/* Region groups with countries */}
+                {REGION_GROUPS.map((group) => (
+                  <div key={group.key}>
+                    {/* Group header — clickable to select entire group */}
+                    <button
+                      onClick={() => handleRegionSelect(group.key)}
+                      className={`w-full text-left px-3 py-2 font-mono text-[10px] tracking-wider transition-colors flex items-center justify-between ${
+                        regionFilter === group.key
+                          ? "bg-atlas-accent/10 text-atlas-accent"
+                          : "text-slate-300 hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <span className="font-semibold">
+                        {isAr ? group.labelAr : group.label}
+                      </span>
+                      <span className="text-[8px] text-slate-600">
+                        {group.countries.length}
+                      </span>
+                    </button>
+
+                    {/* Individual countries */}
+                    {group.countries.map((country) => (
+                      <button
+                        key={country.key}
+                        onClick={() => handleRegionSelect(country.key)}
+                        className={`w-full text-left pl-6 pr-3 py-1.5 font-mono text-[9px] tracking-wider transition-colors ${
+                          regionFilter === country.key
+                            ? "bg-atlas-accent/10 text-atlas-accent"
+                            : "text-slate-500 hover:bg-white/[0.03] hover:text-slate-300"
+                        }`}
+                      >
+                        {isAr ? country.labelAr : country.label}
+                      </button>
+                    ))}
+
+                    <div className="border-b border-white/[0.04]" />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
-        {regionFilter !== "ALL" && (
-          <div className="mt-1.5 flex items-center gap-1">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-atlas-accent/10 border border-atlas-accent/20 font-mono text-[9px] text-atlas-accent">
-              {t(REGION_GROUPS.find((g) => g.key === regionFilter)?.labelKey as any)}
+
+        {/* Active filter tag */}
+        {regionFilter !== "GLOBAL" && (
+          <div className="mt-2 flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-atlas-accent/10 border border-atlas-accent/20 font-mono text-[9px] text-atlas-accent">
+              <span className="w-1.5 h-1.5 rounded-full bg-atlas-accent/60" />
+              {getFilterLabel(regionFilter, lang)}
               <button
-                onClick={() => setRegionFilter("ALL")}
-                className="ml-1 text-atlas-accent/60 hover:text-atlas-accent"
+                onClick={() => setRegionFilter("GLOBAL")}
+                className="ml-0.5 text-atlas-accent/50 hover:text-atlas-accent text-[11px] leading-none"
               >
                 ×
               </button>
@@ -171,9 +224,7 @@ export function Sidebar() {
                     {event.title}
                   </div>
                   <div className="font-mono text-[10px] text-slate-500 leading-relaxed line-clamp-2 mb-1.5">
-                    {lang === "ar" && event.situation_ar
-                      ? event.situation_ar
-                      : event.situation_en}
+                    {isAr && event.situation_ar ? event.situation_ar : event.situation_en}
                   </div>
                   <div className="flex items-center gap-2 font-mono text-[9px] text-slate-600">
                     <span>{event.region}</span>

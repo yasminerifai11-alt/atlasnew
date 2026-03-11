@@ -5,7 +5,7 @@ export type Section =
   | "situation"
   | "intel"
   | "commander"
-  | "morning-brief"
+  | "realtime-brief"
   | "library";
 
 export type RiskFilter = "ALL" | "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
@@ -107,7 +107,7 @@ export const useCommandStore = create<CommandState>((set) => ({
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   sectorFilter: "ALL",
   setSectorFilter: (sectorFilter) => set({ sectorFilter }),
-  regionFilter: "ALL",
+  regionFilter: "GLOBAL",
   setRegionFilter: (regionFilter) => set({ regionFilter }),
 
   // Chat

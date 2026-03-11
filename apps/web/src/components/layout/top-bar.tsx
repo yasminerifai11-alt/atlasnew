@@ -8,7 +8,7 @@ import { PulsingDot } from "@/components/shared/pulsing-dot";
 const SECTIONS: { key: Section; labelKey: string }[] = [
   { key: "situation", labelKey: "nav.situation" },
   { key: "commander", labelKey: "nav.commander" },
-  { key: "morning-brief", labelKey: "nav.morning" },
+  { key: "realtime-brief", labelKey: "nav.morning" },
   { key: "library", labelKey: "nav.library" },
 ];
 

@@ -9,7 +9,7 @@ import { EventMap } from "@/components/map/event-map";
 import { Sidebar } from "@/components/sidebar/sidebar";
 import { DetailPanel } from "@/components/detail/detail-panel";
 import { AtlasCommander } from "@/components/commander/atlas-commander";
-import { MorningBrief } from "@/components/morning-brief/morning-brief";
+import { RealtimeBrief } from "@/components/realtime-brief/realtime-brief";
 import { IntelligenceLibrary } from "@/components/library/intelligence-library";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { ProfileModal } from "@/components/modals/profile-modal";
@@ -43,7 +43,7 @@ export function CommandCenter() {
       {activeSection === "situation" && <SituationRoom />}
       {activeSection === "intel" && <IntelBriefView />}
       {activeSection === "commander" && <AtlasCommander />}
-      {activeSection === "morning-brief" && <MorningBrief />}
+      {activeSection === "realtime-brief" && <RealtimeBrief />}
       {activeSection === "library" && <IntelligenceLibrary />}
 
       {/* Modals */}

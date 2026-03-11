@@ -93,7 +93,7 @@ export interface ApiBrief {
   region_impact: string;
 }
 
-export interface ApiMorningBrief {
+export interface ApiRealtimeBrief {
   id: number;
   brief_date: string;
   summary_en: string;
@@ -202,7 +202,7 @@ export async function analyzeEvent(eventId: number): Promise<{
   });
 }
 
-export async function fetchMorningBrief(): Promise<ApiMorningBrief> {
+export async function fetchRealtimeBrief(): Promise<ApiRealtimeBrief> {
   try {
     return await request(`/intelligence/realtime-brief`);
   } catch {
@@ -211,7 +211,7 @@ export async function fetchMorningBrief(): Promise<ApiMorningBrief> {
   }
 }
 
-export async function generateMorningBrief(): Promise<ApiMorningBrief> {
+export async function generateRealtimeBrief(): Promise<ApiRealtimeBrief> {
   try {
     return await request(`/intelligence/realtime-brief/generate`, { method: "POST" });
   } catch {
