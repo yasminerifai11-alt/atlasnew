@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore, type RiskFilter } from "@/stores/command-store";
+import { useProfileStore, ROLE_META } from "@/stores/profile-store";
 import { REGION_GROUPS, matchesFilter, getFilterLabel } from "@/data/regions";
 import type { ApiEvent } from "@/lib/api";
 
@@ -30,6 +31,18 @@ export function Sidebar() {
 
   const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
 
+  const profile = useProfileStore((s) => s.profile);
+
+  // Profile-aware sorting: boost events matching the user's role sectors
+  const profileSectors = profile ? ROLE_META[profile.role].sectors : [];
+  const profileBoost = (event: ApiEvent): number => {
+    if (!profileSectors.length) return 0;
+    const sectorMatch = profileSectors.some(
+      (s) => event.sector.toUpperCase().includes(s) || event.event_type.toUpperCase().includes(s)
+    );
+    return sectorMatch ? 15 : 0; // Boost score for sorting
+  };
+
   const filtered = events
     .filter((e) => riskFilter === "ALL" || e.risk_level === riskFilter)
     .filter((e) => matchesFilter(e, regionFilter))
@@ -41,7 +54,7 @@ export function Sidebar() {
         e.sector.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.country.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    .sort((a, b) => b.risk_score - a.risk_score);
+    .sort((a, b) => (b.risk_score + profileBoost(b)) - (a.risk_score + profileBoost(a)));
 
   const handleEventClick = (event: ApiEvent) => {
     setSelectedEvent(event);

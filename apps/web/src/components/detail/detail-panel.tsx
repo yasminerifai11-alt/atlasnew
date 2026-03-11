@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
+import { useProfileStore, ROLE_META } from "@/stores/profile-store";
 import {
   fetchEventInfra,
   fetchEventConsequences,
@@ -188,6 +189,9 @@ export function DetailPanel() {
             </div>
           </div>
 
+          {/* What This Means For You — personalised card */}
+          <PersonalisedCard event={event} isAr={isAr} />
+
           {/* 4 Intel cards */}
           <div className="grid grid-cols-2 gap-3">
             <IntelCard
@@ -371,6 +375,99 @@ function IntelCard({
       <div className={`text-[13px] leading-relaxed text-slate-400 ${isArabic ? "arabic-text" : ""}`}>
         {content}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Personalised "What This Means For You" card.
+ * Shows only when a Command Profile is set.
+ * Generates context-specific analysis via the /api/chat endpoint.
+ */
+function PersonalisedCard({
+  event,
+  isAr,
+}: {
+  event: { title: string; sector: string; region: string; risk_level: string; risk_score: number; situation_en: string; why_matters_en: string; situation_ar?: string; why_matters_ar?: string };
+  isAr: boolean;
+}) {
+  const profile = useProfileStore((s) => s.profile);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [generated, setGenerated] = useState(false);
+
+  useEffect(() => {
+    // Reset when event changes
+    setInsight(null);
+    setGenerated(false);
+  }, [event.title]);
+
+  useEffect(() => {
+    if (!profile || generated) return;
+    setGenerated(true);
+    setLoading(true);
+
+    const roleMeta = ROLE_META[profile.role];
+    const prompt = `You are Atlas Command. In 3-4 sentences, explain what this event means specifically for a ${roleMeta.label} professional focused on ${profile.region}.${profile.watchlist ? ` Their specific interests: ${profile.watchlist}.` : ""} Be direct and operational.
+
+Event: ${event.title}
+Risk: ${event.risk_level} (${event.risk_score}/100)
+Sector: ${event.sector} | Region: ${event.region}
+Situation: ${event.situation_en}
+Why it matters: ${event.why_matters_en}
+
+${isAr ? "Respond in Arabic." : "Respond in English."} Maximum 4 sentences, classified memo style.`;
+
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: prompt }],
+        events: [],
+        lang: isAr ? "ar" : "en",
+      }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.response) setInsight(data.response);
+      })
+      .catch(() => {
+        // API not available — generate a static fallback
+        const roleMeta = ROLE_META[profile.role];
+        const fallback = isAr
+          ? `هذا الحدث يؤثر بشكل مباشر على ${roleMeta.labelAr} في ${profile.region}. المستوى ${event.risk_level} يتطلب مراقبة فورية. قطاع ${event.sector} في منطقة ${event.region} معرض لتأثيرات متسلسلة.`
+          : `This ${event.risk_level}-level event in ${event.region} directly impacts ${roleMeta.label.toLowerCase()} operations in ${profile.region}. The ${event.sector.toLowerCase()} sector disruption requires immediate monitoring. Risk score of ${event.risk_score}/100 suggests elevated operational readiness.`;
+        setInsight(fallback);
+      })
+      .finally(() => setLoading(false));
+  }, [profile, event, isAr, generated]);
+
+  if (!profile) return null;
+
+  const roleMeta = ROLE_META[profile.role];
+
+  return (
+    <div className="intel-card" style={{ borderTop: "2px solid #8b5cf6" }}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-mono text-[10px] tracking-widest text-purple-400">
+          {isAr ? "ماذا يعني هذا لك" : "WHAT THIS MEANS FOR YOU"}
+        </div>
+        <div className="flex items-center gap-1.5 font-mono text-[8px] tracking-wider text-slate-600">
+          <span>{roleMeta.icon}</span>
+          <span>{isAr ? roleMeta.labelAr.split(" ")[0] : profile.role.toUpperCase()}</span>
+          <span>·</span>
+          <span>{profile.region.toUpperCase()}</span>
+        </div>
+      </div>
+      {loading ? (
+        <div className="font-mono text-[11px] text-purple-400/60 animate-pulse">
+          {isAr ? "أطلس يحلل التأثير على ملفك..." : "Atlas analyzing impact for your profile..."}
+        </div>
+      ) : insight ? (
+        <div className={`text-[13px] leading-relaxed text-slate-400 ${isAr ? "arabic-text" : ""}`}>
+          {insight}
+        </div>
+      ) : null}
     </div>
   );
 }

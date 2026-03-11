@@ -271,14 +271,13 @@ export async function fetchExposure(sessionId: string): Promise<ApiExposure> {
 export async function chatWithAtlas(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   events: ApiEvent[],
-  lang: "en" | "ar" = "en"
+  lang: "en" | "ar" = "en",
+  profile?: { role: string; region: string; watchlist?: string } | null
 ): Promise<string> {
-  // This calls the Anthropic API via our backend proxy
-  // For now, we'll use a direct approach through a Next.js API route
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, events, lang }),
+    body: JSON.stringify({ messages, events, lang, profile: profile || undefined }),
   });
   if (!res.ok) throw new Error("Chat request failed");
   const data = await res.json();

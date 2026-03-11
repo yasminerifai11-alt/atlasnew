@@ -13,6 +13,7 @@ import { RealtimeBrief } from "@/components/realtime-brief/realtime-brief";
 import { IntelligenceLibrary } from "@/components/library/intelligence-library";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { ProfileModal } from "@/components/modals/profile-modal";
+import { CommandProfileModal } from "@/components/modals/command-profile-modal";
 
 export function CommandCenter() {
   const activeSection = useCommandStore((s) => s.activeSection);
@@ -49,6 +50,7 @@ export function CommandCenter() {
       {/* Modals */}
       <AlertModal />
       <ProfileModal />
+      <CommandProfileModal />
     </div>
   );
 }

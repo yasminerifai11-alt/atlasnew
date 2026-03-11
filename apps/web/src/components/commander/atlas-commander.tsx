@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
+import { useProfileStore } from "@/stores/profile-store";
 import { chatWithAtlas } from "@/lib/api";
 
 export function AtlasCommander() {
@@ -13,6 +14,7 @@ export function AtlasCommander() {
   const chatLoading = useCommandStore((s) => s.chatLoading);
   const setChatLoading = useCommandStore((s) => s.setChatLoading);
   const clearChat = useCommandStore((s) => s.clearChat);
+  const profile = useProfileStore((s) => s.profile);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -37,7 +39,7 @@ export function AtlasCommander() {
           ...chatMessages.map((m) => ({ role: m.role, content: m.content })),
           { role: "user" as const, content: msg },
         ];
-        const response = await chatWithAtlas(history, events, lang);
+        const response = await chatWithAtlas(history, events, lang, profile);
         addChatMessage({ role: "assistant", content: response });
       } catch {
         addChatMessage({
@@ -47,7 +49,7 @@ export function AtlasCommander() {
       }
       setChatLoading(false);
     },
-    [input, chatLoading, chatMessages, events, lang, addChatMessage, setChatLoading]
+    [input, chatLoading, chatMessages, events, lang, profile, addChatMessage, setChatLoading]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
