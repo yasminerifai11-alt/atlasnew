@@ -44,7 +44,7 @@ export function AtlasCommander() {
       } catch {
         addChatMessage({
           role: "assistant",
-          content: "Connection to Atlas Command backend failed. Ensure the API is running on localhost:8000.",
+          content: "Atlas Commander is initializing. Ensure ANTHROPIC_API_KEY is set in apps/web/.env.local and restart the Next.js dev server.",
         });
       }
       setChatLoading(false);

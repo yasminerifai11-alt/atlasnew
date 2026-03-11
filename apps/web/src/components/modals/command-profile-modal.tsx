@@ -17,14 +17,29 @@ export function CommandProfileModal() {
   const modalOpen = useProfileStore((s) => s.modalOpen);
   const setModalOpen = useProfileStore((s) => s.setModalOpen);
   const setProfile = useProfileStore((s) => s.setProfile);
+  const existingProfile = useProfileStore((s) => s.profile);
+
+  const isEditing = !!existingProfile;
 
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<ProfileRole | null>(null);
   const [region, setRegion] = useState<string | null>(null);
   const [watchlist, setWatchlist] = useState("");
   const [complete, setComplete] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const isAr = lang === "ar";
+
+  // Pre-fill from existing profile when opening in edit mode
+  if (modalOpen && existingProfile && !initialized) {
+    setRole(existingProfile.role);
+    setRegion(existingProfile.region);
+    setWatchlist(existingProfile.watchlist || "");
+    setInitialized(true);
+  }
+  if (!modalOpen && initialized) {
+    setInitialized(false);
+  }
 
   const handleFinish = () => {
     if (!role || !region) return;
@@ -199,10 +214,20 @@ export function CommandProfileModal() {
 
               {step === 3 && (
                 <div>
-                  <div className="font-mono text-[11px] text-slate-400 mb-2">
-                    {isAr
-                      ? "أي شيء محدد تريد مراقبته؟"
-                      : "Anything specific to watch?"}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-mono text-[11px] text-slate-400">
+                      {isAr
+                        ? "أي شيء محدد تريد مراقبته؟"
+                        : "Anything specific to watch?"}
+                    </div>
+                    {watchlist && (
+                      <button
+                        onClick={() => setWatchlist("")}
+                        className="font-mono text-[9px] text-slate-600 hover:text-red-400 transition-colors"
+                      >
+                        {isAr ? "مسح" : "Clear"}
+                      </button>
+                    )}
                   </div>
                   <div className="font-mono text-[9px] text-slate-600 mb-4">
                     {isAr ? "(اختياري)" : "(optional)"}
@@ -247,7 +272,9 @@ export function CommandProfileModal() {
                   disabled={!role || !region}
                   className="px-5 py-2 font-mono text-[10px] tracking-wider text-slate-200 bg-atlas-accent/20 border border-atlas-accent/30 hover:bg-atlas-accent/30 disabled:opacity-30 transition-colors"
                 >
-                  {isAr ? "تفعيل الملف" : "ACTIVATE PROFILE"}
+                  {isEditing
+                    ? (isAr ? "تحديث الملف" : "UPDATE PROFILE")
+                    : (isAr ? "تفعيل الملف" : "ACTIVATE PROFILE")}
                 </button>
               )}
             </div>

@@ -59,8 +59,123 @@ export function DetailPanel() {
   }, [event, lang]);
 
   const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
+    if (!event) return;
+    const isArabic = lang === "ar";
+    const sit = isArabic && event.situation_ar ? event.situation_ar : event.situation_en;
+    const whyM = isArabic && event.why_matters_ar ? event.why_matters_ar : event.why_matters_en;
+    const fore = isArabic && event.forecast_ar ? event.forecast_ar : event.forecast_en;
+    const acts = isArabic && event.actions_ar?.length ? event.actions_ar : event.actions_en;
+    const fin = isArabic && event.financial_impact_ar ? event.financial_impact_ar : event.financial_impact_en;
+    const reg = isArabic && event.region_impact_ar ? event.region_impact_ar : event.region_impact_en;
+    const rc = RISK_COLORS[event.risk_level] || "#3b82f6";
+
+    const DOMAIN_CLR: Record<string, string> = {
+      ENERGY: "#ea580c", MARKETS: "#16a34a", SECURITY: "#dc2626",
+      TRADE: "#3b82f6", DIPLOMATIC: "#7c3aed", HUMANITARIAN: "#6b7280",
+    };
+
+    const actionsHtml = (acts || []).map((a, i) =>
+      `<div style="display:flex;gap:10px;padding:8px 12px;border-left:3px solid #3b82f6;margin-bottom:4px;">
+        <span style="color:#3b82f6;font-family:'IBM Plex Mono',monospace;font-weight:600;min-width:20px;">${String(i + 1).padStart(2, "0")}</span>
+        <span style="color:#e5e7eb;font-size:12px;line-height:1.6;">${a}</span>
+      </div>`
+    ).join("");
+
+    const consequenceHtml = consequences.map((c) => {
+      const dc = DOMAIN_CLR[c.domain] || "#6b7280";
+      return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #1e2530;">
+        <div style="border-left:3px solid ${dc};padding-left:10px;flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${dc};font-weight:600;">STEP ${c.step_number} · ${c.domain}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b7280;">${c.timeframe} · P: ${c.probability}%</span>
+          </div>
+          <div style="color:#e5e7eb;font-size:12px;line-height:1.6;${isArabic && c.consequence_ar ? "direction:rtl;text-align:right;" : ""}">${isArabic && c.consequence_ar ? c.consequence_ar : c.consequence_en}</div>
+        </div>
+      </div>`;
+    }).join("");
+
+    const infraHtml = infra.length > 0 ? infra.map((inf) => {
+      const dc = inf.distance_km < 10 ? "#dc2626" : inf.distance_km < 30 ? "#ea580c" : "#ca8a04";
+      return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2530;">
+        <span style="color:#e5e7eb;font-size:12px;">${inf.name} <span style="color:#6b7280;font-size:10px;">(${inf.infra_type})</span></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${dc};font-weight:600;">${inf.distance_km.toFixed(1)} km</span>
+      </div>`;
+    }).join("") : "";
+
+    const section = (num: string, label: string, content: string, rtl = false) =>
+      `<div style="margin-bottom:24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#3b82f6;letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid #1e2530;padding-bottom:6px;margin-bottom:10px;">${num} ${label}</div>
+        <div style="font-size:12px;line-height:1.8;color:#e5e7eb;${rtl ? "direction:rtl;text-align:right;font-family:'Noto Sans Arabic','IBM Plex Sans',sans-serif;" : ""}">${content}</div>
+      </div>`;
+
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`<!DOCTYPE html>
+<html lang="${isArabic ? "ar" : "en"}" dir="${isArabic ? "rtl" : "ltr"}">
+<head>
+<title>Atlas Command — Intel Brief — ${event.title}</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+Arabic:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  @page { size:A4; margin:20mm 25mm; }
+  body { background:#0a0e1a; color:#e5e7eb; font-family:'IBM Plex Sans',sans-serif; font-size:12px; line-height:1.6; padding:40px; }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;margin-bottom:0;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:white;letter-spacing:3px;font-weight:600;">ATLAS COMMAND</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6b7280;text-align:right;">
+      INTELLIGENCE BRIEF<br>${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC
+    </div>
+  </div>
+  <div style="height:1px;background:#3b82f6;margin-bottom:16px;"></div>
+
+  <!-- Classification bar -->
+  <div style="background:${rc};padding:6px 12px;margin-bottom:20px;">
+    <span style="font-family:'IBM Plex Mono',monospace;color:white;font-weight:700;font-size:10px;letter-spacing:1px;">${event.risk_level} — RISK SCORE: ${event.risk_score}/100 — CONFIDENCE: ${event.confidence_score}%</span>
+  </div>
+
+  <!-- Title -->
+  <div style="margin-bottom:24px;">
+    <div style="font-size:22px;font-weight:600;color:white;line-height:1.3;margin-bottom:6px;${isArabic ? "direction:rtl;text-align:right;font-family:'Noto Sans Arabic','IBM Plex Sans',sans-serif;" : ""}">${event.title}</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6b7280;">${event.region} · ${event.sector} · ${new Date(event.event_time).toUTCString()}</div>
+  </div>
+
+  ${section("01", isArabic ? "تقييم الموقف" : "SITUATION", sit, isArabic)}
+  ${section("02", isArabic ? "لماذا يهم" : "WHY IT MATTERS", whyM, isArabic)}
+  ${section("03", isArabic ? "التوقعات" : "FORECAST", fore, isArabic)}
+
+  <div style="margin-bottom:24px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#3b82f6;letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid #1e2530;padding-bottom:6px;margin-bottom:10px;">04 ${isArabic ? "إجراءات القيادة" : "COMMAND ACTIONS"}</div>
+    ${actionsHtml}
+  </div>
+
+  ${reg ? section("05", isArabic ? "التأثير الإقليمي الخليجي" : "GCC REGIONAL IMPACT", reg, isArabic) : ""}
+  ${fin ? section("06", isArabic ? "التأثير المالي" : "FINANCIAL IMPACT", fin, isArabic) : ""}
+
+  ${consequences.length > 0 ? `<div style="margin-bottom:24px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#3b82f6;letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid #1e2530;padding-bottom:6px;margin-bottom:10px;">07 ${isArabic ? "سلسلة التبعات" : "CONSEQUENCE CHAIN"}</div>
+    ${consequenceHtml}
+  </div>` : ""}
+
+  ${infraHtml ? `<div style="margin-bottom:24px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#3b82f6;letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid #1e2530;padding-bottom:6px;margin-bottom:10px;">08 ${isArabic ? "تعرض البنية التحتية" : "INFRASTRUCTURE EXPOSURE"}</div>
+    ${infraHtml}
+  </div>` : ""}
+
+  <!-- Footer -->
+  <div style="height:1px;background:#3b82f6;margin-top:30px;margin-bottom:12px;"></div>
+  <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b7280;">
+    <span>Based on ${event.source_count} sources · Confidence: ${event.confidence_score}%</span>
+    <span>ATLAS COMMAND</span>
+    <span>REF: AC-${String(event.id).padStart(4, "0")} · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
+  </div>
+</body>
+</html>`);
+    w.document.close();
+    setTimeout(() => w.print(), 1000);
+  }, [event, lang, consequences, infra]);
 
   const handleClose = () => {
     setSelectedEvent(null);
@@ -91,25 +206,53 @@ export function DetailPanel() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden animate-fade-in">
-      {/* Print version */}
+      {/* Print version — classified document style */}
       <div className="hidden print-only print-brief">
-        <h1>ATLAS COMMAND — INTEL BRIEF</h1>
-        <p className="risk-badge-print">{event.risk_level} — Risk Score: {event.risk_score}/100</p>
-        <h2>{event.title}</h2>
-        <p>{event.region} · {event.sector} · {new Date(event.event_time).toUTCString()}</p>
-        <h2>Situation</h2>
+        <div className="doc-header">
+          <div className="doc-logo">ATLAS COMMAND</div>
+          <div className="doc-class">INTELLIGENCE BRIEF</div>
+        </div>
+
+        <div className="doc-title">{event.title}</div>
+        <div className="doc-meta">
+          {event.event_type} · {event.region} · {event.sector} · {new Date(event.event_time).toUTCString()}
+        </div>
+
+        <div className={`risk-badge-print risk-${event.risk_level.toLowerCase()}`}>
+          {event.risk_level} — RISK SCORE: {event.risk_score}/100 — CONFIDENCE: {event.confidence_score}%
+        </div>
+
+        <h2>{isAr ? "تقييم الموقف" : "SITUATION ASSESSMENT"}</h2>
         <p className={isAr ? "arabic-text" : ""}>{situation}</p>
-        <h2>Why It Matters</h2>
+
+        <h2>{isAr ? "لماذا يهم" : "WHY IT MATTERS"}</h2>
         <p className={isAr ? "arabic-text" : ""}>{whyMatters}</p>
-        <h2>Forecast</h2>
+
+        <h2>{isAr ? "التوقعات" : "FORECAST"}</h2>
         <p className={isAr ? "arabic-text" : ""}>{forecast}</p>
-        <h2>Command Actions</h2>
-        <ol>{actions?.map((a, i) => <li key={i}>{a}</li>)}</ol>
-        {regionImpact && <><h2>GCC Regional Impact</h2><p className={isAr ? "arabic-text" : ""}>{regionImpact}</p></>}
-        {financialImpact && <><h2>Financial Impact</h2><p className={isAr ? "arabic-text" : ""}>{financialImpact}</p></>}
+
+        <h2>{isAr ? "إجراءات القيادة" : "COMMAND ACTIONS"}</h2>
+        <ol className={isAr ? "arabic-text" : ""}>
+          {actions?.map((a, i) => <li key={i}>{a}</li>)}
+        </ol>
+
+        {regionImpact && (
+          <>
+            <h2>{isAr ? "التأثير الإقليمي الخليجي" : "GCC REGIONAL IMPACT"}</h2>
+            <p className={isAr ? "arabic-text" : ""}>{regionImpact}</p>
+          </>
+        )}
+
+        {financialImpact && (
+          <>
+            <h2>{isAr ? "التأثير المالي" : "FINANCIAL IMPACT"}</h2>
+            <p className={isAr ? "arabic-text" : ""}>{financialImpact}</p>
+          </>
+        )}
+
         {consequences.length > 0 && (
           <>
-            <h2>Consequence Chain</h2>
+            <h2>{isAr ? "سلسلة التبعات" : "CONSEQUENCE CHAIN"}</h2>
             {consequences.map((c) => (
               <div key={c.step_number} className="consequence-step">
                 <strong>Step {c.step_number} [{c.domain}]</strong> — {isAr && c.consequence_ar ? c.consequence_ar : c.consequence_en} (P: {c.probability}%, {c.timeframe})
@@ -117,7 +260,23 @@ export function DetailPanel() {
             ))}
           </>
         )}
-        <div className="branding">ATLAS COMMAND — AI Planetary Decision Intelligence · {new Date().toISOString()}</div>
+
+        {infra.length > 0 && (
+          <>
+            <h2>{isAr ? "تعرض البنية التحتية" : "INFRASTRUCTURE EXPOSURE"}</h2>
+            {infra.map((inf) => (
+              <div key={inf.id} className="consequence-step">
+                <strong>{inf.name}</strong> — {inf.infra_type} · {inf.distance_km.toFixed(1)} km · {inf.impact_type.replace(/_/g, " ")}
+              </div>
+            ))}
+          </>
+        )}
+
+        <div className="doc-footer">
+          <span>ATLAS COMMAND — AI PLANETARY DECISION INTELLIGENCE</span>
+          <span>{new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
+          <span>REF: AC-{String(event.id).padStart(4, "0")}</span>
+        </div>
       </div>
 
       {/* Screen version */}

@@ -1,0 +1,659 @@
+"use client";
+
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useLanguage } from "@/lib/language";
+import { useCommandStore } from "@/stores/command-store";
+import { useProfileStore, ROLE_META } from "@/stores/profile-store";
+import type { ApiEvent } from "@/lib/api";
+
+const RISK_COLORS: Record<string, string> = {
+  CRITICAL: "#dc2626",
+  HIGH: "#ea580c",
+  MEDIUM: "#ca8a04",
+  LOW: "#16a34a",
+};
+
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  STRIKE: "#dc2626",
+  MILITARY: "#dc2626",
+  GEOPOLITICAL: "#ea580c",
+  MARITIME: "#3b82f6",
+  CYBER: "#8b5cf6",
+  ECONOMIC: "#ca8a04",
+  EARTHQUAKE: "#16a34a",
+  NATURAL_DISASTER: "#16a34a",
+};
+
+const ISO3_TO_NAME: Record<string, string> = {
+  KWT: "Kuwait", SAU: "Saudi Arabia", ARE: "UAE", QAT: "Qatar",
+  BHR: "Bahrain", OMN: "Oman", IRQ: "Iraq", IRN: "Iran",
+  YEM: "Yemen", EGY: "Egypt", JOR: "Jordan", SYR: "Syria",
+  LBN: "Lebanon", ISR: "Israel", CYP: "Cyprus", TUR: "Turkey",
+  AFG: "Afghanistan", PAK: "Pakistan", IND: "India", SDN: "Sudan",
+  ERI: "Eritrea", DJI: "Djibouti", SOM: "Somalia", LBY: "Libya",
+};
+
+const ISO3_TO_NAME_AR: Record<string, string> = {
+  KWT: "الكويت", SAU: "السعودية", ARE: "الإمارات", QAT: "قطر",
+  BHR: "البحرين", OMN: "عُمان", IRQ: "العراق", IRN: "إيران",
+  YEM: "اليمن", EGY: "مصر", JOR: "الأردن", SYR: "سوريا",
+  LBN: "لبنان", ISR: "إسرائيل", CYP: "قبرص", TUR: "تركيا",
+  AFG: "أفغانستان", PAK: "باكستان", IND: "الهند", SDN: "السودان",
+  ERI: "إريتريا", DJI: "جيبوتي", SOM: "الصومال", LBY: "ليبيا",
+};
+
+const ISO3_TO_REGION: Record<string, string> = {
+  KWT: "GCC · Gulf", SAU: "GCC · Gulf", ARE: "GCC · Gulf", QAT: "GCC · Gulf",
+  BHR: "GCC · Gulf", OMN: "GCC · Gulf", IRQ: "Levant · Mesopotamia", IRN: "Persian Gulf",
+  YEM: "Arabian Peninsula", EGY: "North Africa", JOR: "Levant", SYR: "Levant",
+  LBN: "Levant", ISR: "Levant", TUR: "Anatolia", AFG: "Central Asia",
+  PAK: "South Asia", SDN: "East Africa", SOM: "Horn of Africa", LBY: "North Africa",
+};
+
+// Map country names in event data to ISO3 for matching
+const COUNTRY_TO_ISO3: Record<string, string> = {
+  Kuwait: "KWT", "Saudi Arabia": "SAU", UAE: "ARE", Qatar: "QAT",
+  Bahrain: "BHR", Oman: "OMN", Iraq: "IRQ", Iran: "IRN",
+  Yemen: "YEM", Egypt: "EGY", Jordan: "JOR", Syria: "SYR",
+  Lebanon: "LBN", Israel: "ISR", Cyprus: "CYP", Turkey: "TUR",
+  Afghanistan: "AFG", Pakistan: "PAK", India: "IND", Sudan: "SDN",
+  Eritrea: "ERI", Djibouti: "DJI", Somalia: "SOM", Libya: "LBY",
+};
+
+interface CountryIntel {
+  situation: string;
+  gcc_significance: string;
+  watch_next: string[];
+  instability_score: number;
+  risk_level: string;
+}
+
+export function CountryIntelPanel() {
+  const { t, lang } = useLanguage();
+  const selectedCountry = useCommandStore((s) => s.selectedCountry);
+  const setSelectedCountry = useCommandStore((s) => s.setSelectedCountry);
+  const events = useCommandStore((s) => s.events);
+  const setSelectedEvent = useCommandStore((s) => s.setSelectedEvent);
+  const setActiveSection = useCommandStore((s) => s.setActiveSection);
+  const profile = useProfileStore((s) => s.profile);
+
+  const [intel, setIntel] = useState<CountryIntel | null>(null);
+  const [intelLoading, setIntelLoading] = useState(false);
+  const [fullBrief, setFullBrief] = useState<string | null>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const isAr = lang === "ar";
+  const countryName = isAr
+    ? (ISO3_TO_NAME_AR[selectedCountry || ""] || selectedCountry)
+    : (ISO3_TO_NAME[selectedCountry || ""] || selectedCountry);
+  const regionTag = ISO3_TO_REGION[selectedCountry || ""] || "Middle East";
+
+  // Filter events for this country
+  const countryEvents = events.filter((e) => {
+    const evIso3 = COUNTRY_TO_ISO3[e.country] || e.country;
+    return evIso3 === selectedCountry;
+  });
+
+  // Also find nearby events (events in the same region)
+  const nearbyEvents = events.filter((e) => {
+    const evIso3 = COUNTRY_TO_ISO3[e.country] || e.country;
+    return evIso3 !== selectedCountry && e.region === regionTag?.split(" · ")[0];
+  });
+
+  // Compute aggregate risk
+  const maxRiskScore = countryEvents.length > 0
+    ? Math.max(...countryEvents.map((e) => e.risk_score))
+    : nearbyEvents.length > 0 ? Math.max(...nearbyEvents.map((e) => e.risk_score)) * 0.5 : 0;
+  const computedRiskLevel = maxRiskScore >= 80 ? "CRITICAL" : maxRiskScore >= 60 ? "HIGH" : maxRiskScore >= 40 ? "MEDIUM" : "LOW";
+
+  // ESC key closes panel
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedCountry) {
+        setSelectedCountry(null);
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [selectedCountry, setSelectedCountry]);
+
+  // Generate AI intel when country changes
+  useEffect(() => {
+    if (!selectedCountry) {
+      setIntel(null);
+      setFullBrief(null);
+      return;
+    }
+    generateCountryIntel();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCountry]);
+
+  const generateCountryIntel = useCallback(async () => {
+    if (!selectedCountry) return;
+    setIntelLoading(true);
+    setIntel(null);
+
+    const allRelevantEvents = [...countryEvents, ...nearbyEvents.slice(0, 3)];
+    const eventsData = allRelevantEvents
+      .map((e) => `[${e.risk_level}/${e.risk_score}] ${e.title} — ${e.region} (${e.sector}, ${e.event_type})\n${isAr && e.situation_ar ? e.situation_ar : e.situation_en}`)
+      .join("\n\n");
+
+    const prompt = `You are Atlas Command intelligence analyst. Generate concise, specific intelligence for senior leaders. Never be generic. Always name specific locations, assets, and implications.
+
+Generate country intelligence for ${ISO3_TO_NAME[selectedCountry] || selectedCountry}.
+Active events in or near this country:
+${eventsData || "No active events detected. Generate assessment based on regional context."}
+${profile ? `\nUser role: ${ROLE_META[profile.role].label}, focused on ${profile.region}.` : ""}
+
+Generate this JSON only, no other text:
+{
+  "situation": "2-3 sentences on current situation in this country",
+  "gcc_significance": "2-3 sentences on what this means for the Gulf",
+  "watch_next": [
+    "3 specific things to monitor",
+    "each one sentence",
+    "concrete and operational"
+  ],
+  "instability_score": ${Math.round(maxRiskScore) || 25},
+  "risk_level": "${computedRiskLevel}"
+}
+Language: ${isAr ? "Arabic" : "English"}`;
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          events: [],
+          lang: isAr ? "ar" : "en",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.response) {
+          try {
+            // Try to parse JSON from response
+            const jsonMatch = data.response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              setIntel(parsed);
+            }
+          } catch {
+            // If JSON parse fails, create structured intel from text
+            setIntel({
+              situation: data.response.slice(0, 300),
+              gcc_significance: isAr
+                ? "التقييم قيد التحليل. الأحداث النشطة في المنطقة تتطلب مراقبة مستمرة."
+                : "Assessment under analysis. Active events in the region require continuous monitoring.",
+              watch_next: [
+                isAr ? "مراقبة التطورات الأمنية على الحدود" : "Monitor border security developments",
+                isAr ? "متابعة تحركات الأسواق المالية الإقليمية" : "Track regional financial market movements",
+                isAr ? "مراقبة تصريحات القيادة والمبعوثين الدبلوماسيين" : "Monitor leadership statements and diplomatic envoys",
+              ],
+              instability_score: Math.round(maxRiskScore) || 25,
+              risk_level: computedRiskLevel,
+            });
+          }
+        }
+      }
+    } catch {
+      // Fallback static intel
+      setIntel({
+        situation: isAr
+          ? `${countryName} تشهد حالياً ${countryEvents.length} حدث نشط. ${countryEvents.length > 0 ? `أعلى مستوى خطر: ${computedRiskLevel} (${Math.round(maxRiskScore)}/100).` : "لا توجد أحداث مباشرة حالياً، المراقبة مستمرة."}`
+          : `${countryName} currently has ${countryEvents.length} active event${countryEvents.length !== 1 ? "s" : ""}. ${countryEvents.length > 0 ? `Highest risk level: ${computedRiskLevel} (${Math.round(maxRiskScore)}/100).` : "No direct events detected. Continuous monitoring active."}`,
+        gcc_significance: isAr
+          ? `أي تصعيد في ${countryName} يؤثر مباشرة على استقرار منطقة الخليج وطرق التجارة البحرية.`
+          : `Any escalation in ${countryName} directly impacts Gulf regional stability and maritime trade routes.`,
+        watch_next: isAr
+          ? ["مراقبة التطورات الأمنية", "متابعة تأثير الأحداث على أسعار النفط", "رصد التحركات الدبلوماسية الإقليمية"]
+          : ["Monitor security developments along borders", "Track impact on oil prices and energy infrastructure", "Watch for diplomatic signals from regional actors"],
+        instability_score: Math.round(maxRiskScore) || 25,
+        risk_level: computedRiskLevel,
+      });
+    }
+    setIntelLoading(false);
+  }, [selectedCountry, countryEvents, nearbyEvents, isAr, maxRiskScore, computedRiskLevel, profile, countryName]);
+
+  const generateFullBrief = useCallback(async () => {
+    if (!selectedCountry) return;
+    setBriefLoading(true);
+    setBriefModalOpen(true);
+
+    const eventsData = countryEvents
+      .map((e) => `[${e.risk_level}/${e.risk_score}] ${e.title} — ${e.region} (${e.sector})\n${isAr && e.situation_ar ? e.situation_ar : e.situation_en}`)
+      .join("\n\n");
+
+    const prompt = `You are Atlas Command.
+Generate a complete intelligence brief for ${ISO3_TO_NAME[selectedCountry] || selectedCountry}.
+Active events: ${eventsData || "No active events."}
+Date: ${new Date().toISOString().slice(0, 10)}
+${profile ? `User role: ${ROLE_META[profile.role].label}, focused on ${profile.region}.` : ""}
+
+Structure:
+1. EXECUTIVE SUMMARY (3 sentences)
+2. CURRENT SITUATION (detailed)
+3. KEY EVENTS AND SIGNALS
+4. INFRASTRUCTURE EXPOSURE
+5. GCC AND REGIONAL IMPLICATIONS
+6. FORECAST — NEXT 72 HOURS
+7. RECOMMENDED ACTIONS (5 specific)
+8. WHAT TO WATCH
+
+Rules:
+- Classified memo style
+- Specific, not generic
+- Name actual assets and locations
+- Maximum 500 words
+- Language: ${isAr ? "Arabic" : "English"}`;
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          events: [],
+          lang: isAr ? "ar" : "en",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.response) setFullBrief(data.response);
+      }
+    } catch {
+      setFullBrief(isAr
+        ? `إحاطة استخباراتية — ${countryName}\n\nالملخص التنفيذي: ${countryName} تشهد ${countryEvents.length} حدث نشط. الوضع يتطلب مراقبة مستمرة.\n\nجاري تحليل البيانات... يرجى التأكد من اتصال خادم API.`
+        : `Intelligence Brief — ${countryName}\n\nExecutive Summary: ${countryName} has ${countryEvents.length} active event${countryEvents.length !== 1 ? "s" : ""}. Situation requires continuous monitoring.\n\nAnalyzing data... Please ensure API server is connected.`
+      );
+    }
+    setBriefLoading(false);
+  }, [selectedCountry, countryEvents, isAr, profile, countryName]);
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const hours = Math.floor(diff / 3600000);
+    if (hours < 1) return isAr ? "الآن" : "now";
+    if (hours < 24) return isAr ? `منذ ${hours} ساعة` : `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return isAr ? `منذ ${days} يوم` : `${days}d ago`;
+  };
+
+  if (!selectedCountry) return null;
+
+  const riskColor = RISK_COLORS[intel?.risk_level || computedRiskLevel] || "#64748b";
+  const instabilityScore = intel?.instability_score || Math.round(maxRiskScore) || 0;
+  const riskLevel = intel?.risk_level || computedRiskLevel;
+
+  // 7-day signal timeline
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recentEvents = countryEvents.filter((e) => new Date(e.event_time).getTime() > sevenDaysAgo);
+
+  return (
+    <>
+      {/* Panel */}
+      <div
+        ref={panelRef}
+        className="absolute top-0 right-0 z-20 h-full w-[380px] overflow-y-auto border-l animate-slide-in-right"
+        style={{ backgroundColor: "#0d1117", borderColor: "#1e2530" }}
+      >
+        {/* Close button */}
+        <button
+          onClick={() => setSelectedCountry(null)}
+          className="absolute top-3 right-3 z-10 flex h-7 w-7 items-center justify-center font-mono text-sm text-slate-500 hover:text-slate-200 transition-colors"
+          style={{ border: "1px solid #1e2530" }}
+        >
+          ✕
+        </button>
+
+        {/* 1. Country Header */}
+        <div className="p-5 pb-4" style={{ borderBottom: "1px solid #1e2530" }}>
+          <div className="pr-8">
+            <h2 className={`text-xl font-semibold text-white mb-1 ${isAr ? "arabic-text" : ""}`}>
+              {countryName}
+            </h2>
+            <div className="font-mono text-[10px] tracking-wider text-slate-500 mb-3">
+              {regionTag}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span
+              className="font-mono text-[10px] font-bold tracking-wider px-2.5 py-1"
+              style={{
+                color: riskColor,
+                backgroundColor: riskColor + "15",
+                border: `1px solid ${riskColor}40`,
+              }}
+            >
+              {riskLevel}
+            </span>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="font-mono text-[9px] text-slate-600">
+                  {isAr ? "مؤشر عدم الاستقرار" : "INSTABILITY SCORE"}
+                </span>
+                <span className="font-mono text-[11px] font-bold" style={{ color: riskColor }}>
+                  {instabilityScore}/100
+                </span>
+              </div>
+              <div className="h-1 w-full" style={{ backgroundColor: "#1e2530" }}>
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{ width: `${instabilityScore}%`, backgroundColor: riskColor }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 font-mono text-[8px] tracking-wider text-slate-600">
+            {isAr ? "آخر تحديث:" : "LAST UPDATED:"} {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC
+          </div>
+        </div>
+
+        {/* 2. Situation */}
+        <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
+          <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
+            {isAr ? "تقييم الموقف" : "SITUATION"}
+          </div>
+          {intelLoading ? (
+            <div className="space-y-2">
+              <div className="h-3 w-full animate-pulse rounded" style={{ backgroundColor: "#1e2530" }} />
+              <div className="h-3 w-4/5 animate-pulse rounded" style={{ backgroundColor: "#1e2530" }} />
+              <div className="h-3 w-3/5 animate-pulse rounded" style={{ backgroundColor: "#1e2530" }} />
+            </div>
+          ) : (
+            <p className={`text-[13px] leading-relaxed ${isAr ? "arabic-text" : ""}`} style={{ color: "#e5e7eb" }}>
+              {intel?.situation || (isAr ? "جاري تحليل البيانات..." : "Analyzing data...")}
+            </p>
+          )}
+        </div>
+
+        {/* 3. Active Events */}
+        <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
+          <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
+            {isAr ? "الأحداث النشطة" : "ACTIVE EVENTS"}
+            <span className="ml-2 text-slate-600">({countryEvents.length})</span>
+          </div>
+          {countryEvents.length === 0 ? (
+            <div className="font-mono text-[11px] text-slate-600 py-2">
+              {isAr ? "لا أحداث نشطة. المراقبة مستمرة." : "No active events. Monitoring signals."}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {countryEvents.map((ev, i) => {
+                const evColor = RISK_COLORS[ev.risk_level] || "#64748b";
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSelectedEvent(ev);
+                      setActiveSection("intel");
+                    }}
+                    className="w-full text-left p-3 hover:brightness-125 transition-all"
+                    style={{ backgroundColor: "#0d1117", border: "1px solid #1e2530" }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div
+                        className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: evColor }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-medium text-slate-200 line-clamp-1">
+                          {ev.title}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className="font-mono text-[8px] tracking-wider px-1.5 py-0.5"
+                            style={{
+                              color: EVENT_TYPE_COLORS[ev.event_type] || "#64748b",
+                              backgroundColor: (EVENT_TYPE_COLORS[ev.event_type] || "#64748b") + "15",
+                            }}
+                          >
+                            {ev.event_type}
+                          </span>
+                          <span className="font-mono text-[9px] text-slate-600">
+                            {timeAgo(ev.event_time)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 4. GCC Significance */}
+        <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
+          <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
+            {isAr ? "الأهمية الخليجية" : "GCC SIGNIFICANCE"}
+          </div>
+          {intelLoading ? (
+            <div className="space-y-2">
+              <div className="h-3 w-full animate-pulse rounded" style={{ backgroundColor: "#1e2530" }} />
+              <div className="h-3 w-3/4 animate-pulse rounded" style={{ backgroundColor: "#1e2530" }} />
+            </div>
+          ) : (
+            <p className={`text-[13px] leading-relaxed ${isAr ? "arabic-text" : ""}`} style={{ color: "#e5e7eb" }}>
+              {intel?.gcc_significance || (isAr ? "جاري التحليل..." : "Analyzing...")}
+            </p>
+          )}
+        </div>
+
+        {/* 5. 7-Day Signal Timeline */}
+        <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
+          <div className="font-mono text-[10px] tracking-widest mb-3" style={{ color: "#6b7280" }}>
+            {isAr ? "إشارات 7 أيام" : "7-DAY SIGNALS"}
+          </div>
+          <div className="relative h-8">
+            {/* Timeline line */}
+            <div className="absolute top-1/2 left-0 right-0 h-px" style={{ backgroundColor: "#1e2530" }} />
+            {/* Day labels */}
+            <div className="absolute bottom-0 left-0 right-0 flex justify-between">
+              {Array.from({ length: 7 }, (_, i) => {
+                const d = new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000);
+                return (
+                  <span key={i} className="font-mono text-[7px] text-slate-700">
+                    {d.toLocaleDateString("en-GB", { day: "2-digit" })}
+                  </span>
+                );
+              })}
+            </div>
+            {/* Event dots */}
+            {recentEvents.length === 0 ? (
+              <div className="absolute top-0 left-0 right-0 flex items-center justify-center h-5">
+                <span className="font-mono text-[9px] text-slate-700">
+                  {isAr ? "الإشارات طبيعية" : "Signals nominal"}
+                </span>
+              </div>
+            ) : (
+              recentEvents.map((ev, i) => {
+                const evTime = new Date(ev.event_time).getTime();
+                const position = ((evTime - sevenDaysAgo) / (7 * 24 * 60 * 60 * 1000)) * 100;
+                const dotColor = EVENT_TYPE_COLORS[ev.event_type] || "#64748b";
+                return (
+                  <div
+                    key={i}
+                    className="absolute top-0 h-3 w-3 rounded-full -translate-x-1/2"
+                    style={{
+                      left: `${Math.min(100, Math.max(0, position))}%`,
+                      backgroundColor: dotColor,
+                      boxShadow: `0 0 6px ${dotColor}60`,
+                    }}
+                    title={ev.title}
+                  />
+                );
+              })
+            )}
+          </div>
+          {/* Legend */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {Object.entries(EVENT_TYPE_COLORS).slice(0, 6).map(([type, color]) => (
+              <div key={type} className="flex items-center gap-1">
+                <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+                <span className="font-mono text-[7px] text-slate-700">{type}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 6. What to Watch */}
+        <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
+          <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
+            {isAr ? "ما يجب مراقبته" : "WATCH"}
+          </div>
+          {intelLoading ? (
+            <div className="space-y-2">
+              <div className="h-3 w-full animate-pulse rounded" style={{ backgroundColor: "#1e2530" }} />
+              <div className="h-3 w-5/6 animate-pulse rounded" style={{ backgroundColor: "#1e2530" }} />
+              <div className="h-3 w-4/5 animate-pulse rounded" style={{ backgroundColor: "#1e2530" }} />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(intel?.watch_next || []).map((item, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="font-mono text-[10px] font-bold mt-0.5" style={{ color: riskColor }}>
+                    {i + 1}.
+                  </span>
+                  <span className={`text-[12px] leading-relaxed ${isAr ? "arabic-text" : ""}`} style={{ color: "#e5e7eb" }}>
+                    {item}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 7. Key Infrastructure */}
+        <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
+          <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
+            {isAr ? "البنية التحتية الحيوية" : "CRITICAL INFRASTRUCTURE"}
+          </div>
+          {countryEvents.length === 0 ? (
+            <div className="font-mono text-[11px] text-slate-600 py-1">
+              {isAr ? "لا توجد بنية تحتية معرضة للخطر" : "No infrastructure at risk"}
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {/* Show infrastructure from event sectors */}
+              {[...new Set(countryEvents.map((e) => e.sector))].slice(0, 5).map((sector, i) => {
+                const relatedEvents = countryEvents.filter((e) => e.sector === sector);
+                const maxRisk = Math.max(...relatedEvents.map((e) => e.risk_score));
+                const sectorColor = RISK_COLORS[maxRisk >= 80 ? "CRITICAL" : maxRisk >= 60 ? "HIGH" : maxRisk >= 40 ? "MEDIUM" : "LOW"];
+                return (
+                  <div key={i} className="flex items-center justify-between p-2" style={{ border: "1px solid #1e2530" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14px]">
+                        {sector === "ENERGY" ? "⚡" : sector === "MARITIME" ? "🚢" : sector === "SECURITY" ? "🛡" : sector === "FINANCIAL" ? "💰" : "🏗"}
+                      </span>
+                      <div>
+                        <div className="text-[11px] font-medium text-slate-300">{sector}</div>
+                        <div className="font-mono text-[8px] text-slate-600">
+                          {relatedEvents.length} {isAr ? "حدث" : "event"}{relatedEvents.length > 1 && !isAr ? "s" : ""}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: sectorColor }} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 8. Generate Full Country Brief Button */}
+        <div className="p-5">
+          <button
+            onClick={generateFullBrief}
+            disabled={briefLoading}
+            className="w-full py-3 font-mono text-[11px] font-semibold tracking-wider text-white transition-colors hover:brightness-110 disabled:opacity-50"
+            style={{ backgroundColor: "#3b82f6" }}
+          >
+            {briefLoading
+              ? (isAr ? "جاري إنشاء الإحاطة..." : "GENERATING BRIEF...")
+              : (isAr ? "إنشاء إحاطة شاملة للدولة" : "GENERATE FULL COUNTRY BRIEF")}
+          </button>
+        </div>
+      </div>
+
+      {/* Full Brief Modal */}
+      {briefModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setBriefModalOpen(false); }}
+        >
+          <div
+            className="relative w-[700px] max-h-[85vh] overflow-y-auto"
+            style={{ backgroundColor: "#0d1117", border: "1px solid #1e2530" }}
+          >
+            {/* Modal header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 backdrop-blur" style={{ backgroundColor: "#0d1117ee", borderBottom: "1px solid #1e2530" }}>
+              <div>
+                <div className="font-mono text-[10px] tracking-widest text-slate-500">
+                  {isAr ? "إحاطة استخباراتية شاملة" : "FULL INTELLIGENCE BRIEF"}
+                </div>
+                <div className="text-sm font-semibold text-white">{countryName}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 font-mono text-[10px] tracking-wider text-slate-400 hover:text-white transition-colors"
+                  style={{ border: "1px solid #1e2530" }}
+                >
+                  {isAr ? "تصدير PDF" : "EXPORT PDF"}
+                </button>
+                <button
+                  onClick={() => setBriefModalOpen(false)}
+                  className="flex h-7 w-7 items-center justify-center font-mono text-slate-500 hover:text-white"
+                  style={{ border: "1px solid #1e2530" }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Brief content */}
+            <div className="p-6">
+              {briefLoading ? (
+                <div className="py-12 text-center">
+                  <div className="font-mono text-[11px] text-blue-400 animate-pulse mb-2">
+                    {isAr ? "أطلس يولد الإحاطة الشاملة..." : "Atlas generating comprehensive brief..."}
+                  </div>
+                  <div className="font-mono text-[9px] text-slate-600">
+                    {isAr ? `تحليل ${countryEvents.length} حدث` : `Analyzing ${countryEvents.length} events`}
+                  </div>
+                </div>
+              ) : fullBrief ? (
+                <div className={`text-[13px] leading-[1.8] whitespace-pre-wrap ${isAr ? "arabic-text" : ""}`} style={{ color: "#e5e7eb" }}>
+                  {fullBrief}
+                </div>
+              ) : null}
+            </div>
+
+            {/* Print version */}
+            <div className="hidden print-only print-brief">
+              <div className="doc-header">
+                <div className="doc-logo">ATLAS COMMAND</div>
+                <div className="doc-class">COUNTRY BRIEF</div>
+              </div>
+              <div className="doc-title">{(ISO3_TO_NAME[selectedCountry] || selectedCountry).toUpperCase()} — INTELLIGENCE BRIEF</div>
+              <div className="doc-meta">
+                {new Date().toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                {" · "}RISK: {riskLevel} · INSTABILITY: {instabilityScore}/100
+              </div>
+              <div style={{ whiteSpace: "pre-wrap" }} className={isAr ? "arabic-text" : ""}>{fullBrief}</div>
+              <div className="doc-footer">
+                <span>ATLAS COMMAND — AI PLANETARY DECISION INTELLIGENCE</span>
+                <span>{new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

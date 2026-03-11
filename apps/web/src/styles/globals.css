@@ -76,6 +76,15 @@
   }
 }
 
+/* Animations */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
+}
+
 /* MapLibre */
 .maplibregl-popup-content {
   background: #0a0e18 !important;
@@ -91,42 +100,150 @@
   border-top-color: #0a0e18 !important;
 }
 
-/* Print styles for PDF export */
+/* Print styles for PDF export — classified document style */
 @media print {
+  * { box-shadow: none !important; }
   body {
     background: #fff !important;
-    color: #111 !important;
+    color: #1a1a1a !important;
     overflow: visible !important;
+    font-family: "IBM Plex Sans", -apple-system, sans-serif !important;
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
   }
   .no-print { display: none !important; }
   .print-only { display: block !important; }
+
   .print-brief {
     background: #fff !important;
-    color: #111 !important;
-    padding: 2rem !important;
-    font-size: 12pt !important;
+    color: #1a1a1a !important;
+    padding: 40px 50px !important;
+    max-width: 100% !important;
   }
-  .print-brief h1 {
-    color: #111 !important;
+
+  /* Header band */
+  .print-brief .doc-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-bottom: 3px solid #111 !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 20px !important;
+  }
+  .print-brief .doc-header .doc-logo {
+    font-family: "IBM Plex Mono", monospace !important;
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 3px !important;
+    text-transform: uppercase !important;
+  }
+  .print-brief .doc-header .doc-class {
+    font-family: "IBM Plex Mono", monospace !important;
+    font-size: 8pt !important;
+    letter-spacing: 2px !important;
+    padding: 3px 12px !important;
+    border: 1.5px solid #c00 !important;
+    color: #c00 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Title block */
+  .print-brief .doc-title {
     font-size: 18pt !important;
-    border-bottom: 2px solid #111 !important;
-    padding-bottom: 0.5rem !important;
+    font-weight: 700 !important;
+    color: #111 !important;
+    margin: 0 0 4px 0 !important;
+    line-height: 1.2 !important;
   }
+  .print-brief .doc-meta {
+    font-family: "IBM Plex Mono", monospace !important;
+    font-size: 8pt !important;
+    color: #666 !important;
+    letter-spacing: 1px !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* Risk badge in print */
+  .print-brief .risk-badge-print {
+    display: inline-block !important;
+    font-family: "IBM Plex Mono", monospace !important;
+    font-size: 9pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    padding: 3px 10px !important;
+    margin-bottom: 12px !important;
+  }
+  .print-brief .risk-critical { border: 2px solid #c00 !important; color: #c00 !important; }
+  .print-brief .risk-high { border: 2px solid #d97706 !important; color: #d97706 !important; }
+  .print-brief .risk-medium { border: 2px solid #a16207 !important; color: #a16207 !important; }
+  .print-brief .risk-low { border: 2px solid #15803d !important; color: #15803d !important; }
+
+  /* Section headers */
   .print-brief h2 {
+    font-family: "IBM Plex Mono", monospace !important;
+    font-size: 9pt !important;
+    font-weight: 600 !important;
+    letter-spacing: 2px !important;
+    text-transform: uppercase !important;
     color: #333 !important;
-    font-size: 14pt !important;
-    margin-top: 1.5rem !important;
+    border-bottom: 1px solid #ddd !important;
+    padding-bottom: 4px !important;
+    margin: 20px 0 10px 0 !important;
   }
+
+  /* Body text */
+  .print-brief p {
+    font-size: 10pt !important;
+    line-height: 1.6 !important;
+    color: #222 !important;
+    margin: 0 0 8px 0 !important;
+  }
+
+  /* Action items */
+  .print-brief ol {
+    padding-left: 20px !important;
+    margin: 8px 0 !important;
+  }
+  .print-brief ol li {
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
+    color: #222 !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Consequence chain */
+  .print-brief .consequence-step {
+    font-size: 9pt !important;
+    padding: 4px 0 !important;
+    border-bottom: 1px solid #eee !important;
+    margin-bottom: 2px !important;
+  }
+
+  /* Arabic text */
   .print-brief .arabic-text {
     font-family: "Noto Sans Arabic", sans-serif !important;
     direction: rtl !important;
     text-align: right !important;
   }
-  .print-brief .branding {
-    margin-top: 2rem !important;
-    padding-top: 1rem !important;
-    border-top: 1px solid #ccc !important;
-    font-size: 9pt !important;
-    color: #666 !important;
+
+  /* Footer */
+  .print-brief .doc-footer {
+    margin-top: 30px !important;
+    padding-top: 12px !important;
+    border-top: 2px solid #111 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    font-family: "IBM Plex Mono", monospace !important;
+    font-size: 7pt !important;
+    color: #999 !important;
+    letter-spacing: 1px !important;
+  }
+
+  /* Page breaks */
+  .print-brief .page-break { page-break-before: always !important; }
+
+  @page {
+    margin: 15mm 12mm;
+    size: A4;
   }
 }

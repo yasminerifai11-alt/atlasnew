@@ -59,6 +59,10 @@ interface CommandState {
   alerts: ApiAlert[];
   setAlerts: (alerts: ApiAlert[]) => void;
 
+  // Country Intel Panel
+  selectedCountry: string | null; // ISO-3 code
+  setSelectedCountry: (country: string | null) => void;
+
   // Modals
   alertModalOpen: boolean;
   setAlertModalOpen: (open: boolean) => void;
@@ -126,6 +130,10 @@ export const useCommandStore = create<CommandState>((set) => ({
   // Alerts
   alerts: [],
   setAlerts: (alerts) => set({ alerts }),
+
+  // Country Intel Panel
+  selectedCountry: null,
+  setSelectedCountry: (selectedCountry) => set({ selectedCountry }),
 
   // Modals
   alertModalOpen: false,

@@ -12,6 +12,7 @@ import { DetailPanel } from "@/components/detail/detail-panel";
 import { AtlasCommander } from "@/components/commander/atlas-commander";
 import { RealtimeBrief } from "@/components/realtime-brief/realtime-brief";
 import { IntelligenceLibrary } from "@/components/library/intelligence-library";
+import { CountryIntelPanel } from "@/components/country/country-intel-panel";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { ProfileModal } from "@/components/modals/profile-modal";
 import { CommandProfileModal } from "@/components/modals/command-profile-modal";
@@ -26,6 +27,8 @@ export function CommandCenter() {
   const alertModalOpen = useCommandStore((s) => s.alertModalOpen);
   const profileModalOpen = useCommandStore((s) => s.profileModalOpen);
   const profileModalOpen2 = useProfileStore((s) => s.modalOpen);
+  const selectedCountry = useCommandStore((s) => s.selectedCountry);
+  const setSelectedCountry = useCommandStore((s) => s.setSelectedCountry);
   const setProfileModalOpen = useCommandStore((s) => s.setProfileModalOpen);
   const setProfileModalOpen2 = useProfileStore((s) => s.setModalOpen);
 
@@ -83,10 +86,11 @@ export function CommandCenter() {
           setAlertModalOpen(true);
           break;
         case "Escape":
-          // Close modals and panels
+          // Close modals and panels in priority order
           if (alertModalOpen) setAlertModalOpen(false);
           else if (profileModalOpen) setProfileModalOpen(false);
           else if (profileModalOpen2) setProfileModalOpen2(false);
+          else if (selectedCountry) setSelectedCountry(null);
           else if (activeSection === "intel") {
             setSelectedEvent(null);
             setActiveSection("situation");
@@ -97,7 +101,7 @@ export function CommandCenter() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeSection, alertModalOpen, profileModalOpen, profileModalOpen2, setActiveSection, setAlertModalOpen, setProfileModalOpen, setProfileModalOpen2, setSelectedEvent]);
+  }, [activeSection, alertModalOpen, profileModalOpen, profileModalOpen2, selectedCountry, setActiveSection, setAlertModalOpen, setProfileModalOpen, setProfileModalOpen2, setSelectedEvent, setSelectedCountry]);
 
   return (
     <div className="flex h-screen flex-col bg-atlas-bg text-slate-200 font-sans">
@@ -118,14 +122,15 @@ export function CommandCenter() {
   );
 }
 
-/** Situation Room: Map + Sidebar Priority Feed */
+/** Situation Room: Map + Sidebar Priority Feed + Country Intel Panel */
 function SituationRoom() {
   return (
     <>
       <StatusStrip />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         <Sidebar />
         <EventMap />
+        <CountryIntelPanel />
       </div>
     </>
   );
