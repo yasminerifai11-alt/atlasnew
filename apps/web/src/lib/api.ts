@@ -1,19 +1,31 @@
 /**
  * Atlas Command — API Client
- * Connects to FastAPI backend at localhost:8000
+ * Connects to FastAPI backend when available, falls back to seed data
  */
+
+import { SEED_EVENTS, SEED_INFRA, SEED_CONSEQUENCES } from "@/data/seed-events";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+let useStaticData = false;
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    ...options,
-  });
-  if (!res.ok) {
-    throw new Error(`API ${res.status}: ${res.statusText}`);
+  if (useStaticData) {
+    throw new Error("Using static data — backend not available");
   }
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      ...options,
+    });
+    if (!res.ok) {
+      throw new Error(`API ${res.status}: ${res.statusText}`);
+    }
+    return res.json();
+  } catch (err) {
+    useStaticData = true;
+    throw err;
+  }
 }
 
 // ─── Types from API ──────────────────────────────────────────────────
@@ -130,26 +142,51 @@ export async function fetchEvents(params?: {
   limit?: number;
   offset?: number;
 }): Promise<{ events: ApiEvent[]; total: number }> {
-  const query = new URLSearchParams();
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== "") query.set(k, String(v));
-    });
+  try {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== "") query.set(k, String(v));
+      });
+    }
+    const qs = query.toString();
+    return await request(`/events${qs ? `?${qs}` : ""}`);
+  } catch {
+    // Fallback to seed data
+    let events = [...SEED_EVENTS];
+    if (params?.risk_level) events = events.filter(e => e.risk_level === params.risk_level);
+    if (params?.search) {
+      const q = params.search.toLowerCase();
+      events = events.filter(e => e.title.toLowerCase().includes(q) || e.region.toLowerCase().includes(q));
+    }
+    return { events, total: events.length };
   }
-  const qs = query.toString();
-  return request(`/events${qs ? `?${qs}` : ""}`);
 }
 
 export async function fetchEvent(id: number): Promise<ApiEvent> {
-  return request(`/events/${id}`);
+  try {
+    return await request(`/events/${id}`);
+  } catch {
+    const event = SEED_EVENTS.find(e => e.id === id);
+    if (!event) throw new Error("Event not found");
+    return event;
+  }
 }
 
 export async function fetchEventConsequences(id: number): Promise<ApiConsequenceStep[]> {
-  return request(`/events/${id}/consequences`);
+  try {
+    return await request(`/events/${id}/consequences`);
+  } catch {
+    return SEED_CONSEQUENCES[id] || [];
+  }
 }
 
 export async function fetchEventInfra(id: number): Promise<ApiInfraLink[]> {
-  return request(`/events/${id}/infra`);
+  try {
+    return await request(`/events/${id}/infra`);
+  } catch {
+    return SEED_INFRA[id] || [];
+  }
 }
 
 // ─── Intelligence ────────────────────────────────────────────────────
@@ -166,11 +203,20 @@ export async function analyzeEvent(eventId: number): Promise<{
 }
 
 export async function fetchMorningBrief(): Promise<ApiMorningBrief> {
-  return request(`/intelligence/morning-brief`);
+  try {
+    return await request(`/intelligence/realtime-brief`);
+  } catch {
+    // Return null-like to trigger fallback to event-based brief
+    throw new Error("Backend not available — using event data for brief");
+  }
 }
 
 export async function generateMorningBrief(): Promise<ApiMorningBrief> {
-  return request(`/intelligence/morning-brief/generate`, { method: "POST" });
+  try {
+    return await request(`/intelligence/realtime-brief/generate`, { method: "POST" });
+  } catch {
+    throw new Error("Backend not available — using event data for brief");
+  }
 }
 
 // ─── Briefs ──────────────────────────────────────────────────────────

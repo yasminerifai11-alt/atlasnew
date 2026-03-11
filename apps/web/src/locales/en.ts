@@ -7,7 +7,7 @@ export const en = {
   "nav.situation": "SITUATION ROOM",
   "nav.intel": "INTEL BRIEF",
   "nav.commander": "ATLAS COMMANDER",
-  "nav.morning": "MORNING BRIEF",
+  "nav.morning": "REALTIME BRIEF",
   "nav.library": "INTEL LIBRARY",
   "nav.live": "LIVE",
   "nav.alerts": "ALERTS",
@@ -76,8 +76,8 @@ export const en = {
   "commander.suggested3": "What should Saudi Arabia's energy minister do in the next 24 hours?",
   "commander.suggested4": "Compare current risk levels across all active events",
 
-  // ─── Morning Brief ───────────────────────────────────
-  "morning.title": "DAILY INTELLIGENCE BRIEF",
+  // ─── Realtime Brief ─────────────────────────────────
+  "morning.title": "REALTIME INTELLIGENCE BRIEF",
   "morning.subtitle": "ATLAS COMMAND — CLASSIFIED",
   "morning.globalSituation": "GLOBAL SITUATION ASSESSMENT",
   "morning.topRisks": "TOP RISKS",
@@ -86,8 +86,8 @@ export const en = {
   "morning.downloadPdf": "DOWNLOAD PDF",
   "morning.share": "SHARE",
   "morning.generate": "GENERATE BRIEF",
-  "morning.generating": "Generating morning brief...",
-  "morning.noData": "No morning brief available. Generate one.",
+  "morning.generating": "Generating realtime brief...",
+  "morning.noData": "No realtime brief available. Generate one.",
   "morning.generatedAt": "Generated at {{time}} UTC",
 
   // ─── Intelligence Library ────────────────────────────

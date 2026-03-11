@@ -52,7 +52,7 @@ export function MorningBrief() {
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Print version */}
       <div className="hidden print-only print-brief">
-        <h1>ATLAS COMMAND — DAILY INTELLIGENCE BRIEF</h1>
+        <h1>ATLAS COMMAND — REALTIME INTELLIGENCE BRIEF</h1>
         <p>{new Date().toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
         {summary && (
           <>

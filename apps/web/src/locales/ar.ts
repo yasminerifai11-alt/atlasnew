@@ -7,7 +7,7 @@ export const ar = {
   "nav.situation": "غرفة العمليات",
   "nav.intel": "إحاطة استخباراتية",
   "nav.commander": "أطلس كوماندر",
-  "nav.morning": "الإحاطة الصباحية",
+  "nav.morning": "إحاطة فورية",
   "nav.library": "المكتبة الاستخباراتية",
   "nav.live": "مباشر",
   "nav.alerts": "التنبيهات",
@@ -76,8 +76,8 @@ export const ar = {
   "commander.suggested3": "ماذا يجب أن يفعل وزير الطاقة السعودي خلال الـ 24 ساعة القادمة؟",
   "commander.suggested4": "قارن مستويات الخطر الحالية عبر جميع الأحداث النشطة",
 
-  // ─── الإحاطة الصباحية ─────────────────────────────
-  "morning.title": "الإحاطة الاستخباراتية اليومية",
+  // ─── الإحاطة الفورية ─────────────────────────────
+  "morning.title": "الإحاطة الاستخباراتية الفورية",
   "morning.subtitle": "أطلس كوماند — سري",
   "morning.globalSituation": "تقييم الوضع العالمي",
   "morning.topRisks": "أبرز المخاطر",
@@ -86,8 +86,8 @@ export const ar = {
   "morning.downloadPdf": "تحميل PDF",
   "morning.share": "مشاركة",
   "morning.generate": "توليد الإحاطة",
-  "morning.generating": "جاري توليد الإحاطة الصباحية...",
-  "morning.noData": "لا توجد إحاطة صباحية. قم بتوليد واحدة.",
+  "morning.generating": "جاري توليد الإحاطة الفورية...",
+  "morning.noData": "لا توجد إحاطة فورية. قم بتوليد واحدة.",
   "morning.generatedAt": "تم التوليد {{time}} بتوقيت غرينتش",
 
   // ─── المكتبة الاستخباراتية ────────────────────────
