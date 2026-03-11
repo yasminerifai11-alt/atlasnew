@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #080c14;
+  overflow: hidden;
+  transition: background 0.3s ease;
+}
+
+/* Scrollbar — dark */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0d1420; }
+::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 2px; }
+
+/* Scrollbar — light */
+body[data-theme="light"] ::-webkit-scrollbar-track { background: #e2e8f0; }
+body[data-theme="light"] ::-webkit-scrollbar-thumb { background: #94a3b8; }
+
+/* Animations */
+@keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Leaflet overrides — dark */
+.leaflet-container {
+  background: #080c14 !important;
+  font-family: 'Space Mono', monospace !important;
+}
+.leaflet-popup-content-wrapper {
+  background: #0f172a !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+}
+.leaflet-popup-content {
+  margin: 10px 12px !important;
+  color: #cbd5e1 !important;
+}
+.leaflet-popup-tip {
+  background: #0f172a !important;
+}
+.leaflet-popup-close-button {
+  color: #64748b !important;
+}
+
+/* Leaflet overrides — light */
+body[data-theme="light"] .leaflet-container {
+  background: #f1f5f9 !important;
+}
+body[data-theme="light"] .leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+body[data-theme="light"] .leaflet-popup-content {
+  color: #334155 !important;
+}
+body[data-theme="light"] .leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+/* Leaflet zoom controls — dark */
+.leaflet-control-zoom a {
+  background: #0f172a !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #1e293b !important;
+}
+body[data-theme="light"] .leaflet-control-zoom a {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-color: rgba(0,0,0,0.15) !important;
+}
+body[data-theme="light"] .leaflet-control-zoom a:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Mobile sidebar overlay */
+.sidebar-overlay {
+  display: none;
+}
+
+/* Responsive: Tablet */
+@media (max-width: 1023px) {
+  .atlas-sidebar {
+    width: 240px !important;
+  }
+  .topbar-subtitle {
+    display: none !important;
+  }
+  .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Responsive: Mobile */
+@media (max-width: 767px) {
+  body {
+    overflow: auto;
+  }
+
+  .menu-toggle {
+    display: block !important;
+  }
+
+  .topbar-subtitle {
+    display: none !important;
+  }
+
+  .topbar-divider {
+    display: none !important;
+  }
+
+  .country-selector {
+    display: none !important;
+  }
+
+  .sidebar-country-selector {
+    display: block !important;
+  }
+
+  .topbar-time {
+    display: none !important;
+  }
+
+  .main-layout {
+    flex-direction: column !important;
+  }
+
+  .atlas-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 85vw !important;
+    height: 100vh !important;
+    z-index: 500 !important;
+    transition: left 0.3s ease !important;
+    border-right: 1px solid rgba(59,130,246,0.3) !important;
+  }
+
+  .atlas-sidebar.open {
+    left: 0 !important;
+  }
+
+  .sidebar-overlay {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0,0,0,0.6) !important;
+    z-index: 499 !important;
+  }
+
+  .detail-panel {
+    padding: 16px !important;
+  }
+
+  .intel-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .infra-row {
+    flex-direction: column !important;
+  }
+
+  .event-meta {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    padding: 8px 12px !important;
+  }
+}
