@@ -45,6 +45,8 @@ interface CommandState {
   setSearchQuery: (query: string) => void;
   sectorFilter: string;
   setSectorFilter: (sector: string) => void;
+  regionFilter: string;
+  setRegionFilter: (region: string) => void;
 
   // Chat (Atlas Commander)
   chatMessages: ChatMessage[];
@@ -105,6 +107,8 @@ export const useCommandStore = create<CommandState>((set) => ({
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   sectorFilter: "ALL",
   setSectorFilter: (sectorFilter) => set({ sectorFilter }),
+  regionFilter: "ALL",
+  setRegionFilter: (regionFilter) => set({ regionFilter }),
 
   // Chat
   chatMessages: [],

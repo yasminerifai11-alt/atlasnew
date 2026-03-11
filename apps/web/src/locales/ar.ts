@@ -7,7 +7,7 @@ export const ar = {
   "nav.situation": "غرفة العمليات",
   "nav.intel": "إحاطة استخباراتية",
   "nav.commander": "أطلس كوماندر",
-  "nav.morning": "إحاطة فورية",
+  "nav.morning": "التقرير اللحظي",
   "nav.library": "المكتبة الاستخباراتية",
   "nav.live": "مباشر",
   "nav.alerts": "التنبيهات",
@@ -76,8 +76,8 @@ export const ar = {
   "commander.suggested3": "ماذا يجب أن يفعل وزير الطاقة السعودي خلال الـ 24 ساعة القادمة؟",
   "commander.suggested4": "قارن مستويات الخطر الحالية عبر جميع الأحداث النشطة",
 
-  // ─── الإحاطة الفورية ─────────────────────────────
-  "morning.title": "الإحاطة الاستخباراتية الفورية",
+  // ─── التقرير اللحظي ─────────────────────────────
+  "morning.title": "التقرير الاستخباراتي اللحظي",
   "morning.subtitle": "أطلس كوماند — سري",
   "morning.globalSituation": "تقييم الوضع العالمي",
   "morning.topRisks": "أبرز المخاطر",
@@ -85,9 +85,9 @@ export const ar = {
   "morning.watchToday": "ما يجب مراقبته اليوم",
   "morning.downloadPdf": "تحميل PDF",
   "morning.share": "مشاركة",
-  "morning.generate": "توليد الإحاطة",
-  "morning.generating": "جاري توليد الإحاطة الفورية...",
-  "morning.noData": "لا توجد إحاطة فورية. قم بتوليد واحدة.",
+  "morning.generate": "توليد التقرير",
+  "morning.generating": "جاري توليد التقرير اللحظي...",
+  "morning.noData": "لا يوجد تقرير لحظي. قم بتوليد واحد.",
   "morning.generatedAt": "تم التوليد {{time}} بتوقيت غرينتش",
 
   // ─── المكتبة الاستخباراتية ────────────────────────
@@ -139,6 +139,14 @@ export const ar = {
   "profile.assetType": "نوع الأصل",
   "profile.addAsset": "إضافة أصل",
   "profile.save": "حفظ الملف",
+
+  // ─── فلتر المنطقة ──────────────────────────────────
+  "region.all": "جميع المناطق",
+  "region.gcc": "دول التعاون",
+  "region.levant": "الشام",
+  "region.gulfWaters": "المياه الخليجية",
+  "region.iran": "إيران",
+  "region.northAfrica": "شمال أفريقيا",
 
   // ─── عام ──────────────────────────────────────────
   "common.close": "إغلاق",

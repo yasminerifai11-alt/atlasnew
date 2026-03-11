@@ -140,6 +140,14 @@ export const en = {
   "profile.addAsset": "ADD ASSET",
   "profile.save": "SAVE PROFILE",
 
+  // ─── Region Filter ──────────────────────────────────
+  "region.all": "ALL REGIONS",
+  "region.gcc": "GCC",
+  "region.levant": "LEVANT",
+  "region.gulfWaters": "GULF WATERS",
+  "region.iran": "IRAN",
+  "region.northAfrica": "NORTH AFRICA",
+
   // ─── Common ──────────────────────────────────────────
   "common.close": "CLOSE",
   "common.cancel": "CANCEL",
