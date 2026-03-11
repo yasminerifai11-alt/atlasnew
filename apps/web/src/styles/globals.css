@@ -19,6 +19,7 @@
   .arabic-text {
     font-family: "Noto Sans Arabic", "IBM Plex Sans", sans-serif;
     direction: rtl;
+    line-height: 2;
   }
 
   .font-mono {

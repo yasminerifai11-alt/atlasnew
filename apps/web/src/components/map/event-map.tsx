@@ -66,19 +66,21 @@ export function EventMap() {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
 
-      events.forEach((event: ApiEvent) => {
+      events.forEach((event: ApiEvent, index: number) => {
         const color = RISK_COLORS[event.risk_level] || "#3b82f6";
         const size = event.risk_level === "CRITICAL" ? 14 : event.risk_level === "HIGH" ? 12 : 10;
 
         const el = document.createElement("div");
         el.style.cssText = `
           width: ${size}px; height: ${size}px; border-radius: 50%;
-          background: ${color}; opacity: 0.85;
+          background: ${color}; opacity: 0;
           border: 1.5px solid ${color};
           box-shadow: 0 0 ${size}px ${color}60;
           cursor: pointer;
-          transition: transform 0.15s ease;
+          transition: transform 0.15s ease, opacity 0.4s ease;
         `;
+        // Stagger marker appearance
+        setTimeout(() => { el.style.opacity = "0.85"; }, index * 80);
         el.onmouseenter = () => { el.style.transform = "scale(1.4)"; };
         el.onmouseleave = () => { el.style.transform = "scale(1)"; };
 

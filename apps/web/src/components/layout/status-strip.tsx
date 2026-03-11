@@ -29,6 +29,9 @@ export function StatusStrip() {
       <span className="font-mono text-[10px] tracking-wider text-slate-500">
         {t("posture.incidents")}: {events.length} · MAX RISK: {maxRisk}
       </span>
+      <span className="ml-auto font-mono text-[9px] tracking-wider text-slate-600">
+        ATLAS COMMAND © 2025 · Built for the GCC
+      </span>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useCommandStore } from "@/stores/command-store";
+import { useProfileStore } from "@/stores/profile-store";
 import { fetchEvents } from "@/lib/api";
 import { TopBar } from "@/components/layout/top-bar";
 import { StatusStrip } from "@/components/layout/status-strip";
@@ -17,8 +18,16 @@ import { CommandProfileModal } from "@/components/modals/command-profile-modal";
 
 export function CommandCenter() {
   const activeSection = useCommandStore((s) => s.activeSection);
+  const setActiveSection = useCommandStore((s) => s.setActiveSection);
   const setEvents = useCommandStore((s) => s.setEvents);
   const setEventsLoading = useCommandStore((s) => s.setEventsLoading);
+  const setAlertModalOpen = useCommandStore((s) => s.setAlertModalOpen);
+  const setSelectedEvent = useCommandStore((s) => s.setSelectedEvent);
+  const alertModalOpen = useCommandStore((s) => s.alertModalOpen);
+  const profileModalOpen = useCommandStore((s) => s.profileModalOpen);
+  const profileModalOpen2 = useProfileStore((s) => s.modalOpen);
+  const setProfileModalOpen = useCommandStore((s) => s.setProfileModalOpen);
+  const setProfileModalOpen2 = useProfileStore((s) => s.setModalOpen);
 
   // Load events on mount
   useEffect(() => {
@@ -28,13 +37,62 @@ export function CommandCenter() {
         const data = await fetchEvents({ limit: 50 });
         setEvents(data.events || []);
       } catch {
-        // API not available — will show empty state
         setEvents([]);
       }
       setEventsLoading(false);
     };
     loadEvents();
   }, [setEvents, setEventsLoading]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") return;
+
+      switch (e.key) {
+        case "s":
+        case "S":
+          e.preventDefault();
+          setActiveSection("situation");
+          break;
+        case "c":
+        case "C":
+          e.preventDefault();
+          setActiveSection("commander");
+          break;
+        case "r":
+        case "R":
+          e.preventDefault();
+          setActiveSection("realtime-brief");
+          break;
+        case "l":
+        case "L":
+          e.preventDefault();
+          setActiveSection("library");
+          break;
+        case "a":
+        case "A":
+          e.preventDefault();
+          setAlertModalOpen(true);
+          break;
+        case "Escape":
+          // Close modals and panels
+          if (alertModalOpen) setAlertModalOpen(false);
+          else if (profileModalOpen) setProfileModalOpen(false);
+          else if (profileModalOpen2) setProfileModalOpen2(false);
+          else if (activeSection === "intel") {
+            setSelectedEvent(null);
+            setActiveSection("situation");
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeSection, alertModalOpen, profileModalOpen, profileModalOpen2, setActiveSection, setAlertModalOpen, setProfileModalOpen, setProfileModalOpen2, setSelectedEvent]);
 
   return (
     <div className="flex h-screen flex-col bg-atlas-bg text-slate-200 font-sans">

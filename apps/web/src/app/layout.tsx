@@ -3,13 +3,16 @@ import "@/styles/globals.css";
 import { LanguageProvider } from "@/lib/language";
 
 export const metadata: Metadata = {
-  title: "Atlas Command — AI Planetary Decision Intelligence",
+  title: "Atlas Command — Planetary Decision Intelligence",
   description:
-    "Real-time geopolitical intelligence platform. Monitor global threats, energy disruptions, and security events with AI-powered analysis and decision recommendations.",
+    "Atlas Command monitors global events and tells leaders what is happening, why it matters, what comes next, and what to do. Built for the GCC.",
+  icons: {
+    icon: "/favicon.svg",
+  },
   openGraph: {
-    title: "Atlas Command",
+    title: "Atlas Command — Planetary Decision Intelligence",
     description:
-      "AI Planetary Decision Intelligence — Monitor. Analyze. Decide.",
+      "Atlas Command monitors global events and tells leaders what is happening, why it matters, what comes next, and what to do. Built for the GCC.",
     type: "website",
     locale: "en_US",
     alternateLocale: "ar_SA",
