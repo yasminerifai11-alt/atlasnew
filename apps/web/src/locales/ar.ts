@@ -1,0 +1,151 @@
+export const ar = {
+  // ─── العلامة التجارية ───────────────────────────────
+  "brand.name": "أطلس كوماند",
+  "brand.tagline": "منصة الذكاء الاستراتيجي للقرار الكوني",
+
+  // ─── التنقل ────────────────────────────────────────
+  "nav.situation": "غرفة العمليات",
+  "nav.intel": "إحاطة استخباراتية",
+  "nav.commander": "أطلس كوماندر",
+  "nav.morning": "الإحاطة الصباحية",
+  "nav.library": "المكتبة الاستخباراتية",
+  "nav.live": "مباشر",
+  "nav.alerts": "التنبيهات",
+  "nav.profile": "ملف الأصول",
+
+  // ─── الوضع التهديدي ──────────────────────────────
+  "posture.label": "الوضع التهديدي",
+  "posture.critical": "حرج",
+  "posture.elevated": "مرتفع",
+  "posture.guarded": "متحفظ",
+  "posture.nominal": "طبيعي",
+  "posture.incidents": "حوادث نشطة",
+  "posture.feeds": "مصادر مراقبة",
+
+  // ─── مستويات الخطر ───────────────────────────────
+  "risk.critical": "حرج",
+  "risk.high": "مرتفع",
+  "risk.medium": "متوسط",
+  "risk.low": "منخفض",
+  "risk.all": "الكل",
+
+  // ─── غرفة العمليات ───────────────────────────────
+  "situation.priorityFeed": "الأحداث الأولوية",
+  "situation.rankedByRisk": "مرتبة حسب درجة الخطر",
+  "situation.noEvents": "لا توجد أحداث تطابق الفلاتر",
+  "situation.loading": "جاري تحميل المعلومات الاستخباراتية...",
+  "situation.searchPlaceholder": "بحث في الأحداث والمناطق والقطاعات...",
+
+  // ─── بطاقة الحدث ─────────────────────────────────
+  "event.viewBrief": "عرض الإحاطة",
+  "event.confidence": "الموثوقية",
+  "event.riskScore": "الخطر",
+  "event.sources": "المصادر",
+
+  // ─── الإحاطة الاستخباراتية ───────────────────────
+  "intel.situation": "01 الموقف",
+  "intel.whyMatters": "02 لماذا يهم",
+  "intel.forecast": "03 التوقعات",
+  "intel.actions": "04 إجراءات القيادة",
+  "intel.gccImpact": "التأثير الإقليمي على الخليج",
+  "intel.financialImpact": "التأثير المالي",
+  "intel.infraExposure": "تعرض البنية التحتية",
+  "intel.consequenceChain": "سلسلة التداعيات",
+  "intel.generateBrief": "توليد إحاطة معمقة",
+  "intel.generating": "أطلس يحلل...",
+  "intel.shareBrief": "مشاركة الإحاطة",
+  "intel.exportPdf": "تصدير PDF",
+  "intel.sourcesConfidence": "المصادر والموثوقية",
+  "intel.close": "إغلاق",
+  "intel.noData": "اختر حدثاً لعرض الإحاطة الاستخباراتية",
+
+  // ─── سلسلة التداعيات ─────────────────────────────
+  "chain.probability": "الاحتمالية",
+  "chain.timeframe": "الإطار الزمني",
+  "chain.step": "خطوة",
+
+  // ─── أطلس كوماندر ─────────────────────────────────
+  "commander.title": "أطلس كوماندر",
+  "commander.subtitle": "مستشار الاستخبارات الذكي",
+  "commander.placeholder": "اسأل أطلس عن الوضع الحالي...",
+  "commander.send": "إرسال",
+  "commander.clear": "مسح",
+  "commander.thinking": "أطلس كوماندر يحلل...",
+  "commander.suggested1": "ما أكبر تهديد للبنية التحتية للطاقة في الخليج حالياً؟",
+  "commander.suggested2": "حلل التأثيرات المتتالية لوضع البحر الأحمر",
+  "commander.suggested3": "ماذا يجب أن يفعل وزير الطاقة السعودي خلال الـ 24 ساعة القادمة؟",
+  "commander.suggested4": "قارن مستويات الخطر الحالية عبر جميع الأحداث النشطة",
+
+  // ─── الإحاطة الصباحية ─────────────────────────────
+  "morning.title": "الإحاطة الاستخباراتية اليومية",
+  "morning.subtitle": "أطلس كوماند — سري",
+  "morning.globalSituation": "تقييم الوضع العالمي",
+  "morning.topRisks": "أبرز المخاطر",
+  "morning.energyMarkets": "توقعات الطاقة والأسواق",
+  "morning.watchToday": "ما يجب مراقبته اليوم",
+  "morning.downloadPdf": "تحميل PDF",
+  "morning.share": "مشاركة",
+  "morning.generate": "توليد الإحاطة",
+  "morning.generating": "جاري توليد الإحاطة الصباحية...",
+  "morning.noData": "لا توجد إحاطة صباحية. قم بتوليد واحدة.",
+  "morning.generatedAt": "تم التوليد {{time}} بتوقيت غرينتش",
+
+  // ─── المكتبة الاستخباراتية ────────────────────────
+  "library.title": "المكتبة الاستخباراتية",
+  "library.subtitle": "فهرس المصادر وتقييم الموثوقية",
+  "library.search": "بحث في المصادر...",
+  "library.categories": "التصنيفات",
+  "library.all": "الكل",
+  "library.conflict": "نزاعات",
+  "library.energy": "طاقة",
+  "library.financial": "مالي",
+  "library.maritime": "بحري",
+  "library.aviation": "طيران",
+  "library.cyber": "سيبراني",
+  "library.satellite": "أقمار صناعية",
+  "library.name": "المصدر",
+  "library.type": "النوع",
+  "library.frequency": "تكرار التحديث",
+  "library.reliability": "الموثوقية",
+
+  // ─── التنبيهات ───────────────────────────────────
+  "alert.title": "إعداد التنبيهات",
+  "alert.name": "اسم التنبيه",
+  "alert.triggerType": "نوع المحفز",
+  "alert.triggerValue": "قيمة المحفز",
+  "alert.create": "إنشاء تنبيه",
+  "alert.active": "التنبيهات النشطة",
+  "alert.delete": "حذف",
+  "alert.region": "المنطقة",
+  "alert.sector": "القطاع",
+  "alert.riskLevel": "مستوى الخطر",
+  "alert.keyword": "كلمة مفتاحية",
+  "alert.assetProximity": "قرب الأصول",
+
+  // ─── ملف الأصول ──────────────────────────────────
+  "profile.title": "ملف الأصول",
+  "profile.subtitle": "إعداد المنظمة والأصول المتتبعة",
+  "profile.orgType": "نوع المنظمة",
+  "profile.government": "حكومة",
+  "profile.energyCompany": "شركة طاقة",
+  "profile.financial": "مؤسسة مالية",
+  "profile.media": "إعلام",
+  "profile.regions": "المناطق المستهدفة",
+  "profile.sectors": "القطاعات المستهدفة",
+  "profile.assets": "الأصول المتتبعة",
+  "profile.assetName": "اسم الأصل",
+  "profile.assetLat": "خط العرض",
+  "profile.assetLng": "خط الطول",
+  "profile.assetType": "نوع الأصل",
+  "profile.addAsset": "إضافة أصل",
+  "profile.save": "حفظ الملف",
+
+  // ─── عام ──────────────────────────────────────────
+  "common.close": "إغلاق",
+  "common.cancel": "إلغاء",
+  "common.save": "حفظ",
+  "common.loading": "جاري التحميل...",
+  "common.error": "حدث خطأ",
+  "common.km": "كم",
+  "common.comingSoon": "قريباً",
+} as const;

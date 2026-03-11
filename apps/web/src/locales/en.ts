@@ -1,0 +1,151 @@
+export const en = {
+  // ─── Brand ──────────────────────────────────────────────
+  "brand.name": "ATLAS COMMAND",
+  "brand.tagline": "AI Planetary Decision Intelligence",
+
+  // ─── Navigation ────────────────────────────────────────
+  "nav.situation": "SITUATION ROOM",
+  "nav.intel": "INTEL BRIEF",
+  "nav.commander": "ATLAS COMMANDER",
+  "nav.morning": "MORNING BRIEF",
+  "nav.library": "INTEL LIBRARY",
+  "nav.live": "LIVE",
+  "nav.alerts": "ALERTS",
+  "nav.profile": "ASSET PROFILE",
+
+  // ─── Threat Posture ──────────────────────────────────
+  "posture.label": "THREAT POSTURE",
+  "posture.critical": "CRITICAL",
+  "posture.elevated": "ELEVATED",
+  "posture.guarded": "GUARDED",
+  "posture.nominal": "NOMINAL",
+  "posture.incidents": "ACTIVE INCIDENTS",
+  "posture.feeds": "FEEDS MONITORING",
+
+  // ─── Risk Levels ─────────────────────────────────────
+  "risk.critical": "CRITICAL",
+  "risk.high": "HIGH",
+  "risk.medium": "MEDIUM",
+  "risk.low": "LOW",
+  "risk.all": "ALL",
+
+  // ─── Situation Room ──────────────────────────────────
+  "situation.priorityFeed": "PRIORITY FEED",
+  "situation.rankedByRisk": "Ranked by risk score",
+  "situation.noEvents": "No events match current filters",
+  "situation.loading": "Loading intelligence feeds...",
+  "situation.searchPlaceholder": "Search events, regions, sectors...",
+
+  // ─── Event Card ──────────────────────────────────────
+  "event.viewBrief": "VIEW INTEL BRIEF",
+  "event.confidence": "CONFIDENCE",
+  "event.riskScore": "RISK",
+  "event.sources": "SOURCES",
+
+  // ─── Intel Brief ─────────────────────────────────────
+  "intel.situation": "01 SITUATION",
+  "intel.whyMatters": "02 WHY IT MATTERS",
+  "intel.forecast": "03 FORECAST",
+  "intel.actions": "04 COMMAND ACTIONS",
+  "intel.gccImpact": "GCC REGIONAL IMPACT",
+  "intel.financialImpact": "FINANCIAL IMPACT",
+  "intel.infraExposure": "INFRASTRUCTURE EXPOSURE",
+  "intel.consequenceChain": "CONSEQUENCE CHAIN",
+  "intel.generateBrief": "GENERATE AI DEEP BRIEF",
+  "intel.generating": "Atlas AI analyzing...",
+  "intel.shareBrief": "SHARE BRIEF",
+  "intel.exportPdf": "EXPORT PDF",
+  "intel.sourcesConfidence": "SOURCES & CONFIDENCE",
+  "intel.close": "CLOSE",
+  "intel.noData": "Select an event to view intelligence brief",
+
+  // ─── Consequence Chain ───────────────────────────────
+  "chain.probability": "PROBABILITY",
+  "chain.timeframe": "TIMEFRAME",
+  "chain.step": "STEP",
+
+  // ─── Atlas Commander ─────────────────────────────────
+  "commander.title": "ATLAS COMMANDER",
+  "commander.subtitle": "AI Intelligence Advisor",
+  "commander.placeholder": "Ask Atlas about the current situation...",
+  "commander.send": "SEND",
+  "commander.clear": "CLEAR",
+  "commander.thinking": "Atlas Commander is analyzing...",
+  "commander.suggested1": "What is the biggest threat to Gulf energy infrastructure right now?",
+  "commander.suggested2": "Analyze the cascading effects of the Red Sea situation",
+  "commander.suggested3": "What should Saudi Arabia's energy minister do in the next 24 hours?",
+  "commander.suggested4": "Compare current risk levels across all active events",
+
+  // ─── Morning Brief ───────────────────────────────────
+  "morning.title": "DAILY INTELLIGENCE BRIEF",
+  "morning.subtitle": "ATLAS COMMAND — CLASSIFIED",
+  "morning.globalSituation": "GLOBAL SITUATION ASSESSMENT",
+  "morning.topRisks": "TOP RISKS",
+  "morning.energyMarkets": "ENERGY & MARKETS OUTLOOK",
+  "morning.watchToday": "WHAT TO WATCH TODAY",
+  "morning.downloadPdf": "DOWNLOAD PDF",
+  "morning.share": "SHARE",
+  "morning.generate": "GENERATE BRIEF",
+  "morning.generating": "Generating morning brief...",
+  "morning.noData": "No morning brief available. Generate one.",
+  "morning.generatedAt": "Generated at {{time}} UTC",
+
+  // ─── Intelligence Library ────────────────────────────
+  "library.title": "INTELLIGENCE LIBRARY",
+  "library.subtitle": "Source catalog and reliability assessment",
+  "library.search": "Search sources...",
+  "library.categories": "CATEGORIES",
+  "library.all": "ALL",
+  "library.conflict": "CONFLICT",
+  "library.energy": "ENERGY",
+  "library.financial": "FINANCIAL",
+  "library.maritime": "MARITIME",
+  "library.aviation": "AVIATION",
+  "library.cyber": "CYBER",
+  "library.satellite": "SATELLITE",
+  "library.name": "SOURCE",
+  "library.type": "TYPE",
+  "library.frequency": "UPDATE FREQUENCY",
+  "library.reliability": "RELIABILITY",
+
+  // ─── Alerts ──────────────────────────────────────────
+  "alert.title": "CONFIGURE ALERTS",
+  "alert.name": "Alert name",
+  "alert.triggerType": "Trigger type",
+  "alert.triggerValue": "Trigger value",
+  "alert.create": "CREATE ALERT",
+  "alert.active": "ACTIVE ALERTS",
+  "alert.delete": "DELETE",
+  "alert.region": "REGION",
+  "alert.sector": "SECTOR",
+  "alert.riskLevel": "RISK LEVEL",
+  "alert.keyword": "KEYWORD",
+  "alert.assetProximity": "ASSET PROXIMITY",
+
+  // ─── Asset Profile ───────────────────────────────────
+  "profile.title": "ASSET PROFILE",
+  "profile.subtitle": "Configure your organisation and tracked assets",
+  "profile.orgType": "Organisation type",
+  "profile.government": "Government",
+  "profile.energyCompany": "Energy Company",
+  "profile.financial": "Financial Institution",
+  "profile.media": "Media",
+  "profile.regions": "Focus regions",
+  "profile.sectors": "Focus sectors",
+  "profile.assets": "Tracked assets",
+  "profile.assetName": "Asset name",
+  "profile.assetLat": "Latitude",
+  "profile.assetLng": "Longitude",
+  "profile.assetType": "Asset type",
+  "profile.addAsset": "ADD ASSET",
+  "profile.save": "SAVE PROFILE",
+
+  // ─── Common ──────────────────────────────────────────
+  "common.close": "CLOSE",
+  "common.cancel": "CANCEL",
+  "common.save": "SAVE",
+  "common.loading": "Loading...",
+  "common.error": "An error occurred",
+  "common.km": "km",
+  "common.comingSoon": "COMING SOON",
+} as const;

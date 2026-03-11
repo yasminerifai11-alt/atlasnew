@@ -1,0 +1,315 @@
+// ══════════════════════════════════════════════════════════════════════
+//  ATLAS COMMAND — Database Schema
+//  PostgreSQL + PostGIS · Bilingual (EN/AR) · Decision Intelligence
+// ══════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ─── 1. EVENT ────────────────────────────────────────────────────────
+// Core intelligence event — every signal that Atlas tracks
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Core
+  title       String
+  description String   @db.Text
+  eventTime   DateTime @map("event_time")
+
+  // Location
+  latitude    Float
+  longitude   Float
+  region      String                // "Southern Iraq", "Red Sea", "Gulf of Oman"
+  country     String                // ISO 3166-1 alpha-2: "IQ", "YE", "IR"
+
+  // Classification
+  eventType   EventType @map("event_type")
+  sector      Sector
+  source      String                // "SIGINT + Satellite", "OSINT", "AIS Maritime"
+  sourceCount Int       @default(1) @map("source_count") // how many sources corroborate
+  confidenceScore Int   @map("confidence_score")          // 0–100
+
+  // Risk assessment
+  severity    RiskLevel
+  riskScore   Int       @map("risk_score")  // 0–100
+  riskLevel   RiskLevel @map("risk_level")
+
+  // ── Intelligence narrative — English ──
+  situationEn       String @map("situation_en") @db.Text
+  whyMattersEn      String @map("why_matters_en") @db.Text
+  forecastEn        String @map("forecast_en") @db.Text
+  actionsEn         String[] @map("actions_en")
+  financialImpactEn String? @map("financial_impact_en") @db.Text
+  regionImpactEn    String? @map("region_impact_en") @db.Text  // what this means for GCC
+
+  // ── Intelligence narrative — Arabic ──
+  situationAr       String? @map("situation_ar") @db.Text
+  whyMattersAr      String? @map("why_matters_ar") @db.Text
+  forecastAr        String? @map("forecast_ar") @db.Text
+  actionsAr         String[] @map("actions_ar")
+  financialImpactAr String? @map("financial_impact_ar") @db.Text
+  regionImpactAr    String? @map("region_impact_ar") @db.Text
+
+  // Relations
+  infrastructureLinks EventInfrastructureLink[]
+  consequenceChains   ConsequenceChain[]
+  countryEvents       CountryEvent[]
+  briefs              Brief[]
+
+  // Indexes
+  @@index([eventType])
+  @@index([riskLevel])
+  @@index([sector])
+  @@index([country])
+  @@index([eventTime])
+  @@index([latitude, longitude])
+  @@index([riskScore])
+  @@map("events")
+}
+
+enum EventType {
+  STRIKE
+  AVIATION
+  MARITIME
+  EARTHQUAKE
+  CYBER
+  GEOPOLITICAL
+  ECONOMIC
+}
+
+enum RiskLevel {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum Sector {
+  ENERGY
+  MARITIME
+  AVIATION
+  CYBER
+  INFRASTRUCTURE
+  FINANCIAL
+  GEOPOLITICAL
+}
+
+// ─── 2. INFRASTRUCTURE ──────────────────────────────────────────────
+// Critical infrastructure assets — refineries, ports, pipelines, bases
+
+model Infrastructure {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  name        String
+  infraType   String   @map("infra_type")  // "Oil Terminal", "Refinery", "Naval Base", "Airport"
+  country     String                        // ISO alpha-2
+  region      String
+  latitude    Float
+  longitude   Float
+  criticality Criticality @default(HIGH)
+  owner       String?                       // "Saudi Aramco", "ADNOC", "KPC"
+  sector      Sector
+
+  // Relations
+  eventLinks  EventInfrastructureLink[]
+
+  @@index([country])
+  @@index([sector])
+  @@index([latitude, longitude])
+  @@map("infrastructure")
+}
+
+enum Criticality {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// ─── 3. EVENT ↔ INFRASTRUCTURE LINK ─────────────────────────────────
+// Connects events to nearby infrastructure with impact assessment
+
+model EventInfrastructureLink {
+  id               Int      @id @default(autoincrement())
+
+  eventId          Int      @map("event_id")
+  infrastructureId Int      @map("infrastructure_id")
+  distanceKm       Float    @map("distance_km")
+  impactType       String   @map("impact_type")   // "blast_radius", "supply_disruption", "route_blockage", "airspace_overlap"
+  impactLevel      RiskLevel @map("impact_level")
+
+  event            Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  infrastructure   Infrastructure @relation(fields: [infrastructureId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, infrastructureId])
+  @@index([eventId])
+  @@index([infrastructureId])
+  @@map("event_infrastructure_links")
+}
+
+// ─── 4. CONSEQUENCE CHAIN ───────────────────────────────────────────
+// Step-by-step cascade analysis — "Event X → Domain Y consequence → Domain Z consequence"
+
+model ConsequenceChain {
+  id             Int      @id @default(autoincrement())
+
+  eventId        Int      @map("event_id")
+  stepNumber     Int      @map("step_number")     // 1, 2, 3...
+  domain         String                            // "ENERGY", "MARITIME", "FINANCIAL", "HUMANITARIAN"
+  consequenceEn  String   @map("consequence_en") @db.Text
+  consequenceAr  String?  @map("consequence_ar") @db.Text
+  probability    Int                               // 0–100
+  timeframe      String                            // "0-6h", "6-24h", "24-72h", "1-2w"
+
+  event          Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([eventId, stepNumber])
+  @@map("consequence_chains")
+}
+
+// ─── 5. ALERT ───────────────────────────────────────────────────────
+// User-configured alert triggers — notify when conditions match
+
+model Alert {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  userSession  String   @map("user_session")     // session or user ID
+  name         String                             // "Red Sea Critical Events", "Kuwait Energy Alerts"
+  triggerType  TriggerType @map("trigger_type")
+  triggerValue String   @map("trigger_value")     // the value to match against
+  isActive     Boolean  @default(true) @map("is_active")
+
+  @@index([userSession])
+  @@index([triggerType, isActive])
+  @@map("alerts")
+}
+
+enum TriggerType {
+  REGION
+  SECTOR
+  RISK_LEVEL
+  KEYWORD
+  ASSET_PROXIMITY
+}
+
+// ─── 6. USER PROFILE ────────────────────────────────────────────────
+// Personalisation — what regions/sectors/assets does this user care about
+
+model UserProfile {
+  id               Int      @id @default(autoincrement())
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  sessionId        String   @unique @map("session_id")
+  organisationType String?  @map("organisation_type")  // "government", "energy_company", "financial_institution", "media"
+  focusRegions     String[] @map("focus_regions")       // ["Gulf", "Red Sea", "Levant"]
+  focusSectors     String[] @map("focus_sectors")       // ["ENERGY", "MARITIME"]
+  assets           Json?                                 // custom tracked assets: [{ name, lat, lng, type }]
+
+  @@map("user_profiles")
+}
+
+// ─── 7. MORNING BRIEF ──────────────────────────────────────────────
+// Daily intelligence brief — generated at 07:00 Gulf time
+
+model MorningBrief {
+  id                  Int      @id @default(autoincrement())
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  briefDate           DateTime @unique @map("brief_date") @db.Date
+  summaryEn           String   @map("summary_en") @db.Text
+  summaryAr           String?  @map("summary_ar") @db.Text
+  topRisksEn          Json     @map("top_risks_en")            // [{ eventId, title, riskLevel, oneLiner }]
+  topRisksAr          Json?    @map("top_risks_ar")
+  financialOutlookEn  String?  @map("financial_outlook_en") @db.Text
+  financialOutlookAr  String?  @map("financial_outlook_ar") @db.Text
+
+  @@map("morning_briefs")
+}
+
+// ─── SUPPORTING: Country + CountryEvent + Brief + Subscription ──────
+
+model Country {
+  code      String @id          // ISO 3166-1 alpha-2
+  name      String
+  nameAr    String? @map("name_ar")
+  flag      String              // emoji
+  latitude  Float
+  longitude Float
+  zoom      Int    @default(5)
+
+  countryEvents CountryEvent[]
+
+  @@map("countries")
+}
+
+model CountryEvent {
+  id          Int       @id @default(autoincrement())
+  countryCode String    @map("country_code")
+  eventId     Int       @map("event_id")
+  relevance   Relevance
+  reason      String?
+  reasonAr    String?   @map("reason_ar")
+
+  country     Country   @relation(fields: [countryCode], references: [code])
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([countryCode, eventId])
+  @@index([countryCode])
+  @@index([eventId])
+  @@map("country_events")
+}
+
+enum Relevance {
+  direct
+  spillover
+}
+
+model Brief {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  eventId   Int?      @map("event_id")
+  type      BriefType
+  lang      String    @default("en")
+  content   String    @db.Text
+
+  event     Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([type, lang])
+  @@map("briefs")
+}
+
+enum BriefType {
+  EVENT
+  DAILY
+  LEADER
+  COUNTRY
+}
+
+model Subscription {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  email     String?
+  telegram  String?
+  lang      String   @default("en")
+  countries String[]
+  active    Boolean  @default(true)
+
+  @@map("subscriptions")
+}
