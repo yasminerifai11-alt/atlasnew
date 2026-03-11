@@ -11,3 +11,4 @@ venv/
 *.sqlite
 .DS_Store
 .turbo/
+tsconfig.tsbuildinfo
