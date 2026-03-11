@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useCommandStore } from "@/stores/command-store";
 import { useProfileStore } from "@/stores/profile-store";
-import { fetchEvents } from "@/lib/api";
+import { fetchEvents, retryApiConnection } from "@/lib/api";
 import { TopBar } from "@/components/layout/top-bar";
 import { StatusStrip } from "@/components/layout/status-strip";
 import { EventMap } from "@/components/map/event-map";
@@ -29,20 +29,25 @@ export function CommandCenter() {
   const setProfileModalOpen = useCommandStore((s) => s.setProfileModalOpen);
   const setProfileModalOpen2 = useProfileStore((s) => s.setModalOpen);
 
-  // Load events on mount
-  useEffect(() => {
-    const loadEvents = async () => {
-      setEventsLoading(true);
-      try {
-        const data = await fetchEvents({ limit: 50 });
-        setEvents(data.events || []);
-      } catch {
-        setEvents([]);
-      }
-      setEventsLoading(false);
-    };
-    loadEvents();
+  // Load events on mount + refresh every 5 minutes
+  const loadEvents = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setEventsLoading(true);
+    try {
+      retryApiConnection(); // retry API if previously failed
+      const data = await fetchEvents({ limit: 50 });
+      setEvents(data.events || []);
+    } catch {
+      // Keep existing events on refresh failure; clear on first load only
+      if (!isRefresh) setEvents([]);
+    }
+    if (!isRefresh) setEventsLoading(false);
   }, [setEvents, setEventsLoading]);
+
+  useEffect(() => {
+    loadEvents(false);
+    const interval = setInterval(() => loadEvents(true), 5 * 60 * 1000); // 5 min
+    return () => clearInterval(interval);
+  }, [loadEvents]);
 
   // Keyboard shortcuts
   useEffect(() => {

@@ -13,6 +13,20 @@ class Settings(BaseSettings):
     # Anthropic AI
     ANTHROPIC_API_KEY: str = ""
 
+    # ACLED
+    ACLED_API_KEY: str = ""
+    ACLED_EMAIL: str = ""
+
+    # NASA FIRMS
+    NASA_FIRMS_KEY: str = ""
+
+    # EIA
+    EIA_API_KEY: str = ""
+
+    # OpenSky
+    OPENSKY_USER: str = ""
+    OPENSKY_PASS: str = ""
+
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "https://atlascommand.ai"]
 

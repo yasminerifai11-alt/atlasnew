@@ -71,6 +71,7 @@ export function EventMap() {
         const size = event.risk_level === "CRITICAL" ? 14 : event.risk_level === "HIGH" ? 12 : 10;
 
         const el = document.createElement("div");
+        const isCritical = event.risk_level === "CRITICAL";
         el.style.cssText = `
           width: ${size}px; height: ${size}px; border-radius: 50%;
           background: ${color}; opacity: 0;
@@ -78,7 +79,20 @@ export function EventMap() {
           box-shadow: 0 0 ${size}px ${color}60;
           cursor: pointer;
           transition: transform 0.15s ease, opacity 0.4s ease;
+          ${isCritical ? `animation: atlas-pulse 2s ease-in-out infinite;` : ""}
         `;
+        // Inject pulse keyframes once
+        if (isCritical && !document.getElementById("atlas-pulse-style")) {
+          const style = document.createElement("style");
+          style.id = "atlas-pulse-style";
+          style.textContent = `
+            @keyframes atlas-pulse {
+              0%, 100% { box-shadow: 0 0 ${size}px ${color}60; transform: scale(1); }
+              50% { box-shadow: 0 0 ${size * 2}px ${color}90; transform: scale(1.15); }
+            }
+          `;
+          document.head.appendChild(style);
+        }
         // Stagger marker appearance
         setTimeout(() => { el.style.opacity = "0.85"; }, index * 80);
         el.onmouseenter = () => { el.style.transform = "scale(1.4)"; };

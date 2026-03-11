@@ -8,6 +8,8 @@ import { SEED_EVENTS, SEED_INFRA, SEED_CONSEQUENCES } from "@/data/seed-events";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 let useStaticData = false;
+let lastSyncTime: string | null = null;
+let activeSourceCount = 5; // USGS, GDELT, GDACS, NASA FIRMS, EIA
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (useStaticData) {
@@ -21,11 +23,26 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     if (!res.ok) {
       throw new Error(`API ${res.status}: ${res.statusText}`);
     }
+    lastSyncTime = new Date().toISOString().slice(11, 19) + " UTC";
     return res.json();
   } catch (err) {
     useStaticData = true;
     throw err;
   }
+}
+
+/** Returns metadata about last successful API sync */
+export function getSyncStatus() {
+  return {
+    lastSync: lastSyncTime,
+    isLive: !useStaticData,
+    activeSourceCount,
+  };
+}
+
+/** Reset static data flag to retry API connection */
+export function retryApiConnection() {
+  useStaticData = false;
 }
 
 // ─── Types from API ──────────────────────────────────────────────────

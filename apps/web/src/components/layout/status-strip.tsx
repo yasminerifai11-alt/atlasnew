@@ -1,11 +1,22 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
+import { getSyncStatus } from "@/lib/api";
 
 export function StatusStrip() {
   const { t } = useLanguage();
   const events = useCommandStore((s) => s.events);
+  const [syncInfo, setSyncInfo] = useState({ lastSync: null as string | null, isLive: false, activeSourceCount: 0 });
+
+  // Update sync status every 10 seconds
+  useEffect(() => {
+    const update = () => setSyncInfo(getSyncStatus());
+    update();
+    const interval = setInterval(update, 10_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const criticalCount = events.filter((e) => e.risk_level === "CRITICAL").length;
   const highCount = events.filter((e) => e.risk_level === "HIGH").length;
@@ -30,7 +41,13 @@ export function StatusStrip() {
         {t("posture.incidents")}: {events.length} · MAX RISK: {maxRisk}
       </span>
       <span className="ml-auto font-mono text-[9px] tracking-wider text-slate-600">
-        ATLAS COMMAND © 2025 · Built for the GCC
+        {syncInfo.isLive ? (
+          <>
+            Last sync: {syncInfo.lastSync || "—"} · {events.length} events monitored · {syncInfo.activeSourceCount} sources active
+          </>
+        ) : (
+          <>Live data temporarily unavailable. Displaying last known intelligence.</>
+        )}
       </span>
     </div>
   );

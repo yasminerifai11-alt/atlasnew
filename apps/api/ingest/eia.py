@@ -1,11 +1,11 @@
 """
 Atlas Command — EIA Connector
 
-US Energy Information Administration
+US Energy Information Administration — Petroleum Spot Prices
 https://www.eia.gov/
 API docs: https://www.eia.gov/opendata/documentation.php
 
-Schedule: daily
+Schedule: every 1 hour
 """
 
 from __future__ import annotations
@@ -20,136 +20,101 @@ from models.schemas import EventType, RiskLevel, Sector
 
 logger = logging.getLogger("atlas.ingest.eia")
 
-# EIA API v2 base URL
-EIA_API_URL = "https://api.eia.gov/v2"
-
-# Series IDs for monitoring
-EIA_SERIES = {
-    "petroleum_stocks": {
-        "route": "/petroleum/stoc/wstk/data/",
-        "params": {"frequency": "weekly", "data[]": "value", "sort[0][column]": "period", "sort[0][direction]": "desc", "length": 10},
-        "description": "Weekly U.S. Ending Stocks of Crude Oil",
-    },
-    "petroleum_supply": {
-        "route": "/petroleum/sum/sndw/data/",
-        "params": {"frequency": "weekly", "data[]": "value", "sort[0][column]": "period", "sort[0][direction]": "desc", "length": 10},
-        "description": "Weekly U.S. Supply of Crude Oil",
-    },
-    "natural_gas_storage": {
-        "route": "/natural-gas/stor/wkly/data/",
-        "params": {"frequency": "weekly", "data[]": "value", "sort[0][column]": "period", "sort[0][direction]": "desc", "length": 10},
-        "description": "Weekly Natural Gas Storage",
-    },
-}
-
-# Thresholds for anomaly detection (percentage change week-over-week)
-ANOMALY_THRESHOLD_PCT = 5.0  # flag if > 5% weekly change
+# EIA API v2 — Petroleum spot prices
+EIA_SPOT_URL = "https://api.eia.gov/v2/petroleum/pri/spt/data/"
 
 
 class EIAConnector(BaseConnector):
-    """Ingest energy market anomalies from the EIA open data API."""
+    """Monitor Brent crude spot prices for significant 24hr changes."""
 
     source_name = "EIA"
-    dedup_time_window = timedelta(days=2)
-    dedup_distance_km = 1000.0  # national-level data, wide dedup
+    dedup_time_window = timedelta(days=1)
+    dedup_distance_km = 1000.0
 
     def __init__(self, session, eia_api_key: str = "") -> None:
         super().__init__(session)
         self.api_key = eia_api_key
 
     async def fetch(self) -> list[dict]:
-        """Fetch recent EIA data series and flag anomalies."""
-        anomalies: list[dict] = []
-
+        """Fetch last 7 days of petroleum spot prices and check for significant moves."""
+        params = {
+            "api_key": self.api_key,
+            "frequency": "daily",
+            "data[]": "value",
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "length": 7,
+        }
         async with httpx.AsyncClient(timeout=30) as client:
-            for series_key, series_info in EIA_SERIES.items():
-                try:
-                    url = f"{EIA_API_URL}{series_info['route']}"
-                    params = {**series_info["params"], "api_key": self.api_key}
-                    resp = await client.get(url, params=params)
-                    resp.raise_for_status()
-                    data = resp.json()
+            resp = await client.get(EIA_SPOT_URL, params=params)
+            resp.raise_for_status()
+            data = resp.json()
 
-                    response_data = data.get("response", {}).get("data", [])
-                    if len(response_data) < 2:
-                        continue
+        response_data = data.get("response", {}).get("data", [])
+        if len(response_data) < 2:
+            return []
 
-                    # Check for significant week-over-week changes
-                    latest = response_data[0]
-                    previous = response_data[1]
+        latest = response_data[0]
+        previous = response_data[1]
 
-                    latest_val = float(latest.get("value", 0) or 0)
-                    prev_val = float(previous.get("value", 0) or 0)
+        latest_val = float(latest.get("value", 0) or 0)
+        prev_val = float(previous.get("value", 0) or 0)
 
-                    if prev_val == 0:
-                        continue
+        if prev_val == 0:
+            return []
 
-                    pct_change = ((latest_val - prev_val) / abs(prev_val)) * 100
+        pct_change = ((latest_val - prev_val) / abs(prev_val)) * 100
 
-                    if abs(pct_change) >= ANOMALY_THRESHOLD_PCT:
-                        anomalies.append({
-                            "series_key": series_key,
-                            "description": series_info["description"],
-                            "latest_value": latest_val,
-                            "previous_value": prev_val,
-                            "pct_change": pct_change,
-                            "period": latest.get("period", ""),
-                            "units": latest.get("units", ""),
-                            "series_description": latest.get("series-description", ""),
-                        })
+        if abs(pct_change) < 3.0:
+            return []
 
-                except Exception:
-                    logger.warning("EIA: failed to fetch series %s", series_key)
-
-        return anomalies
+        return [{
+            "latest_value": latest_val,
+            "previous_value": prev_val,
+            "pct_change": pct_change,
+            "period": latest.get("period", ""),
+            "product_name": latest.get("product-name", "Petroleum"),
+        }]
 
     def normalize(self, raw: dict) -> dict | None:
-        """Transform an EIA anomaly into Atlas event format."""
+        """Transform an EIA price change into Atlas event format."""
         pct = raw.get("pct_change", 0)
-        series_desc = raw.get("description", "Energy data")
-        period = raw.get("period", "")
+        abs_pct = abs(pct)
         latest_val = raw.get("latest_value", 0)
         prev_val = raw.get("previous_value", 0)
-        units = raw.get("units", "")
+        period = raw.get("period", "")
 
-        direction = "increase" if pct > 0 else "decrease"
-        abs_pct = abs(pct)
+        direction = "+" if pct > 0 else "-"
 
-        # Severity based on magnitude of change
-        if abs_pct >= 15:
-            severity = RiskLevel.CRITICAL
-            confidence_score = 90
-        elif abs_pct >= 10:
+        if abs_pct >= 6:
+            risk_score = 75
             severity = RiskLevel.HIGH
-            confidence_score = 85
-        elif abs_pct >= 5:
-            severity = RiskLevel.MEDIUM
-            confidence_score = 80
         else:
-            severity = RiskLevel.LOW
-            confidence_score = 70
+            risk_score = 50
+            severity = RiskLevel.MEDIUM
 
-        # Parse period to datetime
+        confidence_score = 95
+
         try:
             event_time = datetime.strptime(period, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         except (ValueError, TypeError):
             event_time = datetime.now(timezone.utc)
 
-        title = f"EIA: {abs_pct:.1f}% {direction} in {series_desc}"
+        title = f"Brent Crude: {direction}{abs_pct:.1f}% in 24 hours"
         description = (
-            f"{series_desc}: {abs_pct:.1f}% weekly {direction}. "
-            f"Latest: {latest_val:,.0f} {units} (period: {period}). "
-            f"Previous: {prev_val:,.0f} {units}."
+            f"Brent crude spot price moved {direction}{abs_pct:.1f}% in 24 hours. "
+            f"Current: ${latest_val:.2f}/bbl (previous: ${prev_val:.2f}/bbl). "
+            f"Period: {period}."
         )
 
         return {
-            "title": title[:255],
+            "title": title,
             "description": description,
             "event_time": event_time,
-            "latitude": 39.8283,   # US centroid
-            "longitude": -98.5795,
-            "region": "Americas",
-            "country": "US",
+            "latitude": 26.07,
+            "longitude": 50.55,
+            "region": "Middle East",
+            "country": "BH",
             "event_type": EventType.ECONOMIC,
             "sector": Sector.ENERGY,
             "source": self.source_name,
@@ -158,13 +123,14 @@ class EIAConnector(BaseConnector):
             "severity": severity,
             "situation_en": description,
             "why_matters_en": (
-                f"U.S. energy data shows a significant {abs_pct:.1f}% weekly {direction} "
-                f"in {series_desc.lower()}. This may signal supply disruption, demand shift, "
-                "or market volatility affecting global energy prices."
+                f"Brent crude has moved {direction}{abs_pct:.1f}% in 24 hours, "
+                f"reaching ${latest_val:.2f}/bbl. "
+                f"{'This level of volatility signals potential supply disruption or major demand shift. ' if abs_pct >= 6 else ''}"
+                "GCC economies are directly exposed to oil price movements."
             ),
             "forecast_en": (
-                "Monitor for sustained trend over next 2-4 weeks. "
-                "Watch for corresponding price movements in crude oil and natural gas futures."
+                "Monitor for sustained price trend over next 48-72 hours. "
+                "Watch OPEC+ response and geopolitical catalysts."
             ),
-            "actions_en": '{"Monitor energy futures","Review supply chain exposure","Assess price impact on operations"}',
+            "actions_en": '{"Monitor energy futures","Assess fiscal impact on GCC budgets","Review hedging positions","Check supply chain contracts","Watch OPEC+ statements"}',
         }

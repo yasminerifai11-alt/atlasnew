@@ -1,7 +1,7 @@
 """
 Atlas Command — USGS Earthquake Hazards Connector
 
-United States Geological Survey Earthquake Hazards Program
+United States Geological Survey — FDSN Event Web Service
 https://earthquake.usgs.gov/fdsnws/event/1/
 
 Schedule: every 5 minutes
@@ -19,24 +19,46 @@ from models.schemas import EventType, RiskLevel, Sector
 
 logger = logging.getLogger("atlas.ingest.usgs")
 
-# GeoJSON feed — significant earthquakes in the past hour
-USGS_FEED_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson"
+# FDSN event query endpoint (filtered to Middle East bbox)
+USGS_API_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 
 
 class USGSConnector(BaseConnector):
-    """Ingest earthquake data from the USGS GeoJSON feed."""
+    """Ingest earthquake data from the USGS FDSN event API."""
 
     source_name = "USGS"
     dedup_time_window = timedelta(hours=1)
     dedup_distance_km = 20.0
 
     async def fetch(self) -> list[dict]:
-        """Fetch the USGS all-earthquakes-past-hour GeoJSON feed."""
+        """Fetch recent earthquakes (M3.5+) in the Middle East bounding box."""
+        params = {
+            "format": "geojson",
+            "minmagnitude": 3.5,
+            "orderby": "time",
+            "limit": 20,
+            "minlatitude": 12,
+            "maxlatitude": 42,
+            "minlongitude": 25,
+            "maxlongitude": 65,
+        }
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(USGS_FEED_URL)
+            resp = await client.get(USGS_API_URL, params=params)
             resp.raise_for_status()
             payload = resp.json()
         return payload.get("features", [])
+
+    @staticmethod
+    def _score_by_magnitude(mag: float) -> tuple[int, str]:
+        """Risk score and level by magnitude bracket."""
+        if mag >= 6.5:
+            return 85, RiskLevel.CRITICAL
+        if mag >= 5.5:
+            return 70, RiskLevel.HIGH
+        if mag >= 4.5:
+            return 45, RiskLevel.MEDIUM
+        # 3.5–4.5
+        return 20, RiskLevel.LOW
 
     def normalize(self, raw: dict) -> dict | None:
         """Transform a USGS GeoJSON feature into Atlas event format."""
@@ -59,32 +81,19 @@ class USGSConnector(BaseConnector):
         else:
             event_time = datetime.now(timezone.utc)
 
-        # Severity by magnitude
-        if mag >= 7.0:
-            severity = RiskLevel.CRITICAL
-            confidence_score = 95
-        elif mag >= 5.5:
-            severity = RiskLevel.HIGH
-            confidence_score = 90
-        elif mag >= 4.0:
-            severity = RiskLevel.MEDIUM
-            confidence_score = 85
-        else:
-            severity = RiskLevel.LOW
-            confidence_score = 80
+        risk_score, severity = self._score_by_magnitude(mag)
 
-        # Skip very minor quakes (< 2.5) to reduce noise
-        if mag < 2.5:
-            return None
-
+        # Override severity if USGS alert level is elevated
         tsunami = bool(props.get("tsunami", 0))
-        felt = props.get("felt") or 0
         alert_level = props.get("alert", "")
-
         if alert_level == "red":
             severity = RiskLevel.CRITICAL
+            risk_score = max(risk_score, 90)
         elif alert_level == "orange":
             severity = RiskLevel.HIGH
+            risk_score = max(risk_score, 70)
+
+        felt = props.get("felt") or 0
 
         title = f"M{mag:.1f} Earthquake — {place}"
         description = (
@@ -94,13 +103,15 @@ class USGSConnector(BaseConnector):
             f"{'Felt by ' + str(felt) + ' people. ' if felt else ''}"
         )
 
-        # Attempt country from place string (USGS format: "X km TYPE of PLACE, COUNTRY")
+        # Country from place string (USGS format: "X km TYPE of PLACE, COUNTRY")
         country = "XX"
         if ", " in place:
             country_name = place.rsplit(", ", 1)[-1].strip()
             country = _country_name_to_iso2(country_name)
 
         region = _usgs_region(lat, lon)
+
+        confidence_score = 90 if mag >= 5.5 else 85 if mag >= 4.5 else 80
 
         return {
             "title": title,
@@ -132,10 +143,10 @@ class USGSConnector(BaseConnector):
 
 def _usgs_region(lat: float, lon: float) -> str:
     """Basic region classification from coordinates."""
+    if 12 <= lat <= 42 and 25 <= lon <= 65:
+        return "Middle East"
     if lat > 35 and -30 < lon < 60:
         return "Europe"
-    if lat > 15 and 25 < lon < 75:
-        return "Middle East"
     if -10 < lat < 60 and lon > 60:
         return "Asia-Pacific"
     if lat > -55 and lon < -30:
@@ -149,15 +160,21 @@ def _usgs_region(lat: float, lon: float) -> str:
 
 # Minimal mapping for common USGS place suffixes
 _COUNTRY_ISO2: dict[str, str] = {
-    "Alaska": "US", "California": "US", "Hawaii": "US", "Oklahoma": "US",
-    "Puerto Rico": "PR", "Japan": "JP", "Indonesia": "ID", "Chile": "CL",
-    "Mexico": "MX", "Turkey": "TR", "Türkiye": "TR", "Iran": "IR",
-    "Philippines": "PH", "New Zealand": "NZ", "Italy": "IT", "Greece": "GR",
-    "Peru": "PE", "Colombia": "CO", "Afghanistan": "AF", "Pakistan": "PK",
-    "China": "CN", "India": "IN", "Papua New Guinea": "PG", "Fiji": "FJ",
-    "Tonga": "TO", "Vanuatu": "VU", "Solomon Islands": "SB", "Taiwan": "TW",
-    "Ecuador": "EC", "Argentina": "AR", "Bolivia": "BO", "Russia": "RU",
-    "Nepal": "NP", "Myanmar": "MM", "Tajikistan": "TJ",
+    "Iran": "IR", "Iraq": "IQ", "Turkey": "TR", "Türkiye": "TR",
+    "Afghanistan": "AF", "Pakistan": "PK", "Saudi Arabia": "SA",
+    "Yemen": "YE", "Oman": "OM", "UAE": "AE",
+    "United Arab Emirates": "AE", "Kuwait": "KW", "Bahrain": "BH",
+    "Qatar": "QA", "Jordan": "JO", "Lebanon": "LB", "Syria": "SY",
+    "Israel": "IL", "Egypt": "EG", "Cyprus": "CY", "Greece": "GR",
+    "India": "IN", "China": "CN", "Japan": "JP", "Indonesia": "ID",
+    "Philippines": "PH", "Nepal": "NP", "Myanmar": "MM",
+    "Tajikistan": "TJ", "Uzbekistan": "UZ", "Turkmenistan": "TM",
+    "Azerbaijan": "AZ", "Georgia": "GE", "Armenia": "AM",
+    "Russia": "RU", "Alaska": "US", "California": "US", "Hawaii": "US",
+    "Mexico": "MX", "Chile": "CL", "Peru": "PE", "Colombia": "CO",
+    "New Zealand": "NZ", "Italy": "IT", "Papua New Guinea": "PG",
+    "Fiji": "FJ", "Tonga": "TO", "Vanuatu": "VU", "Solomon Islands": "SB",
+    "Taiwan": "TW", "Ecuador": "EC", "Argentina": "AR", "Bolivia": "BO",
 }
 
 

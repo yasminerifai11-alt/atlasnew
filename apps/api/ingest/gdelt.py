@@ -5,13 +5,11 @@ Global Database of Events, Language, and Tone
 https://www.gdeltproject.org/
 API docs: https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
 
-Schedule: every 15 minutes
+Schedule: every 30 minutes
 """
 
 from __future__ import annotations
 
-import csv
-import io
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -22,29 +20,7 @@ from models.schemas import EventType, RiskLevel, Sector
 
 logger = logging.getLogger("atlas.ingest.gdelt")
 
-# GDELT 2.0 Events last-update file (15-min CSV export)
-GDELT_LAST_UPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
-
-# GDELT DOC API for keyword-based monitoring
 GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
-
-# Event codes of interest (CAMEO codes)
-# 19x = Use of force, 18x = Military, 14x = Protest, 20x = Unconventional mass violence
-_CAMEO_INTEREST = {
-    "190", "191", "192", "193", "194", "195",
-    "180", "181", "182", "183",
-    "140", "141", "142", "143", "144", "145",
-    "200", "201", "202", "203",
-}
-
-# Map CAMEO root codes → Atlas event types
-_CAMEO_TYPE_MAP: dict[str, str] = {
-    "14": EventType.GEOPOLITICAL,  # Protest
-    "17": EventType.GEOPOLITICAL,  # Coerce
-    "18": EventType.STRIKE,        # Assault / Military
-    "19": EventType.STRIKE,        # Use force
-    "20": EventType.STRIKE,        # Unconventional mass violence
-}
 
 
 class GDELTConnector(BaseConnector):
@@ -56,40 +32,25 @@ class GDELTConnector(BaseConnector):
 
     async def fetch(self) -> list[dict]:
         """
-        Query the GDELT DOC API for recent high-impact security events.
-        Returns article-level records with tone, themes, and locations.
+        Query the GDELT DOC API for recent Middle East / Gulf conflict news.
         """
-        queries = [
-            "conflict attack military strike",
-            "explosion bombing terror",
-            "coup protest unrest",
-            "maritime incident piracy",
-            "cyberattack infrastructure",
-        ]
-        all_articles: list[dict] = []
+        params = {
+            "query": "Middle East OR Gulf OR Iran OR Iraq OR Yemen conflict attack",
+            "mode": "artlist",
+            "maxrecords": 25,
+            "format": "json",
+            "timespan": "6h",
+        }
 
         async with httpx.AsyncClient(timeout=30) as client:
-            for q in queries:
-                params = {
-                    "query": q,
-                    "mode": "ArtList",
-                    "maxrecords": 75,
-                    "timespan": "15min",
-                    "format": "json",
-                    "sort": "ToneDesc",
-                }
-                try:
-                    resp = await client.get(GDELT_DOC_API_URL, params=params)
-                    resp.raise_for_status()
-                    data = resp.json()
-                    articles = data.get("articles", [])
-                    for art in articles:
-                        art["_query_theme"] = q
-                    all_articles.extend(articles)
-                except Exception:
-                    logger.warning("GDELT: query '%s' failed", q)
-
-        return all_articles
+            try:
+                resp = await client.get(GDELT_DOC_API_URL, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+                return data.get("articles", [])
+            except Exception:
+                logger.warning("GDELT: fetch failed")
+                return []
 
     def normalize(self, raw: dict) -> dict | None:
         """Transform a GDELT article record into Atlas event format."""
@@ -97,7 +58,6 @@ class GDELTConnector(BaseConnector):
         url = raw.get("url", "")
         source_domain = raw.get("domain", "")
         seendate = raw.get("seendate", "")
-        language = raw.get("language", "English")
         tone = raw.get("tone", 0)
 
         if not title:
@@ -114,51 +74,32 @@ class GDELTConnector(BaseConnector):
         # Tone is negative for negative events (range roughly -25 to +25)
         tone_val = float(tone) if tone else 0
 
-        # Determine severity from tone
-        if tone_val < -10:
-            severity = RiskLevel.CRITICAL
-            confidence_score = 80
-        elif tone_val < -5:
+        # Risk score and severity based on tone
+        if tone_val < -5:
+            risk_score = 65
             severity = RiskLevel.HIGH
             confidence_score = 75
         elif tone_val < -2:
+            risk_score = 40
             severity = RiskLevel.MEDIUM
             confidence_score = 65
         else:
+            risk_score = 20
             severity = RiskLevel.LOW
             confidence_score = 55
-
-        # Skip low-impact articles
-        if tone_val > -2:
-            return None
 
         # Extract location from socialimage or context if available
         lat = 0.0
         lon = 0.0
         country = "XX"
-        region = "Global"
+        region = "Middle East"
 
         # Try to use GDELT's geo fields if present
         if raw.get("sourcecountry"):
             country = raw["sourcecountry"][:2].upper()
 
-        # Determine event type from query theme
-        query_theme = raw.get("_query_theme", "")
-        if "maritime" in query_theme or "piracy" in query_theme:
-            event_type = EventType.MARITIME
-            sector = Sector.MARITIME
-        elif "cyber" in query_theme:
-            event_type = EventType.CYBER
-            sector = Sector.CYBER
-        elif "conflict" in query_theme or "explosion" in query_theme:
-            event_type = EventType.STRIKE
-            sector = Sector.GEOPOLITICAL
-        elif "coup" in query_theme or "protest" in query_theme:
-            event_type = EventType.GEOPOLITICAL
-            sector = Sector.GEOPOLITICAL
-        else:
-            event_type = EventType.GEOPOLITICAL
-            sector = Sector.GEOPOLITICAL
+        event_type = EventType.GEOPOLITICAL
+        sector = Sector.GEOPOLITICAL
 
         description = (
             f"GDELT detected article: \"{title}\" "
@@ -182,8 +123,8 @@ class GDELTConnector(BaseConnector):
             "severity": severity,
             "situation_en": f"Media report: {title}",
             "why_matters_en": (
-                f"GDELT media monitoring flagged this article with negative tone ({tone_val:.1f}). "
-                f"Source: {source_domain}. Theme: {query_theme}."
+                f"GDELT media monitoring flagged this article with tone ({tone_val:.1f}). "
+                f"Source: {source_domain}."
             ),
             "forecast_en": (
                 "Corroborate with additional sources. "
