@@ -34,6 +34,18 @@ const RISK_COLORS: Record<string, string> = {
   LOW: "#22c55e",
 };
 
+const SECTOR_AR: Record<string, string> = {
+  ENERGY: "الطاقة",
+  MARITIME: "البحري",
+  SECURITY: "الأمن",
+  CYBER: "الإلكتروني",
+  FINANCIAL: "المالي",
+  AVIATION: "الجوي",
+  INFRASTRUCTURE: "البنية التحتية",
+  DIPLOMATIC: "الدبلوماسي",
+  TRADE: "التجارة",
+};
+
 const POSTURE_COLORS: Record<string, { bg: string; text: string; label: string; labelAr: string }> = {
   CRITICAL: { bg: "#ef4444", text: "#fff", label: "CRITICAL", labelAr: "حرج" },
   ELEVATED: { bg: "#f97316", text: "#fff", label: "ELEVATED", labelAr: "مرتفع" },
@@ -104,7 +116,57 @@ Do NOT mix English words into Arabic text or use colloquial dialect.
 Use proper Arabic equivalents: Cyberattack = هجوم إلكتروني, Infrastructure = بنية تحتية, Geopolitical = جيوسياسي, Sanctions = عقوبات, Escalation = تصعيد, Intelligence = استخبارات, Strike = ضربة عسكرية, Drone = طائرة مسيّرة, Missile = صاروخ, Pipeline = خط أنابيب, Tanker = ناقلة نفط, Refinery = مصفاة نفط, Supply chain = سلسلة الإمداد.
 Sentence structure must be natural Arabic, not translated English.` : "";
 
-    const prompt = `You are Atlas Command, an AI planetary decision intelligence platform.
+    const prompt = isAr
+      ? `أنت Atlas Command، منصة استخبارات القرار الكوني.
+أنشئ نشرة استخباراتية منظمة بصيغة JSON. يجب أن تكون جميع القيم النصية بالعربية الفصحى.
+${arabicRules}
+
+التاريخ: ${new Date().toISOString().slice(0, 10)}
+إجمالي الأحداث النشطة: ${events.length}
+حرج: ${criticalCount}، مرتفع: ${highCount}
+مصادر المراقبة: ${totalSources}
+${profile ? `دور المستخدم: ${roleMeta?.label}، يركز على ${profile.region}.` : ""}
+
+أبرز الأحداث حسب الخطر:
+${eventsData}
+
+التوزيع الإقليمي:
+${regionSummary}
+
+التوزيع القطاعي:
+${sectorSummary}
+
+أعد فقط JSON صالح بهذا الهيكل بالضبط. جميع النصوص يجب أن تكون بالعربية:
+{
+  "situation_now": "٣-٤ جمل تلخص الموقف الحالي. أسلوب مذكرات سرية. أشر لأحداث محددة وتداعياتها.",
+  "threat_level": "${posture}",
+  "active_count": ${events.length},
+  "top_sector": "${topSector}",
+  "anticipate": {
+    "h24": { "text": "ما نتوقعه خلال ٢٤ ساعة — محدد وليس عاماً", "probability": 75 },
+    "h48": { "text": "ما نتوقعه خلال ٢٤-٤٨ ساعة", "probability": 60 },
+    "h72": { "text": "ما نتوقعه خلال ٤٨-٧٢ ساعة", "probability": 45 },
+    "wildcard": { "text": "سيناريو منخفض الاحتمال عالي التأثير", "probability": 15 }
+  },
+  "recommendations": [
+    "٥ توصيات عملية محددة بالعربية",
+    "كل توصية قابلة للتنفيذ ومباشرة",
+    "أشر لأحداث أو مناطق محددة",
+    "صمم حسب دور المستخدم إن وُجد",
+    "التوصية الأخيرة نظرة استراتيجية"
+  ],
+  "regional_intel": [
+    { "region": "اسم المنطقة", "summary": "جملتان تحليل إقليمي بالعربية", "risk": "CRITICAL/HIGH/MEDIUM/LOW" }
+  ],
+  "sector_intel": [
+    { "sector": "SECTOR", "summary": "جملتان عن تأثير القطاع بالعربية", "events": 3 }
+  ],
+  "signals_to_watch": [
+    "٥ إشارات محددة قد تغير صورة التهديد",
+    "كل إشارة ملموسة وقابلة للرصد"
+  ]
+}`
+      : `You are Atlas Command, an AI planetary decision intelligence platform.
 Generate a structured intelligence brief as JSON.
 
 Current date: ${new Date().toISOString().slice(0, 10)}
@@ -151,10 +213,7 @@ Return ONLY valid JSON in this exact structure:
     "5 specific signals that could change the threat picture",
     "Each one concrete and monitorable"
   ]
-}
-
-Language: ${isAr ? "Arabic" : "English"}
-${arabicRules}`;
+}`;
 
     try {
       const res = await fetch("/api/chat", {
@@ -247,13 +306,22 @@ ${arabicRules}`;
     setLastGenerated(new Date().toISOString());
   }, [events, topEvents, isAr, criticalCount, posture, topSector]);
 
-  // Auto-generate on mount
+  // Auto-generate on mount and when language changes
+  const prevLangRef = useRef(lang);
   useEffect(() => {
     if (events.length > 0 && !briefData) {
       generateBrief();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events.length]);
+
+  // Regenerate when language changes
+  useEffect(() => {
+    if (prevLangRef.current !== lang && events.length > 0) {
+      prevLangRef.current = lang;
+      generateBrief();
+    }
+  }, [lang, events.length, generateBrief]);
 
   // Auto-refresh every 30 minutes
   useEffect(() => {
@@ -474,7 +542,7 @@ ${arabicRules}`;
           {/* Top Sector */}
           <div className="p-5">
             <div className="font-mono text-[9px] tracking-[3px] text-slate-600 mb-2">{t("morning.topSector")}</div>
-            <div className="font-mono text-lg font-semibold text-white">{topSector}</div>
+            <div className="font-mono text-lg font-semibold text-white">{isAr ? (SECTOR_AR[topSector] || topSector) : topSector}</div>
             <div className="font-mono text-[9px] text-slate-600 mt-1">
               {sectorCounts[topSector] || 0} {isAr ? "حدث" : "events"}
             </div>

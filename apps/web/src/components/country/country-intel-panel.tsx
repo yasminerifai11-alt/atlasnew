@@ -151,7 +151,27 @@ export function CountryIntelPanel() {
       .map((e) => `[${e.risk_level}/${e.risk_score}] ${e.title} — ${e.region} (${e.sector}, ${e.event_type})\n${isAr && e.situation_ar ? e.situation_ar : e.situation_en}`)
       .join("\n\n");
 
-    const prompt = `You are Atlas Command intelligence analyst. Generate concise, specific intelligence for senior leaders. Never be generic. Always name specific locations, assets, and implications.
+    const prompt = isAr
+      ? `أنت محلل استخبارات Atlas Command. أنشئ تقييماً موجزاً ومحدداً لكبار القادة. لا تكن عاماً. سمِّ مواقع وأصولاً وتداعيات بعينها. أجب بالعربية الفصحى فقط.
+
+أنشئ استخبارات عن ${ISO3_TO_NAME_AR[selectedCountry] || ISO3_TO_NAME[selectedCountry] || selectedCountry}.
+الأحداث النشطة في هذه الدولة أو بالقرب منها:
+${eventsData || "لم تُكتشف أحداث نشطة. أنشئ تقييماً بناءً على السياق الإقليمي."}
+${profile ? `\nدور المستخدم: ${ROLE_META[profile.role].label}، يركز على ${profile.region}.` : ""}
+
+أعد فقط JSON صالح، جميع النصوص بالعربية:
+{
+  "situation": "٢-٣ جمل عن الوضع الحالي بالعربية",
+  "gcc_significance": "٢-٣ جمل عن أهمية ذلك لدول الخليج بالعربية",
+  "watch_next": [
+    "٣ أشياء محددة للمراقبة بالعربية",
+    "كل واحدة جملة واحدة",
+    "ملموسة وعملية"
+  ],
+  "instability_score": ${Math.round(maxRiskScore) || 25},
+  "risk_level": "${computedRiskLevel}"
+}`
+      : `You are Atlas Command intelligence analyst. Generate concise, specific intelligence for senior leaders. Never be generic. Always name specific locations, assets, and implications.
 
 Generate country intelligence for ${ISO3_TO_NAME[selectedCountry] || selectedCountry}.
 Active events in or near this country:
@@ -169,8 +189,7 @@ Generate this JSON only, no other text:
   ],
   "instability_score": ${Math.round(maxRiskScore) || 25},
   "risk_level": "${computedRiskLevel}"
-}
-Language: ${isAr ? "Arabic" : "English"}`;
+}`;
 
     try {
       const res = await fetch("/api/chat", {
@@ -238,7 +257,30 @@ Language: ${isAr ? "Arabic" : "English"}`;
       .map((e) => `[${e.risk_level}/${e.risk_score}] ${e.title} — ${e.region} (${e.sector})\n${isAr && e.situation_ar ? e.situation_ar : e.situation_en}`)
       .join("\n\n");
 
-    const prompt = `You are Atlas Command.
+    const prompt = isAr
+      ? `أنت Atlas Command.
+أنشئ نشرة استخباراتية شاملة عن ${ISO3_TO_NAME_AR[selectedCountry] || ISO3_TO_NAME[selectedCountry] || selectedCountry}. اكتب بالكامل بالعربية الفصحى.
+الأحداث النشطة: ${eventsData || "لا أحداث نشطة."}
+التاريخ: ${new Date().toISOString().slice(0, 10)}
+${profile ? `دور المستخدم: ${ROLE_META[profile.role].label}، يركز على ${profile.region}.` : ""}
+
+الهيكل:
+١. الملخص التنفيذي (٣ جمل)
+٢. الوضع الحالي (مفصل)
+٣. الأحداث والإشارات الرئيسية
+٤. تعرض البنية التحتية
+٥. التداعيات الخليجية والإقليمية
+٦. التوقعات — ٧٢ ساعة القادمة
+٧. الإجراءات الموصى بها (٥ محددة)
+٨. ما يجب مراقبته
+
+القواعد:
+- أسلوب مذكرات سرية
+- محدد وليس عاماً
+- سمِّ أصولاً ومواقع فعلية
+- ٥٠٠ كلمة كحد أقصى
+- بالعربية الفصحى فقط`
+      : `You are Atlas Command.
 Generate a complete intelligence brief for ${ISO3_TO_NAME[selectedCountry] || selectedCountry}.
 Active events: ${eventsData || "No active events."}
 Date: ${new Date().toISOString().slice(0, 10)}
@@ -259,7 +301,7 @@ Rules:
 - Specific, not generic
 - Name actual assets and locations
 - Maximum 500 words
-- Language: ${isAr ? "Arabic" : "English"}`;
+- Language: English`;
 
     try {
       const res = await fetch("/api/chat", {
