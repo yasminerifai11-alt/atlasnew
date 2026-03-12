@@ -154,11 +154,23 @@ export function setMapLanguage(map: any, lang: string): void {
   // Mapbox/MapTiler may use "name_xx" with underscore
   const nameFieldUnderscore = lang === "ar" ? "name_ar" : "name_en";
 
-  const textFieldExpr = [
+  // Build the base name expression
+  const baseName = [
     "coalesce",
     ["get", nameFieldColon],
     ["get", nameFieldUnderscore],
     ["get", "name"],
+  ];
+
+  // Override Israel → Palestine on the map labels
+  const palestineName = lang === "ar" ? "فلسطين" : "Palestine";
+  const textFieldExpr = [
+    "case",
+    ["in", "Israel", ["coalesce", ["get", "name:en"], ["get", "name"], ["literal", ""]]],
+    ["literal", palestineName],
+    ["in", "إسرائيل", ["coalesce", ["get", "name:ar"], ["get", "name"], ["literal", ""]]],
+    ["literal", palestineName],
+    baseName,
   ];
 
   // Apply to all known label layers
