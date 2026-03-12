@@ -154,49 +154,77 @@ export function CountryIntelPanel() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCountry]);
 
+  // Build a structured event list for Claude context
+  const buildEventContext = useCallback(
+    (evList: ApiEvent[]) => {
+      if (evList.length === 0) return "";
+      return evList
+        .sort((a, b) => b.risk_score - a.risk_score)
+        .map((e, i) => {
+          const ago = (() => {
+            const diff = Date.now() - new Date(e.event_time).getTime();
+            const h = Math.floor(diff / 3600000);
+            if (h < 1) return "just now";
+            if (h < 24) return `${h}h ago`;
+            return `${Math.floor(h / 24)}d ago`;
+          })();
+          return `${i + 1}. ${e.risk_level} — ${e.title}\n   Risk: ${e.risk_score}/100 — ${ago}\n   ${isAr && e.situation_ar ? e.situation_ar : e.situation_en || e.description || ""}`;
+        })
+        .join("\n\n");
+    },
+    [isAr]
+  );
+
   const generateCountryIntel = useCallback(async () => {
     if (!selectedCountry) return;
     setIntelLoading(true);
     setIntel(null);
 
     const allRelevantEvents = [...countryEvents, ...nearbyEvents.slice(0, 3)];
-    const eventsData = allRelevantEvents
-      .map((e) => `[${e.risk_level}/${e.risk_score}] ${e.title} — ${e.region} (${e.sector}, ${e.event_type})\n${isAr && e.situation_ar ? e.situation_ar : e.situation_en}`)
-      .join("\n\n");
+    const eventContext = buildEventContext(allRelevantEvents);
+    const hasEvents = allRelevantEvents.length > 0;
 
     const prompt = isAr
-      ? `أنت محلل استخبارات Atlas Command. أنشئ تقييماً موجزاً ومحدداً لكبار القادة. لا تكن عاماً. سمِّ مواقع وأصولاً وتداعيات بعينها. أجب بالعربية الفصحى فقط.
+      ? `أنت محلل استخبارات Atlas Command. أنشئ تقييماً موجزاً ومحدداً لكبار القادة.
 
-أنشئ استخبارات عن ${ISO3_TO_NAME_AR[selectedCountry] || ISO3_TO_NAME[selectedCountry] || selectedCountry}.
-الأحداث النشطة في هذه الدولة أو بالقرب منها:
-${eventsData || "لم تُكتشف أحداث نشطة. أنشئ تقييماً بناءً على السياق الإقليمي."}
+الأحداث النشطة التي تؤثر على ${ISO3_TO_NAME_AR[selectedCountry] || ISO3_TO_NAME[selectedCountry] || selectedCountry} الآن:
+${eventContext || "لم تُكتشف أحداث نشطة. أنشئ تقييماً بناءً على السياق الإقليمي."}
 ${profile ? `\nدور المستخدم: ${ROLE_META[profile.role].label}، يركز على ${profile.region}.` : ""}
+
+${hasEvents ? `بناءً فقط على هذه الأحداث المحددة، صف وضع ${ISO3_TO_NAME_AR[selectedCountry] || selectedCountry} الحالي.
+اذكر هذه الأحداث بالاسم. أعطِ أرقاماً محددة.
+لا تخترع أحداثاً. لا تكن عاماً.
+كل جملة يجب أن تتصل بأحد الأحداث أعلاه.` : ""}
 
 أعد فقط JSON صالح، جميع النصوص بالعربية:
 {
-  "situation": "٢-٣ جمل عن الوضع الحالي بالعربية",
-  "gcc_significance": "٢-٣ جمل عن أهمية ذلك لدول الخليج بالعربية",
+  "situation": "٢-٣ جمل عن الوضع الحالي — اذكر أحداثاً بعينها",
+  "gcc_significance": "٢-٣ جمل عن أهمية ذلك لدول الخليج — بأرقام محددة",
   "watch_next": [
-    "٣ أشياء محددة للمراقبة بالعربية",
+    "٣ أشياء محددة للمراقبة مرتبطة بالأحداث أعلاه",
     "كل واحدة جملة واحدة",
     "ملموسة وعملية"
   ],
   "instability_score": ${Math.round(maxRiskScore) || 25},
   "risk_level": "${computedRiskLevel}"
 }`
-      : `You are Atlas Command intelligence analyst. Generate concise, specific intelligence for senior leaders. Never be generic. Always name specific locations, assets, and implications.
+      : `You are Atlas Command intelligence analyst. Generate concise, specific intelligence for senior leaders.
 
-Generate country intelligence for ${ISO3_TO_NAME[selectedCountry] || selectedCountry}.
-Active events in or near this country:
-${eventsData || "No active events detected. Generate assessment based on regional context."}
+Current active events affecting ${ISO3_TO_NAME[selectedCountry] || selectedCountry} right now:
+${eventContext || "No active events detected. Generate assessment based on regional context."}
 ${profile ? `\nUser role: ${ROLE_META[profile.role].label}, focused on ${profile.region}.` : ""}
+
+${hasEvents ? `Based ONLY on these specific events, describe ${ISO3_TO_NAME[selectedCountry] || selectedCountry}'s current situation.
+Reference these events by name. Give specific numbers.
+Do not invent events. Do not be generic.
+Every sentence must connect to one of the events above.` : ""}
 
 Generate this JSON only, no other text:
 {
-  "situation": "2-3 sentences on current situation in this country",
-  "gcc_significance": "2-3 sentences on what this means for the Gulf",
+  "situation": "2-3 sentences referencing the specific events above",
+  "gcc_significance": "2-3 sentences on Gulf impact — use specific numbers",
   "watch_next": [
-    "3 specific things to monitor",
+    "3 specific things to monitor tied to events above",
     "each one sentence",
     "concrete and operational"
   ],
