@@ -1,0 +1,173 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [55.0272, 25.0143]},
+      "properties": {
+        "name": "Jebel Ali Port",
+        "nameAr": "ميناء جبل علي",
+        "country": "UAE",
+        "type": "CONTAINER_PORT",
+        "operator": "DP World",
+        "capacity": "23.4M TEU/year",
+        "significance": "Largest port in Middle East, 9th globally",
+        "significanceAr": "أكبر ميناء في الشرق الأوسط، التاسع عالمياً"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [39.1722, 21.4894]},
+      "properties": {
+        "name": "King Abdulaziz Port (Jeddah Islamic)",
+        "nameAr": "ميناء الملك عبدالعزيز (جدة الإسلامي)",
+        "country": "Saudi Arabia",
+        "type": "CONTAINER_PORT",
+        "operator": "Saudi Ports Authority",
+        "capacity": "7.6M TEU/year",
+        "significance": "Red Sea gateway, Hajj logistics hub",
+        "significanceAr": "بوابة البحر الأحمر ومحور لوجستيات الحج"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.1950, 26.6320]},
+      "properties": {
+        "name": "King Abdulaziz Port (Dammam)",
+        "nameAr": "ميناء الملك عبدالعزيز (الدمام)",
+        "country": "Saudi Arabia",
+        "type": "CONTAINER_PORT",
+        "operator": "Saudi Ports Authority",
+        "capacity": "2.2M TEU/year",
+        "significance": "Eastern Province main port, Gulf access",
+        "significanceAr": "الميناء الرئيسي للمنطقة الشرقية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [47.9483, 29.3556]},
+      "properties": {
+        "name": "Shuwaikh Port",
+        "nameAr": "ميناء الشويخ",
+        "country": "Kuwait",
+        "type": "CONTAINER_PORT",
+        "operator": "Kuwait Ports Authority",
+        "capacity": "1.5M TEU/year",
+        "significance": "Kuwait's primary commercial port",
+        "significanceAr": "ميناء الكويت التجاري الرئيسي"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.5833, 26.2333]},
+      "properties": {
+        "name": "Mina Salman Port",
+        "nameAr": "ميناء سلمان",
+        "country": "Bahrain",
+        "type": "MIXED_PORT",
+        "operator": "Bahrain Ports",
+        "capacity": "Mixed military/commercial",
+        "significance": "Dual-use port, adjacent to NSA Bahrain",
+        "significanceAr": "ميناء مزدوج الاستخدام، مجاور لقاعدة البحرين"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [51.5322, 25.2866]},
+      "properties": {
+        "name": "Hamad Port",
+        "nameAr": "ميناء حمد",
+        "country": "Qatar",
+        "type": "CONTAINER_PORT",
+        "operator": "QTerminals",
+        "capacity": "7.5M TEU/year design",
+        "significance": "Mega-port built during blockade, strategic redundancy",
+        "significanceAr": "ميناء ضخم بُني أثناء الحصار، احتياطي استراتيجي"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [56.7361, 23.6267]},
+      "properties": {
+        "name": "Port of Duqm",
+        "nameAr": "ميناء الدقم",
+        "country": "Oman",
+        "type": "INDUSTRIAL_PORT",
+        "operator": "Port of Duqm Co.",
+        "capacity": "Expanding",
+        "significance": "Strategic port outside Strait of Hormuz, drydock",
+        "significanceAr": "ميناء استراتيجي خارج مضيق هرمز"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [57.0167, 23.6383]},
+      "properties": {
+        "name": "Port Sultan Qaboos (Sohar)",
+        "nameAr": "ميناء السلطان قابوس (صحار)",
+        "country": "Oman",
+        "type": "CONTAINER_PORT",
+        "operator": "Hutchison Ports",
+        "capacity": "1.5M TEU/year",
+        "significance": "Oman's main container port",
+        "significanceAr": "ميناء الحاويات الرئيسي في عمان"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [56.2786, 27.1667]},
+      "properties": {
+        "name": "Shahid Rajaee Port (Bandar Abbas)",
+        "nameAr": "ميناء الشهيد رجائي (بندر عباس)",
+        "country": "Iran",
+        "type": "CONTAINER_PORT",
+        "operator": "PSO",
+        "capacity": "3.2M TEU/year",
+        "significance": "Iran's largest commercial port, Strait of Hormuz chokepoint",
+        "significanceAr": "أكبر ميناء تجاري في إيران، نقطة اختناق مضيق هرمز"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [43.1581, 12.7797]},
+      "properties": {
+        "name": "Port of Djibouti (Doraleh)",
+        "nameAr": "ميناء جيبوتي (دورالي)",
+        "country": "Djibouti",
+        "type": "CONTAINER_PORT",
+        "operator": "DP World/Djibouti",
+        "capacity": "Multi-terminal",
+        "significance": "Bab el-Mandeb chokepoint, multiple foreign bases",
+        "significanceAr": "نقطة اختناق باب المندب، عدة قواعد أجنبية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [43.2300, 14.7975]},
+      "properties": {
+        "name": "Port of Hodeidah",
+        "nameAr": "ميناء الحديدة",
+        "country": "Yemen",
+        "type": "MIXED_PORT",
+        "operator": "Houthi-controlled",
+        "capacity": "Reduced",
+        "significance": "Yemen's main Red Sea port, humanitarian corridor",
+        "significanceAr": "ميناء اليمن الرئيسي على البحر الأحمر، ممر إنساني"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [32.3019, 31.2611]},
+      "properties": {
+        "name": "Port Said / Suez Canal",
+        "nameAr": "بورسعيد / قناة السويس",
+        "country": "Egypt",
+        "type": "CANAL_PORT",
+        "operator": "Suez Canal Authority",
+        "capacity": "12% of world trade",
+        "significance": "Critical global chokepoint, $10B+ annual revenue",
+        "significanceAr": "نقطة اختناق عالمية حيوية، إيرادات سنوية +10 مليار دولار"
+      }
+    }
+  ]
+}

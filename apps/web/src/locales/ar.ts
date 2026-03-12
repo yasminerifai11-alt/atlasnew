@@ -270,6 +270,11 @@ export const ar = {
   "map.militaryBases": "القواعد العسكرية",
   "map.nuclearFacilities": "المنشآت النووية",
   "map.operator": "المشغّل",
+  "map.criticalInfra": "البنية التحتية الحيوية",
+  "map.oilGas": "النفط والغاز",
+  "map.desalination": "محطات التحلية",
+  "map.ports": "الموانئ والشحن",
+  "map.telecomCables": "كابلات الاتصالات",
 
   // ─── فلتر المنطقة ──────────────────────────────────
   "region.all": "جميع المناطق",

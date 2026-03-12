@@ -1,0 +1,122 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [56.3800, 25.3600]},
+      "properties": {
+        "name": "Fujairah Cable Landing Station",
+        "nameAr": "محطة إنزال كابلات الفجيرة",
+        "country": "UAE",
+        "type": "CABLE_LANDING",
+        "cables": "FLAG, SEA-ME-WE 3/5, AAE-1, 2Africa",
+        "significance": "Largest cable hub in Middle East, 10+ cables",
+        "significanceAr": "أكبر مركز كابلات في الشرق الأوسط، أكثر من 10 كابلات"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [39.1456, 21.5431]},
+      "properties": {
+        "name": "Jeddah Cable Landing",
+        "nameAr": "محطة إنزال كابلات جدة",
+        "country": "Saudi Arabia",
+        "type": "CABLE_LANDING",
+        "cables": "SEA-ME-WE 3/5/6, JADI, AAE-1, 2Africa",
+        "significance": "Red Sea cable corridor, multiple redundant cables",
+        "significanceAr": "ممر كابلات البحر الأحمر، كابلات متعددة"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.2100, 26.6200]},
+      "properties": {
+        "name": "Al Khobar / Dammam Cable Landing",
+        "nameAr": "محطة إنزال كابلات الخبر / الدمام",
+        "country": "Saudi Arabia",
+        "type": "CABLE_LANDING",
+        "cables": "FLAG, FOG, Gulf Bridge",
+        "significance": "Gulf-side connectivity for Eastern Province",
+        "significanceAr": "اتصال جهة الخليج للمنطقة الشرقية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [51.5400, 25.2900]},
+      "properties": {
+        "name": "Doha Cable Landing",
+        "nameAr": "محطة إنزال كابلات الدوحة",
+        "country": "Qatar",
+        "type": "CABLE_LANDING",
+        "cables": "FLAG, FOG, Qatar-UAE Cable, GBI",
+        "significance": "Qatar's international internet connectivity",
+        "significanceAr": "اتصال قطر بالإنترنت الدولي"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.6000, 26.2200]},
+      "properties": {
+        "name": "Bahrain Cable Landing",
+        "nameAr": "محطة إنزال كابلات البحرين",
+        "country": "Bahrain",
+        "type": "CABLE_LANDING",
+        "cables": "FOG, GBI, FALCON",
+        "significance": "Island connectivity, financial sector dependency",
+        "significanceAr": "اتصال الجزيرة، اعتماد القطاع المالي"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [57.0800, 23.6500]},
+      "properties": {
+        "name": "Barka/Muscat Cable Landing",
+        "nameAr": "محطة إنزال كابلات بركاء/مسقط",
+        "country": "Oman",
+        "type": "CABLE_LANDING",
+        "cables": "SEA-ME-WE 3/5, FLAG, OAC, 2Africa",
+        "significance": "Oman cable hub, bypass for Strait of Hormuz routes",
+        "significanceAr": "مركز كابلات عمان، بديل لمسارات مضيق هرمز"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [47.9700, 29.3700]},
+      "properties": {
+        "name": "Kuwait Cable Landing",
+        "nameAr": "محطة إنزال كابلات الكويت",
+        "country": "Kuwait",
+        "type": "CABLE_LANDING",
+        "cables": "FLAG, FOG, GBI, FALCON",
+        "significance": "Northern Gulf connectivity node",
+        "significanceAr": "عقدة اتصال شمال الخليج"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [32.3200, 31.2500]},
+      "properties": {
+        "name": "Port Said / Suez Cable Corridor",
+        "nameAr": "ممر كابلات بورسعيد / السويس",
+        "country": "Egypt",
+        "type": "CABLE_CORRIDOR",
+        "cables": "16+ cables transit Suez",
+        "significance": "Global chokepoint: 16+ submarine cables pass through",
+        "significanceAr": "نقطة اختناق عالمية: أكثر من 16 كابل بحري يمر عبرها"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [43.1600, 11.5900]},
+      "properties": {
+        "name": "Djibouti Cable Landing",
+        "nameAr": "محطة إنزال كابلات جيبوتي",
+        "country": "Djibouti",
+        "type": "CABLE_LANDING",
+        "cables": "SEA-ME-WE 3/5, EASSy, DARE1, 2Africa",
+        "significance": "Red Sea / Indian Ocean cable junction",
+        "significanceAr": "تقاطع كابلات البحر الأحمر / المحيط الهندي"
+      }
+    }
+  ]
+}

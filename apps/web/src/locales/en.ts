@@ -270,6 +270,11 @@ export const en = {
   "map.militaryBases": "Military Bases",
   "map.nuclearFacilities": "Nuclear Facilities",
   "map.operator": "OPERATOR",
+  "map.criticalInfra": "CRITICAL INFRASTRUCTURE",
+  "map.oilGas": "Oil & Gas",
+  "map.desalination": "Desalination",
+  "map.ports": "Ports & Shipping",
+  "map.telecomCables": "Submarine Cables",
 
   // ─── Region Filter ──────────────────────────────────
   "region.all": "ALL REGIONS",

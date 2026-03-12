@@ -1,0 +1,215 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [49.6778, 25.9386]},
+      "properties": {
+        "name": "Abqaiq Processing Facility",
+        "nameAr": "منشأة بقيق للمعالجة",
+        "country": "Saudi Arabia",
+        "type": "REFINERY",
+        "operator": "Saudi Aramco",
+        "capacity": "7M bbl/day processing",
+        "significance": "World's largest oil processing facility, attacked 2019",
+        "significanceAr": "أكبر منشأة معالجة نفط في العالم، تعرضت لهجوم 2019"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.1700, 26.6431]},
+      "properties": {
+        "name": "Ras Tanura Refinery & Terminal",
+        "nameAr": "مصفاة وميناء رأس تنورة",
+        "country": "Saudi Arabia",
+        "type": "TERMINAL",
+        "operator": "Saudi Aramco",
+        "capacity": "550K bbl/day",
+        "significance": "Largest oil export terminal in the world",
+        "significanceAr": "أكبر محطة تصدير نفط في العالم"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [49.9681, 26.3081]},
+      "properties": {
+        "name": "Dhahran Oil Complex",
+        "nameAr": "مجمع الظهران النفطي",
+        "country": "Saudi Arabia",
+        "type": "REFINERY",
+        "operator": "Saudi Aramco",
+        "capacity": "HQ + refining",
+        "significance": "Saudi Aramco headquarters and operations center",
+        "significanceAr": "المقر الرئيسي لأرامكو السعودية ومركز العمليات"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [38.9939, 22.4642]},
+      "properties": {
+        "name": "Yanbu Refinery Complex",
+        "nameAr": "مجمع ينبع للتكرير",
+        "country": "Saudi Arabia",
+        "type": "REFINERY",
+        "operator": "Saudi Aramco",
+        "capacity": "400K bbl/day",
+        "significance": "Red Sea export bypass for Strait of Hormuz risk",
+        "significanceAr": "مسار تصدير بديل عبر البحر الأحمر لتجنب مضيق هرمز"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [51.5368, 25.0121]},
+      "properties": {
+        "name": "Ras Laffan Industrial City",
+        "nameAr": "مدينة رأس لفان الصناعية",
+        "country": "Qatar",
+        "type": "LNG_TERMINAL",
+        "operator": "QatarEnergy",
+        "capacity": "77M tonnes/year LNG",
+        "significance": "World's largest LNG export facility",
+        "significanceAr": "أكبر منشأة تصدير غاز طبيعي مسال في العالم"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [54.6583, 24.8822]},
+      "properties": {
+        "name": "Ruwais Refinery Complex",
+        "nameAr": "مجمع الرويس للتكرير",
+        "country": "UAE",
+        "type": "REFINERY",
+        "operator": "ADNOC",
+        "capacity": "922K bbl/day",
+        "significance": "Largest refinery in UAE, major petrochemical hub",
+        "significanceAr": "أكبر مصفاة في الإمارات ومركز بتروكيماويات رئيسي"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [54.3181, 24.4436]},
+      "properties": {
+        "name": "ADNOC Das Island Terminal",
+        "nameAr": "محطة جزيرة داس - أدنوك",
+        "country": "UAE",
+        "type": "LNG_TERMINAL",
+        "operator": "ADNOC",
+        "capacity": "Export terminal",
+        "significance": "Offshore LNG and oil export terminal",
+        "significanceAr": "محطة تصدير بحرية للغاز المسال والنفط"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [47.9756, 29.0810]},
+      "properties": {
+        "name": "Mina Al-Ahmadi Refinery",
+        "nameAr": "مصفاة ميناء الأحمدي",
+        "country": "Kuwait",
+        "type": "REFINERY",
+        "operator": "KNPC",
+        "capacity": "466K bbl/day",
+        "significance": "Kuwait's largest refinery, export hub",
+        "significanceAr": "أكبر مصفاة في الكويت ومحور التصدير"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.6150, 26.1924]},
+      "properties": {
+        "name": "BAPCO Sitra Refinery",
+        "nameAr": "مصفاة بابكو سترة",
+        "country": "Bahrain",
+        "type": "REFINERY",
+        "operator": "BAPCO",
+        "capacity": "267K bbl/day",
+        "significance": "Bahrain's primary refinery, recently expanded",
+        "significanceAr": "المصفاة الرئيسية في البحرين، توسعت مؤخراً"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [56.6222, 23.6100]},
+      "properties": {
+        "name": "Duqm Refinery",
+        "nameAr": "مصفاة الدقم",
+        "country": "Oman",
+        "type": "REFINERY",
+        "operator": "OQ/Kuwait Petroleum",
+        "capacity": "230K bbl/day",
+        "significance": "New strategic refinery outside Strait of Hormuz",
+        "significanceAr": "مصفاة استراتيجية جديدة خارج مضيق هرمز"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [49.0880, 30.4303]},
+      "properties": {
+        "name": "Basra Oil Terminal (ABOT)",
+        "nameAr": "محطة نفط البصرة",
+        "country": "Iraq",
+        "type": "TERMINAL",
+        "operator": "SOMO",
+        "capacity": "3.5M bbl/day export",
+        "significance": "Iraq's primary oil export terminal, 95% of exports",
+        "significanceAr": "محطة تصدير النفط الرئيسية في العراق، 95% من الصادرات"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [44.3516, 33.3129]},
+      "properties": {
+        "name": "Baiji Refinery",
+        "nameAr": "مصفاة بيجي",
+        "country": "Iraq",
+        "type": "REFINERY",
+        "operator": "North Refineries Co",
+        "capacity": "310K bbl/day",
+        "significance": "Iraq's largest refinery, damaged in conflict",
+        "significanceAr": "أكبر مصفاة في العراق، تضررت في النزاع"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [51.4098, 27.5186]},
+      "properties": {
+        "name": "Kharg Island Terminal",
+        "nameAr": "محطة جزيرة خارك",
+        "country": "Iran",
+        "type": "TERMINAL",
+        "operator": "NIOC",
+        "capacity": "5M bbl/day capacity",
+        "significance": "Iran's primary oil export terminal, 90% of exports",
+        "significanceAr": "محطة تصدير النفط الرئيسية في إيران، 90% من الصادرات"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [51.4227, 35.7369]},
+      "properties": {
+        "name": "Tehran Refinery",
+        "nameAr": "مصفاة طهران",
+        "country": "Iran",
+        "type": "REFINERY",
+        "operator": "NIORDC",
+        "capacity": "250K bbl/day",
+        "significance": "Iran's largest refinery, supplies capital region",
+        "significanceAr": "أكبر مصفاة في إيران، تزود العاصمة"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [52.5311, 36.8020]},
+      "properties": {
+        "name": "Iran LNG (South Pars)",
+        "nameAr": "الغاز المسال الإيراني (بارس الجنوبي)",
+        "country": "Iran",
+        "type": "LNG_TERMINAL",
+        "operator": "NIGC",
+        "capacity": "South Pars gas field",
+        "significance": "World's largest gas field (shared with Qatar)",
+        "significanceAr": "أكبر حقل غاز في العالم (مشترك مع قطر)"
+      }
+    }
+  ]
+}

@@ -36,9 +36,32 @@ const NUCLEAR_COLORS: Record<string, string> = {
   NUCLEAR_UNDECLARED: "#7c3aed",
 };
 
+const OIL_TYPE_ICONS: Record<string, string> = {
+  REFINERY: "⛽",
+  TERMINAL: "🛢",
+  LNG_TERMINAL: "🔥",
+};
+
+const OIL_TYPE_COLORS: Record<string, string> = {
+  REFINERY: "#f59e0b",
+  TERMINAL: "#d97706",
+  LNG_TERMINAL: "#ef4444",
+};
+
+const PORT_TYPE_COLORS: Record<string, string> = {
+  CONTAINER_PORT: "#06b6d4",
+  MIXED_PORT: "#0891b2",
+  INDUSTRIAL_PORT: "#0e7490",
+  CANAL_PORT: "#0284c7",
+};
+
 interface MapLayers {
   militaryBases: boolean;
   nuclearFacilities: boolean;
+  oilGas: boolean;
+  desalination: boolean;
+  ports: boolean;
+  telecomCables: boolean;
 }
 
 // ISO-2 → ISO-3 for countries in scope
@@ -111,6 +134,10 @@ export function EventMap() {
   const markersRef = useRef<any[]>([]);
   const baseMarkersRef = useRef<any[]>([]);
   const nuclearMarkersRef = useRef<any[]>([]);
+  const oilGasMarkersRef = useRef<any[]>([]);
+  const desalMarkersRef = useRef<any[]>([]);
+  const portMarkersRef = useRef<any[]>([]);
+  const cableMarkersRef = useRef<any[]>([]);
   const countryLayerReady = useRef(false);
   const hoverPopupRef = useRef<any>(null);
   const eventsRef = useRef<ApiEvent[]>([]);
@@ -124,7 +151,7 @@ export function EventMap() {
         if (saved) return JSON.parse(saved);
       } catch {}
     }
-    return { militaryBases: false, nuclearFacilities: false };
+    return { militaryBases: false, nuclearFacilities: false, oilGas: false, desalination: false, ports: false, telecomCables: false };
   });
 
   const isAr = lang === "ar";
@@ -368,6 +395,207 @@ export function EventMap() {
     });
   }, [layers.nuclearFacilities, isAr]);
 
+  // Oil & Gas infrastructure layer
+  useEffect(() => {
+    if (!mapRef.current) return;
+    oilGasMarkersRef.current.forEach((m) => m.remove());
+    oilGasMarkersRef.current = [];
+
+    if (!layers.oilGas) return;
+
+    import("maplibre-gl").then(async (maplibregl) => {
+      try {
+        const res = await fetch("/data/oil-gas-infrastructure.geojson");
+        const data = await res.json();
+        for (const feature of data.features) {
+          const p = feature.properties;
+          const [lng, lat] = feature.geometry.coordinates;
+          const color = OIL_TYPE_COLORS[p.type] || "#f59e0b";
+          const icon = OIL_TYPE_ICONS[p.type] || "●";
+
+          const el = document.createElement("div");
+          el.style.cssText = `
+            width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 10px; cursor: pointer; border-radius: 3px;
+            background: ${color}20; border: 1.5px solid ${color}60; color: ${color};
+            transition: transform 0.15s ease;
+          `;
+          el.textContent = icon;
+          el.onmouseenter = () => { el.style.transform = "scale(1.3)"; };
+          el.onmouseleave = () => { el.style.transform = "scale(1)"; };
+
+          const name = isAr && p.nameAr ? p.nameAr : p.name;
+          const sig = isAr && p.significanceAr ? p.significanceAr : p.significance;
+          const popupHtml = `
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;min-width:180px;">
+              <div style="color:${color};font-weight:600;margin-bottom:3px;">${name}</div>
+              <div style="color:#94a3b8;font-size:9px;">${p.operator} · ${p.type.replace(/_/g, " ")}</div>
+              <div style="color:#cbd5e1;font-size:9px;margin-top:2px;">${p.capacity}</div>
+              ${sig ? `<div style="color:#cbd5e1;font-size:9px;margin-top:4px;">${sig}</div>` : ""}
+              <div style="color:#64748b;font-size:8px;margin-top:3px;">${p.country}</div>
+            </div>
+          `;
+
+          const popup = new maplibregl.Popup({ offset: 10, closeButton: false, maxWidth: "260px" }).setHTML(popupHtml);
+          const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.current);
+          oilGasMarkersRef.current.push(marker);
+        }
+      } catch (e) {
+        console.warn("Failed to load oil & gas infrastructure:", e);
+      }
+    });
+  }, [layers.oilGas, isAr]);
+
+  // Desalination plants layer
+  useEffect(() => {
+    if (!mapRef.current) return;
+    desalMarkersRef.current.forEach((m) => m.remove());
+    desalMarkersRef.current = [];
+
+    if (!layers.desalination) return;
+
+    import("maplibre-gl").then(async (maplibregl) => {
+      try {
+        const res = await fetch("/data/desalination-plants.geojson");
+        const data = await res.json();
+        for (const feature of data.features) {
+          const p = feature.properties;
+          const [lng, lat] = feature.geometry.coordinates;
+          const color = "#38bdf8";
+
+          const el = document.createElement("div");
+          el.style.cssText = `
+            width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 11px; cursor: pointer; border-radius: 50%;
+            background: ${color}18; border: 1.5px solid ${color}60; color: ${color};
+            transition: transform 0.15s ease;
+          `;
+          el.textContent = "💧";
+          el.onmouseenter = () => { el.style.transform = "scale(1.3)"; };
+          el.onmouseleave = () => { el.style.transform = "scale(1)"; };
+
+          const name = isAr && p.nameAr ? p.nameAr : p.name;
+          const sig = isAr && p.significanceAr ? p.significanceAr : p.significance;
+          const popupHtml = `
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;min-width:180px;">
+              <div style="color:${color};font-weight:600;margin-bottom:3px;">💧 ${name}</div>
+              <div style="color:#94a3b8;font-size:9px;">${p.operator} · ${p.type.replace(/_/g, " ")}</div>
+              <div style="color:#cbd5e1;font-size:9px;margin-top:2px;">${p.capacity}</div>
+              ${sig ? `<div style="color:#cbd5e1;font-size:9px;margin-top:4px;">${sig}</div>` : ""}
+              <div style="color:#64748b;font-size:8px;margin-top:3px;">${p.country}</div>
+            </div>
+          `;
+
+          const popup = new maplibregl.Popup({ offset: 10, closeButton: false, maxWidth: "260px" }).setHTML(popupHtml);
+          const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.current);
+          desalMarkersRef.current.push(marker);
+        }
+      } catch (e) {
+        console.warn("Failed to load desalination plants:", e);
+      }
+    });
+  }, [layers.desalination, isAr]);
+
+  // Ports & Shipping layer
+  useEffect(() => {
+    if (!mapRef.current) return;
+    portMarkersRef.current.forEach((m) => m.remove());
+    portMarkersRef.current = [];
+
+    if (!layers.ports) return;
+
+    import("maplibre-gl").then(async (maplibregl) => {
+      try {
+        const res = await fetch("/data/ports-shipping.geojson");
+        const data = await res.json();
+        for (const feature of data.features) {
+          const p = feature.properties;
+          const [lng, lat] = feature.geometry.coordinates;
+          const color = PORT_TYPE_COLORS[p.type] || "#06b6d4";
+
+          const el = document.createElement("div");
+          el.style.cssText = `
+            width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+            font-size: 10px; cursor: pointer; border-radius: 2px;
+            background: ${color}20; border: 1.5px solid ${color}60; color: ${color};
+            transition: transform 0.15s ease;
+          `;
+          el.textContent = "⚓";
+          el.onmouseenter = () => { el.style.transform = "scale(1.3)"; };
+          el.onmouseleave = () => { el.style.transform = "scale(1)"; };
+
+          const name = isAr && p.nameAr ? p.nameAr : p.name;
+          const sig = isAr && p.significanceAr ? p.significanceAr : p.significance;
+          const popupHtml = `
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;min-width:180px;">
+              <div style="color:${color};font-weight:600;margin-bottom:3px;">⚓ ${name}</div>
+              <div style="color:#94a3b8;font-size:9px;">${p.operator} · ${p.type.replace(/_/g, " ")}</div>
+              <div style="color:#cbd5e1;font-size:9px;margin-top:2px;">${p.capacity}</div>
+              ${sig ? `<div style="color:#cbd5e1;font-size:9px;margin-top:4px;">${sig}</div>` : ""}
+              <div style="color:#64748b;font-size:8px;margin-top:3px;">${p.country}</div>
+            </div>
+          `;
+
+          const popup = new maplibregl.Popup({ offset: 10, closeButton: false, maxWidth: "260px" }).setHTML(popupHtml);
+          const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.current);
+          portMarkersRef.current.push(marker);
+        }
+      } catch (e) {
+        console.warn("Failed to load ports:", e);
+      }
+    });
+  }, [layers.ports, isAr]);
+
+  // Telecom / Submarine cables layer
+  useEffect(() => {
+    if (!mapRef.current) return;
+    cableMarkersRef.current.forEach((m) => m.remove());
+    cableMarkersRef.current = [];
+
+    if (!layers.telecomCables) return;
+
+    import("maplibre-gl").then(async (maplibregl) => {
+      try {
+        const res = await fetch("/data/telecom-cables.geojson");
+        const data = await res.json();
+        for (const feature of data.features) {
+          const p = feature.properties;
+          const [lng, lat] = feature.geometry.coordinates;
+          const color = "#a78bfa";
+
+          const el = document.createElement("div");
+          el.style.cssText = `
+            width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+            font-size: 9px; cursor: pointer; border-radius: 50%;
+            background: ${color}18; border: 1.5px solid ${color}60; color: ${color};
+            transition: transform 0.15s ease;
+          `;
+          el.textContent = "◉";
+          el.onmouseenter = () => { el.style.transform = "scale(1.3)"; };
+          el.onmouseleave = () => { el.style.transform = "scale(1)"; };
+
+          const name = isAr && p.nameAr ? p.nameAr : p.name;
+          const sig = isAr && p.significanceAr ? p.significanceAr : p.significance;
+          const popupHtml = `
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;min-width:200px;">
+              <div style="color:${color};font-weight:600;margin-bottom:3px;">◉ ${name}</div>
+              <div style="color:#94a3b8;font-size:9px;">${p.type.replace(/_/g, " ")}</div>
+              <div style="color:#cbd5e1;font-size:9px;margin-top:2px;">${p.cables}</div>
+              ${sig ? `<div style="color:#cbd5e1;font-size:9px;margin-top:4px;">${sig}</div>` : ""}
+              <div style="color:#64748b;font-size:8px;margin-top:3px;">${p.country}</div>
+            </div>
+          `;
+
+          const popup = new maplibregl.Popup({ offset: 10, closeButton: false, maxWidth: "280px" }).setHTML(popupHtml);
+          const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.current);
+          cableMarkersRef.current.push(marker);
+        }
+      } catch (e) {
+        console.warn("Failed to load telecom cables:", e);
+      }
+    });
+  }, [layers.telecomCables, isAr]);
+
   return (
     <div className="relative flex-1 min-h-0">
       <div ref={mapContainer} className="h-full w-full" />
@@ -380,7 +608,8 @@ export function EventMap() {
           ≡ {isAr ? "الطبقات" : "LAYERS"}
         </button>
         {layerPanelOpen && (
-          <div className="mt-1 bg-atlas-bg/95 border border-white/[0.08] backdrop-blur-sm p-3 min-w-[200px]">
+          <div className="mt-1 bg-atlas-bg/95 border border-white/[0.08] backdrop-blur-sm p-3 min-w-[220px] max-h-[70vh] overflow-y-auto">
+            {/* Military section */}
             <div className="font-mono text-[8px] tracking-widest text-slate-600 mb-2">
               {isAr ? "طبقات عسكرية" : "MILITARY LAYERS"}
             </div>
@@ -428,6 +657,73 @@ export function EventMap() {
                 ))}
               </div>
             )}
+
+            {/* Infrastructure section */}
+            <div className="mt-3 pt-3 border-t border-white/[0.06]">
+              <div className="font-mono text-[8px] tracking-widest text-slate-600 mb-2">
+                {isAr ? "البنية التحتية الحيوية" : "CRITICAL INFRASTRUCTURE"}
+              </div>
+              <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={layers.oilGas}
+                  onChange={() => toggleLayer("oilGas")}
+                  className="accent-amber-500"
+                />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px]">⛽</span>
+                  <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
+                    {isAr ? "النفط والغاز" : "Oil & Gas"}
+                  </span>
+                </div>
+                <span className="ml-auto font-mono text-[8px] text-slate-600">15</span>
+              </label>
+              <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={layers.desalination}
+                  onChange={() => toggleLayer("desalination")}
+                  className="accent-sky-400"
+                />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px]">💧</span>
+                  <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
+                    {isAr ? "محطات التحلية" : "Desalination"}
+                  </span>
+                </div>
+                <span className="ml-auto font-mono text-[8px] text-slate-600">9</span>
+              </label>
+              <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={layers.ports}
+                  onChange={() => toggleLayer("ports")}
+                  className="accent-cyan-500"
+                />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px]">⚓</span>
+                  <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
+                    {isAr ? "الموانئ والشحن" : "Ports & Shipping"}
+                  </span>
+                </div>
+                <span className="ml-auto font-mono text-[8px] text-slate-600">12</span>
+              </label>
+              <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={layers.telecomCables}
+                  onChange={() => toggleLayer("telecomCables")}
+                  className="accent-violet-400"
+                />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px]">◉</span>
+                  <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
+                    {isAr ? "كابلات الاتصالات" : "Submarine Cables"}
+                  </span>
+                </div>
+                <span className="ml-auto font-mono text-[8px] text-slate-600">9</span>
+              </label>
+            </div>
           </div>
         )}
       </div>

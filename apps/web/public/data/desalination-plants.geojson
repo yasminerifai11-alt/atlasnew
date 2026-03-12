@@ -1,0 +1,131 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [49.6556, 27.0114]},
+      "properties": {
+        "name": "Ras Al Khair Desalination Plant",
+        "nameAr": "محطة رأس الخير لتحلية المياه",
+        "country": "Saudi Arabia",
+        "type": "DESAL_THERMAL",
+        "operator": "SWCC",
+        "capacity": "1.025M m³/day",
+        "significance": "World's largest desalination plant",
+        "significanceAr": "أكبر محطة تحلية مياه في العالم"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [49.3500, 26.6167]},
+      "properties": {
+        "name": "Jubail Desalination Plant",
+        "nameAr": "محطة الجبيل لتحلية المياه",
+        "country": "Saudi Arabia",
+        "type": "DESAL_THERMAL",
+        "operator": "SWCC",
+        "capacity": "800K m³/day",
+        "significance": "Supplies Riyadh via 450km pipeline, existential infrastructure",
+        "significanceAr": "تزود الرياض عبر خط أنابيب 450 كم، بنية تحتية وجودية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [39.1233, 21.5783]},
+      "properties": {
+        "name": "Shoaiba Desalination Plant",
+        "nameAr": "محطة شعيبة لتحلية المياه",
+        "country": "Saudi Arabia",
+        "type": "DESAL_RO",
+        "operator": "SWCC",
+        "capacity": "880K m³/day",
+        "significance": "Supplies Jeddah and Makkah, critical for Hajj",
+        "significanceAr": "تزود جدة ومكة المكرمة، حيوية لموسم الحج"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [55.1225, 25.0572]},
+      "properties": {
+        "name": "Jebel Ali Desalination Plant",
+        "nameAr": "محطة جبل علي لتحلية المياه",
+        "country": "UAE",
+        "type": "DESAL_THERMAL",
+        "operator": "DEWA",
+        "capacity": "636M gallons/day",
+        "significance": "Largest in UAE, supplies Dubai metro area",
+        "significanceAr": "الأكبر في الإمارات، تزود منطقة دبي الحضرية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [54.0014, 24.4767]},
+      "properties": {
+        "name": "Taweelah Desalination Plant",
+        "nameAr": "محطة الطويلة لتحلية المياه",
+        "country": "UAE",
+        "type": "DESAL_RO",
+        "operator": "EWEC/ACWA Power",
+        "capacity": "909K m³/day",
+        "significance": "World's largest RO plant, supplies Abu Dhabi",
+        "significanceAr": "أكبر محطة تناضح عكسي في العالم، تزود أبوظبي"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [47.9389, 29.2875]},
+      "properties": {
+        "name": "Doha West & Az-Zour Desal",
+        "nameAr": "محطة الدوحة الغربية والزور",
+        "country": "Kuwait",
+        "type": "DESAL_THERMAL",
+        "operator": "MEW",
+        "capacity": "Combined 600K+ m³/day",
+        "significance": "Supplies majority of Kuwait's freshwater",
+        "significanceAr": "تزود غالبية المياه العذبة في الكويت"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.6083, 26.1583]},
+      "properties": {
+        "name": "Al Hidd Desalination Plant",
+        "nameAr": "محطة الحد لتحلية المياه",
+        "country": "Bahrain",
+        "type": "DESAL_RO",
+        "operator": "BWSC",
+        "capacity": "273K m³/day",
+        "significance": "Primary water supply for Bahrain island",
+        "significanceAr": "المصدر الرئيسي للمياه في جزيرة البحرين"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [51.5553, 25.3867]},
+      "properties": {
+        "name": "Ras Abu Fontas Desal Complex",
+        "nameAr": "مجمع رأس أبو فنطاس لتحلية المياه",
+        "country": "Qatar",
+        "type": "DESAL_THERMAL",
+        "operator": "Kahramaa",
+        "capacity": "650K m³/day",
+        "significance": "Qatar's primary water supply complex",
+        "significanceAr": "مجمع إمداد المياه الرئيسي في قطر"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [58.1883, 23.6033]},
+      "properties": {
+        "name": "Barka Desalination Plant",
+        "nameAr": "محطة بركاء لتحلية المياه",
+        "country": "Oman",
+        "type": "DESAL_RO",
+        "operator": "OPWP",
+        "capacity": "281K m³/day",
+        "significance": "Supplies Muscat metro area",
+        "significanceAr": "تزود منطقة مسقط الحضرية"
+      }
+    }
+  ]
+}
