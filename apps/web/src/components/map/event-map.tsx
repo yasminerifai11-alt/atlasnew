@@ -142,6 +142,7 @@ export function EventMap() {
   const hoverPopupRef = useRef<any>(null);
   const eventsRef = useRef<ApiEvent[]>([]);
   const countryRiskRef = useRef<CountryRiskMap>({});
+  const savedLayersRef = useRef<MapLayers | null>(null);
 
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
   const [layers, setLayers] = useState<MapLayers>(() => {
@@ -161,13 +162,53 @@ export function EventMap() {
   const setSelectedEvent = useCommandStore((s) => s.setSelectedEvent);
   const setActiveSection = useCommandStore((s) => s.setActiveSection);
   const setSelectedCountry = useCommandStore((s) => s.setSelectedCountry);
+  const mapFlyTarget = useCommandStore((s) => s.mapFlyTarget);
+  const setMapFlyTarget = useCommandStore((s) => s.setMapFlyTarget);
+  const situationView = useCommandStore((s) => s.situationView);
 
   const countryRisk = useMemo(() => computeCountryRisk(events), [events]);
 
-  // Persist layer prefs
+  // Fly to target when triggered by chat panel
   useEffect(() => {
-    try { localStorage.setItem("atlas-map-layers", JSON.stringify(layers)); } catch {}
-  }, [layers]);
+    const map = mapRef.current;
+    if (!map || !mapFlyTarget) return;
+    map.flyTo({
+      center: [mapFlyTarget.lng, mapFlyTarget.lat],
+      zoom: mapFlyTarget.zoom || 7,
+      duration: 1500,
+      essential: true,
+    });
+    // Clear target after flying
+    setMapFlyTarget(null);
+  }, [mapFlyTarget, setMapFlyTarget]);
+
+  // Auto-toggle all layers in defense view
+  useEffect(() => {
+    if (situationView === "defense") {
+      // Save current prefs before overriding
+      savedLayersRef.current = { ...layers };
+      setLayers({
+        militaryBases: true,
+        nuclearFacilities: true,
+        oilGas: true,
+        desalination: true,
+        ports: true,
+        telecomCables: true,
+      });
+    } else if (savedLayersRef.current) {
+      // Restore saved prefs
+      setLayers(savedLayersRef.current);
+      savedLayersRef.current = null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [situationView]);
+
+  // Persist layer prefs (only when not in defense override mode)
+  useEffect(() => {
+    if (situationView !== "defense") {
+      try { localStorage.setItem("atlas-map-layers", JSON.stringify(layers)); } catch {}
+    }
+  }, [layers, situationView]);
 
   const toggleLayer = useCallback((key: keyof MapLayers) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));

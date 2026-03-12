@@ -119,6 +119,15 @@
   to { transform: translateX(0); }
 }
 
+/* Commander pulse animation */
+@keyframes commander-pulse {
+  0%, 100% { box-shadow: 0 4px 24px rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 4px 36px rgba(59, 130, 246, 0.7), 0 0 0 8px rgba(59, 130, 246, 0.1); }
+}
+.commander-pulse {
+  animation: commander-pulse 2s ease-in-out infinite;
+}
+
 /* MapLibre */
 .maplibregl-popup-content {
   background: #0a0e18 !important;

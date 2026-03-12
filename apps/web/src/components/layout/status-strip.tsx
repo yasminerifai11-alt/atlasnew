@@ -8,6 +8,8 @@ import { getSyncStatus } from "@/lib/api";
 export function StatusStrip() {
   const { t, lang } = useLanguage();
   const events = useCommandStore((s) => s.events);
+  const situationView = useCommandStore((s) => s.situationView);
+  const setSituationView = useCommandStore((s) => s.setSituationView);
   const [syncInfo, setSyncInfo] = useState({ lastSync: null as string | null, isLive: false, activeSourceCount: 0 });
 
   const isAr = lang === "ar";
@@ -36,21 +38,62 @@ export function StatusStrip() {
 
   return (
     <div className={`no-print flex shrink-0 items-center gap-4 border-b px-5 py-1.5 ${postureColors[posture]}`}>
-      <span className="font-mono text-[10px] font-semibold tracking-wider">
-        ▲ {t("posture.label")}: {t(`posture.${posture}` as any)}
-      </span>
-      <span className="font-mono text-[10px] tracking-wider text-slate-500">
-        {t("posture.incidents")}: {events.length} · {t("status.maxRisk")}: {maxRisk}
-      </span>
-      <span className="ml-auto font-mono text-[9px] tracking-wider text-slate-600">
-        {syncInfo.isLive ? (
-          <>
-            {t("status.lastSync")}: {syncInfo.lastSync || "—"} · {events.length} {t("status.eventsMonitored")} · {syncInfo.activeSourceCount} {t("status.sourcesActive")}
-          </>
-        ) : (
-          <>{t("status.unavailable")}</>
-        )}
-      </span>
+      {/* View toggle: Intelligence / Defense */}
+      <div className="flex items-center border border-white/[0.08] rounded-sm overflow-hidden mr-2">
+        <button
+          onClick={() => setSituationView("intelligence")}
+          className={`flex items-center gap-1.5 px-3 py-1 font-mono text-[9px] tracking-wider transition-colors ${
+            situationView === "intelligence"
+              ? "bg-blue-500/15 text-blue-400 border-b-2 border-blue-400"
+              : "text-slate-500 hover:text-slate-400 border-b-2 border-transparent"
+          }`}
+        >
+          <span className="text-[11px]">🌍</span>
+          {isAr ? "الاستخبارات" : "INTELLIGENCE"}
+        </button>
+        <button
+          onClick={() => setSituationView("defense")}
+          className={`flex items-center gap-1.5 px-3 py-1 font-mono text-[9px] tracking-wider transition-colors ${
+            situationView === "defense"
+              ? "bg-blue-500/15 text-blue-400 border-b-2 border-blue-400"
+              : "text-slate-500 hover:text-slate-400 border-b-2 border-transparent"
+          }`}
+        >
+          <span className="text-[11px]">⚔</span>
+          {isAr ? "الدفاع" : "DEFENSE"}
+        </button>
+      </div>
+
+      {situationView === "defense" ? (
+        /* Defense view header */
+        <>
+          <span className="font-mono text-[10px] font-semibold tracking-wider text-blue-400">
+            ⚔ {isAr ? "الاستخبارات الدفاعية — شامل" : "DEFENSE INTEL — GLOBAL"}
+          </span>
+          <span className="ml-auto font-mono text-[9px] tracking-wider text-slate-600">
+            {isAr ? "جميع الطبقات الدفاعية نشطة" : "All defense layers active"}
+          </span>
+        </>
+      ) : (
+        /* Intelligence view header (original) */
+        <>
+          <span className="font-mono text-[10px] font-semibold tracking-wider">
+            ▲ {t("posture.label")}: {t(`posture.${posture}` as any)}
+          </span>
+          <span className="font-mono text-[10px] tracking-wider text-slate-500">
+            {t("posture.incidents")}: {events.length} · {t("status.maxRisk")}: {maxRisk}
+          </span>
+          <span className="ml-auto font-mono text-[9px] tracking-wider text-slate-600">
+            {syncInfo.isLive ? (
+              <>
+                {t("status.lastSync")}: {syncInfo.lastSync || "—"} · {events.length} {t("status.eventsMonitored")} · {syncInfo.activeSourceCount} {t("status.sourcesActive")}
+              </>
+            ) : (
+              <>{t("status.unavailable")}</>
+            )}
+          </span>
+        </>
+      )}
     </div>
   );
 }

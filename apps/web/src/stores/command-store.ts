@@ -4,10 +4,17 @@ import type { ApiEvent, ApiInfraLink, ApiConsequenceStep, ApiAlert } from "@/lib
 export type Section =
   | "situation"
   | "intel"
-  | "commander"
   | "realtime-brief"
-  | "library"
-  | "defense";
+  | "library";
+
+export type SituationView = "intelligence" | "defense";
+
+export interface MapFlyTarget {
+  lng: number;
+  lat: number;
+  zoom?: number;
+  label?: string;
+}
 
 export type RiskFilter = "ALL" | "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
@@ -69,6 +76,14 @@ interface CommandState {
   setAlertModalOpen: (open: boolean) => void;
   profileModalOpen: boolean;
   setProfileModalOpen: (open: boolean) => void;
+
+  // Situation Room view toggle
+  situationView: SituationView;
+  setSituationView: (view: SituationView) => void;
+
+  // Map fly-to (triggered by chat panel)
+  mapFlyTarget: MapFlyTarget | null;
+  setMapFlyTarget: (target: MapFlyTarget | null) => void;
 
   // User session
   sessionId: string;
@@ -141,6 +156,14 @@ export const useCommandStore = create<CommandState>((set) => ({
   setAlertModalOpen: (alertModalOpen) => set({ alertModalOpen }),
   profileModalOpen: false,
   setProfileModalOpen: (profileModalOpen) => set({ profileModalOpen }),
+
+  // Situation Room view toggle
+  situationView: "intelligence",
+  setSituationView: (situationView) => set({ situationView }),
+
+  // Map fly-to
+  mapFlyTarget: null,
+  setMapFlyTarget: (mapFlyTarget) => set({ mapFlyTarget }),
 
   // User session
   sessionId: "atlas-default",
