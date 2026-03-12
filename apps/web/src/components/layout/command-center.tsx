@@ -13,6 +13,7 @@ import { AtlasCommander } from "@/components/commander/atlas-commander";
 import { RealtimeBrief } from "@/components/realtime-brief/realtime-brief";
 import { IntelligenceLibrary } from "@/components/library/intelligence-library";
 import { CountryIntelPanel } from "@/components/country/country-intel-panel";
+import { DefenseOverview } from "@/components/defense/defense-overview";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { ProfileModal } from "@/components/modals/profile-modal";
 import { CommandProfileModal } from "@/components/modals/command-profile-modal";
@@ -70,6 +71,11 @@ export function CommandCenter() {
           e.preventDefault();
           setActiveSection("commander");
           break;
+        case "d":
+        case "D":
+          e.preventDefault();
+          setActiveSection("defense");
+          break;
         case "r":
         case "R":
           e.preventDefault();
@@ -110,6 +116,7 @@ export function CommandCenter() {
       {/* Section content */}
       {activeSection === "situation" && <SituationRoom />}
       {activeSection === "intel" && <IntelBriefView />}
+      {activeSection === "defense" && <DefenseOverview />}
       {activeSection === "commander" && <AtlasCommander />}
       {activeSection === "realtime-brief" && <RealtimeBrief />}
       {activeSection === "library" && <IntelligenceLibrary />}

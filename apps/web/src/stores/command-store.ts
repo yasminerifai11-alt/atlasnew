@@ -6,7 +6,8 @@ export type Section =
   | "intel"
   | "commander"
   | "realtime-brief"
-  | "library";
+  | "library"
+  | "defense";
 
 export type RiskFilter = "ALL" | "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
