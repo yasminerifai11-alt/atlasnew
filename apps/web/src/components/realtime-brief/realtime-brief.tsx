@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
 import { useProfileStore, ROLE_META, type ProfileRole } from "@/stores/profile-store";
 import { fetchRealtimeBrief, generateRealtimeBrief, type ApiRealtimeBrief } from "@/lib/api";
 import { getLocalizedField, translateTag } from "@/utils/translate";
 
-/* ─── Types ──────────────────────────────────────────────── */
+/* ─── Types ──────────────────────────────────────────── */
 
 interface BriefData {
   situation_now: string;
@@ -26,7 +26,7 @@ interface BriefData {
   signals_to_watch: string[];
 }
 
-/* ─── Constants ──────────────────────────────────────────── */
+/* ─── Constants ──────────────────────────────────────── */
 
 const RISK_COLORS: Record<string, string> = {
   CRITICAL: "#ef4444",
@@ -56,11 +56,32 @@ const POSTURE_COLORS: Record<string, { bg: string; text: string; label: string; 
 
 const AUTO_REFRESH_MS = 30 * 60 * 1000; // 30 minutes
 
-/* ─── Component ──────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────────── */
+
+function timeAgo(dateStr: string): string {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  if (ms < 0) return "just now";
+  if (ms < 60000) return `${Math.round(ms / 1000)}s ago`;
+  if (ms < 3600000) return `${Math.round(ms / 60000)}m ago`;
+  if (ms < 86400000) return `${Math.round(ms / 3600000)}h ago`;
+  return `${Math.round(ms / 86400000)}d ago`;
+}
+
+function timeAgoAr(dateStr: string): string {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  if (ms < 0) return "الآن";
+  if (ms < 60000) return `منذ ${Math.round(ms / 1000)} ث`;
+  if (ms < 3600000) return `منذ ${Math.round(ms / 60000)} د`;
+  if (ms < 86400000) return `منذ ${Math.round(ms / 3600000)} س`;
+  return `منذ ${Math.round(ms / 86400000)} ي`;
+}
+
+/* ─── Component ──────────────────────────────────────── */
 
 export function RealtimeBrief() {
   const { t, lang } = useLanguage();
   const events = useCommandStore((s) => s.events);
+  const setSelectedEvent = useCommandStore((s) => s.setSelectedEvent);
   const profile = useProfileStore((s) => s.profile);
   const openProfileModal = useProfileStore((s) => s.openModal);
 
@@ -69,31 +90,79 @@ export function RealtimeBrief() {
   const [lastGenerated, setLastGenerated] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [highlightedKeys, setHighlightedKeys] = useState<Set<string>>(new Set());
+  const [selectedCountry, setSelectedCountry] = useState("ALL");
+  const [selectedSector, setSelectedSector] = useState("ALL");
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>();
   const prevBriefRef = useRef<BriefData | null>(null);
 
   const isAr = lang === "ar";
-  const topEvents = [...events].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5);
-  const criticalCount = events.filter((e) => e.risk_level === "CRITICAL").length;
-  const highCount = events.filter((e) => e.risk_level === "HIGH").length;
+
+  /* ─── Derived: available countries & sectors ─────── */
+
+  const availableCountries = useMemo(() => {
+    const set = new Set<string>();
+    events.forEach((e) => {
+      if (e.country) set.add(e.country);
+      else if (e.region) set.add(e.region);
+    });
+    return Array.from(set).sort();
+  }, [events]);
+
+  const availableSectors = useMemo(() => {
+    const set = new Set<string>();
+    events.forEach((e) => { if (e.sector) set.add(e.sector); });
+    return Array.from(set).sort();
+  }, [events]);
+
+  /* ─── Filtered events ──────────────────────────── */
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((e) => {
+      const countryMatch = selectedCountry === "ALL" || e.country === selectedCountry || e.region === selectedCountry;
+      const sectorMatch = selectedSector === "ALL" || e.sector === selectedSector;
+      return countryMatch && sectorMatch;
+    });
+  }, [events, selectedCountry, selectedSector]);
+
+  const topEvents = useMemo(() =>
+    [...filteredEvents].sort((a, b) => b.risk_score - a.risk_score).slice(0, 10),
+    [filteredEvents]
+  );
+
+  const criticalCount = filteredEvents.filter((e) => e.risk_level === "CRITICAL").length;
+  const highCount = filteredEvents.filter((e) => e.risk_level === "HIGH").length;
   const totalSources = events.reduce((sum, e) => sum + e.source_count, 0);
+  const filteredSources = filteredEvents.reduce((sum, e) => sum + e.source_count, 0);
 
   const posture = criticalCount >= 2 ? "CRITICAL" : criticalCount >= 1 ? "ELEVATED" : highCount >= 1 ? "GUARDED" : "NOMINAL";
   const postureInfo = POSTURE_COLORS[posture];
 
-  // Top sector by event count
+  // Top sector by event count (from filtered)
   const sectorCounts: Record<string, number> = {};
-  events.forEach((e) => { sectorCounts[e.sector] = (sectorCounts[e.sector] || 0) + 1; });
+  filteredEvents.forEach((e) => { sectorCounts[e.sector] = (sectorCounts[e.sector] || 0) + 1; });
   const topSector = Object.entries(sectorCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "—";
 
-  /* ─── Generate Intelligence Brief ───────────────────── */
+  // Sector change indicator (simple: compare top sector event count vs total)
+  const topSectorPct = topSector !== "—" ? ((sectorCounts[topSector] / (filteredEvents.length || 1)) * 100).toFixed(1) : "0";
+
+  /* ─── Generate Intelligence Brief ───────────────── */
 
   const generateBrief = useCallback(async () => {
     if (events.length === 0) return;
     setLoading(true);
 
+    const allTopEvents = [...events].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5);
+    const allCriticalCount = events.filter((e) => e.risk_level === "CRITICAL").length;
+    const allHighCount = events.filter((e) => e.risk_level === "HIGH").length;
+    const allTotalSources = events.reduce((sum, e) => sum + e.source_count, 0);
+    const allPosture = allCriticalCount >= 2 ? "CRITICAL" : allCriticalCount >= 1 ? "ELEVATED" : allHighCount >= 1 ? "GUARDED" : "NOMINAL";
+
+    const allSectorCounts: Record<string, number> = {};
+    events.forEach((e) => { allSectorCounts[e.sector] = (allSectorCounts[e.sector] || 0) + 1; });
+    const allTopSector = Object.entries(allSectorCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "—";
+
     const roleMeta = profile ? ROLE_META[profile.role] : null;
-    const eventsData = topEvents
+    const eventsData = allTopEvents
       .map((e) => `[${e.risk_level}/${e.risk_score}] ${isAr ? (e.title_ar || e.title) : e.title} — ${e.region} (${isAr ? (SECTOR_AR[e.sector] || e.sector) : e.sector})\n${isAr && e.situation_ar ? e.situation_ar : e.situation_en}`)
       .join("\n\n");
 
@@ -124,8 +193,8 @@ ${arabicRules}
 
 التاريخ: ${new Date().toISOString().slice(0, 10)}
 إجمالي الأحداث النشطة: ${events.length}
-حرج: ${criticalCount}، مرتفع: ${highCount}
-مصادر المراقبة: ${totalSources}
+حرج: ${allCriticalCount}، مرتفع: ${allHighCount}
+مصادر المراقبة: ${allTotalSources}
 ${profile ? `دور المستخدم: ${roleMeta?.label}، يركز على ${profile.region}.` : ""}
 
 أبرز الأحداث حسب الخطر:
@@ -140,9 +209,9 @@ ${sectorSummary}
 أعد فقط JSON صالح بهذا الهيكل بالضبط. جميع النصوص يجب أن تكون بالعربية:
 {
   "situation_now": "٣-٤ جمل تلخص الموقف الحالي. أسلوب مذكرات سرية. أشر لأحداث محددة وتداعياتها.",
-  "threat_level": "${posture}",
+  "threat_level": "${allPosture}",
   "active_count": ${events.length},
-  "top_sector": "${topSector}",
+  "top_sector": "${allTopSector}",
   "anticipate": {
     "h24": { "text": "ما نتوقعه خلال ٢٤ ساعة — محدد وليس عاماً", "probability": 75 },
     "h48": { "text": "ما نتوقعه خلال ٢٤-٤٨ ساعة", "probability": 60 },
@@ -172,8 +241,8 @@ Generate a structured intelligence brief as JSON.
 
 Current date: ${new Date().toISOString().slice(0, 10)}
 Total active events: ${events.length}
-Critical: ${criticalCount}, High: ${highCount}
-Total sources monitoring: ${totalSources}
+Critical: ${allCriticalCount}, High: ${allHighCount}
+Total sources monitoring: ${allTotalSources}
 ${profile ? `User role: ${roleMeta?.label}, focused on ${profile.region}.` : ""}
 
 Top events by risk:
@@ -188,9 +257,9 @@ ${sectorSummary}
 Return ONLY valid JSON in this exact structure:
 {
   "situation_now": "3-4 sentence synthesis of the current situation. Direct, classified memo style. Reference specific events and their implications.",
-  "threat_level": "${posture}",
+  "threat_level": "${allPosture}",
   "active_count": ${events.length},
-  "top_sector": "${topSector}",
+  "top_sector": "${allTopSector}",
   "anticipate": {
     "h24": { "text": "What we expect in the next 24 hours — specific, not generic", "probability": 75 },
     "h48": { "text": "What we expect in 24-48 hours", "probability": 60 },
@@ -255,9 +324,18 @@ Return ONLY valid JSON in this exact structure:
       buildFallbackBrief();
     }
     setLoading(false);
-  }, [events, topEvents, isAr, profile, criticalCount, highCount, totalSources, posture, topSector]);
+  }, [events, isAr, profile]);
 
   const buildFallbackBrief = useCallback(() => {
+    const allTopEvents = [...events].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5);
+    const allCriticalCount = events.filter((e) => e.risk_level === "CRITICAL").length;
+    const allHighCount = events.filter((e) => e.risk_level === "HIGH").length;
+    const allPosture = allCriticalCount >= 2 ? "CRITICAL" : allCriticalCount >= 1 ? "ELEVATED" : allHighCount >= 1 ? "GUARDED" : "NOMINAL";
+
+    const allSectorCounts: Record<string, number> = {};
+    events.forEach((e) => { allSectorCounts[e.sector] = (allSectorCounts[e.sector] || 0) + 1; });
+    const allTopSector = Object.entries(allSectorCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "—";
+
     const regionMap: Record<string, typeof events> = {};
     events.forEach((e) => { if (!regionMap[e.region]) regionMap[e.region] = []; regionMap[e.region].push(e); });
 
@@ -265,16 +343,16 @@ Return ONLY valid JSON in this exact structure:
     events.forEach((e) => { if (!sectorMap[e.sector]) sectorMap[e.sector] = []; sectorMap[e.sector].push(e); });
 
     const situationNow = isAr
-      ? `أطلس كوماند يتتبع ${events.length} حادثة نشطة. ${criticalCount > 0 ? `${criticalCount} حدث مصنف كحرج.` : ""} أعلى درجة خطر: ${topEvents[0]?.risk_score || 0}/100. القطاعات الأكثر تأثراً: ${[...new Set(topEvents.map((e) => SECTOR_AR[e.sector] || e.sector))].join("، ")}.`
-      : `Atlas Command tracking ${events.length} active incidents. ${criticalCount > 0 ? `${criticalCount} classified CRITICAL.` : ""} Maximum risk score: ${topEvents[0]?.risk_score || 0}/100. Most affected sectors: ${[...new Set(topEvents.map((e) => e.sector))].join(", ")}.`;
+      ? `أطلس كوماند يتتبع ${events.length} حادثة نشطة. ${allCriticalCount > 0 ? `${allCriticalCount} حدث مصنف كحرج.` : ""} أعلى درجة خطر: ${allTopEvents[0]?.risk_score || 0}/100. القطاعات الأكثر تأثراً: ${[...new Set(allTopEvents.map((e) => SECTOR_AR[e.sector] || e.sector))].join("، ")}.`
+      : `Atlas Command tracking ${events.length} active incidents. ${allCriticalCount > 0 ? `${allCriticalCount} classified CRITICAL.` : ""} Maximum risk score: ${allTopEvents[0]?.risk_score || 0}/100. Most affected sectors: ${[...new Set(allTopEvents.map((e) => e.sector))].join(", ")}.`;
 
     setBriefData({
       situation_now: situationNow,
-      threat_level: posture,
+      threat_level: allPosture,
       active_count: events.length,
-      top_sector: topSector,
+      top_sector: allTopSector,
       anticipate: {
-        h24: { text: isAr ? `مراقبة التطورات في ${topEvents[0]?.region || "المنطقة"} — احتمال تصعيد مرتفع` : `Monitor developments in ${topEvents[0]?.region || "region"} — elevated escalation probability`, probability: 70 },
+        h24: { text: isAr ? `مراقبة التطورات في ${allTopEvents[0]?.region || "المنطقة"} — احتمال تصعيد مرتفع` : `Monitor developments in ${allTopEvents[0]?.region || "region"} — elevated escalation probability`, probability: 70 },
         h48: { text: isAr ? "تأثيرات متتالية محتملة على أسواق الطاقة والخطوط البحرية" : "Potential cascading effects on energy markets and maritime routes", probability: 55 },
         h72: { text: isAr ? "إعادة تقييم الوضع الأمني الإقليمي بناءً على مسار الأحداث" : "Regional security posture reassessment based on event trajectory", probability: 40 },
         wildcard: { text: isAr ? "تصعيد مفاجئ قد يؤثر على البنية التحتية الحيوية" : "Sudden escalation impacting critical infrastructure", probability: 15 },
@@ -305,7 +383,7 @@ Return ONLY valid JSON in this exact structure:
         : ["Official statements from regional leaders", "Unusual military movements", "Sudden oil price fluctuations", "Communications or cyber service disruptions", "New security advisories from international organizations"],
     });
     setLastGenerated(new Date().toISOString());
-  }, [events, topEvents, isAr, criticalCount, posture, topSector]);
+  }, [events, isAr]);
 
   // Auto-generate on mount and when language changes
   const prevLangRef = useRef(lang);
@@ -350,7 +428,7 @@ Return ONLY valid JSON in this exact structure:
     });
   };
 
-  /* ─── PDF Export ────────────────────────────────────── */
+  /* ─── PDF Export ────────────────────────────────── */
 
   const handlePrint = useCallback(() => {
     const bd = briefData;
@@ -433,7 +511,13 @@ Return ONLY valid JSON in this exact structure:
     setTimeout(() => w.print(), 1000);
   }, [briefData, events, totalSources, isAr, posture]);
 
-  /* ─── Render ───────────────────────────────────────── */
+  /* ─── VIEW ON MAP handler ───────────────────────── */
+
+  const handleViewOnMap = useCallback((ev: (typeof events)[0]) => {
+    setSelectedEvent(ev);
+  }, [setSelectedEvent]);
+
+  /* ─── Render ───────────────────────────────────── */
 
   const arText = isAr ? "arabic-text" : "";
 
@@ -441,9 +525,12 @@ Return ONLY valid JSON in this exact structure:
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
 
-        {/* ═══ BLOCK 1: Live Status Bar ═══ */}
-        <div className="flex items-center justify-between px-6 py-2 border-b border-white/[0.06]" style={{ background: "#080d1a" }}>
+        {/* ═══ HEADER BAR ═══ */}
+        <div className="flex items-center justify-between px-6 py-2.5 border-b border-white/[0.06]" style={{ background: "#080d1a" }}>
           <div className="flex items-center gap-4">
+            <span className="font-mono text-[11px] tracking-[3px] text-white font-semibold">
+              {isAr ? "النشرة الاستخباراتية" : "INTELLIGENCE BRIEF"}
+            </span>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
@@ -452,7 +539,7 @@ Return ONLY valid JSON in this exact structure:
               <span className="font-mono text-[9px] tracking-wider text-green-500">{t("nav.live")}</span>
             </div>
             <span className="font-mono text-[9px] text-slate-600">
-              {t("morning.monitoring", { count: String(totalSources) })}
+              {totalSources} {isAr ? "مصدر" : "sources"}
             </span>
             {lastGenerated && (
               <>
@@ -476,132 +563,239 @@ Return ONLY valid JSON in this exact structure:
             </button>
             <button
               onClick={handlePrint}
-              className="px-3 py-1.5 font-mono text-[10px] tracking-wider text-slate-400 border border-white/[0.08] hover:border-white/[0.15]"
+              className="px-3 py-1.5 font-mono text-[10px] tracking-wider text-slate-400 border border-white/[0.08] hover:border-white/[0.15] transition-colors"
             >
               {t("morning.downloadPdf")}
             </button>
           </div>
         </div>
 
-        {/* ═══ BLOCK 2: THE SITUATION NOW ═══ */}
-        <div className={`px-6 py-5 border-b border-white/[0.06] transition-colors ${highlightedKeys.has("situation") ? "bg-blue-500/[0.05]" : ""}`} style={{ background: highlightedKeys.has("situation") ? undefined : "#080d1a" }}>
-          <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-3">
-            {t("morning.globalSituation")}
+        {/* ═══ FILTER BAR ═══ */}
+        <div className="flex items-center gap-4 px-6 py-2.5 border-b border-white/[0.06]" style={{ background: "#0a1020" }}>
+          {/* Country Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[9px] tracking-wider text-slate-600 uppercase">
+              {isAr ? "الدولة" : "COUNTRY"}
+            </span>
+            <select
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
+              className="font-mono text-[10px] tracking-wide text-slate-300 bg-[#0c1426] border border-white/[0.08] px-2 py-1 outline-none focus:border-blue-500/40 hover:border-white/[0.15] transition-colors appearance-none cursor-pointer"
+              style={{ minWidth: 100 }}
+            >
+              <option value="ALL">{isAr ? "الكل" : "All"}</option>
+              {availableCountries.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
-          {loading && !briefData ? (
-            <div className="py-8 text-center">
-              <div className="font-mono text-[11px] text-blue-400 animate-pulse mb-2">
-                {t("morning.generatingBrief")}
-              </div>
-              <div className="font-mono text-[9px] text-slate-600">
-                {t("morning.analyzingEvents", { count: String(events.length) })}
-              </div>
-            </div>
-          ) : (
-            <div className={`text-[16px] leading-[1.9] text-white max-w-3xl ${arText}`} style={{ fontFamily: isAr ? "'Noto Sans Arabic', 'IBM Plex Sans', sans-serif" : "'IBM Plex Sans', sans-serif" }}>
-              {briefData?.situation_now || t("morning.noData")}
-            </div>
-          )}
-        </div>
 
-        {/* ═══ BLOCK 3: Three Columns ═══ */}
-        <div className="grid grid-cols-3 border-b border-white/[0.06]" style={{ background: "#080d1a" }}>
-          {/* Threat Level */}
-          <div className="p-5 border-r border-white/[0.06]">
-            <div className="font-mono text-[9px] tracking-[3px] text-slate-600 mb-2">{t("morning.threatPosture")}</div>
-            <div className="flex items-center gap-2">
-              <span
-                className="font-mono text-[11px] font-bold tracking-wider px-2.5 py-1"
-                style={{ backgroundColor: postureInfo.bg, color: postureInfo.text }}
+          {/* Sector Divider */}
+          <span className="text-white/[0.08]">|</span>
+
+          {/* Sector Chips */}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[9px] tracking-wider text-slate-600 uppercase">
+              {isAr ? "القطاع" : "SECTOR"}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setSelectedSector("ALL")}
+                className={`font-mono text-[9px] tracking-wider px-2.5 py-1 rounded-full border transition-colors ${
+                  selectedSector === "ALL"
+                    ? "bg-blue-500/20 text-blue-400 border-blue-500/40"
+                    : "text-slate-500 border-white/[0.08] hover:border-white/[0.15] hover:text-slate-400"
+                }`}
               >
-                {isAr ? postureInfo.labelAr : postureInfo.label}
-              </span>
-            </div>
-            <div className="mt-2 grid grid-cols-4 gap-1">
-              {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((level) => {
-                const count = events.filter((e) => e.risk_level === level).length;
-                const color = RISK_COLORS[level];
-                return (
-                  <div key={level} className="text-center">
-                    <div className="font-mono text-lg font-bold" style={{ color }}>{count}</div>
-                    <div className="font-mono text-[7px] tracking-wider text-slate-600">{t(`risk.${level.toLowerCase()}` as any)}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Active Now */}
-          <div className="p-5 border-r border-white/[0.06]">
-            <div className="font-mono text-[9px] tracking-[3px] text-slate-600 mb-2">{t("morning.activeNow")}</div>
-            <div className="font-mono text-3xl font-bold text-white">{events.length}</div>
-            <div className="font-mono text-[9px] text-slate-600 mt-1">
-              {totalSources} {isAr ? "مصدر نشط" : "sources active"}
-            </div>
-          </div>
-
-          {/* Top Sector */}
-          <div className="p-5">
-            <div className="font-mono text-[9px] tracking-[3px] text-slate-600 mb-2">{t("morning.topSector")}</div>
-            <div className="font-mono text-lg font-semibold text-white">{isAr ? (SECTOR_AR[topSector] || topSector) : topSector}</div>
-            <div className="font-mono text-[9px] text-slate-600 mt-1">
-              {sectorCounts[topSector] || 0} {isAr ? "حدث" : "events"}
-            </div>
-          </div>
-        </div>
-
-        {/* ═══ BLOCK 4: WHAT WE ANTICIPATE ═══ */}
-        <div className="px-6 py-5 border-b border-white/[0.06]" style={{ background: "#0c1426" }}>
-          <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-4">{t("morning.watchToday")}</div>
-          {briefData?.anticipate ? (
-            <div className="grid grid-cols-3 gap-4">
-              {([
-                { key: "h24", label: t("morning.next24") },
-                { key: "h48", label: t("morning.next48") },
-                { key: "h72", label: t("morning.next72") },
-              ] as const).map(({ key, label }) => {
-                const item = briefData.anticipate[key];
-                if (!item) return null;
-                const barColor = item.probability >= 70 ? "#ef4444" : item.probability >= 50 ? "#f97316" : "#eab308";
-                return (
-                  <div key={key} className="border border-white/[0.06] bg-white/[0.02] p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-[9px] tracking-wider text-blue-400">{label}</span>
-                      <span className="font-mono text-[10px] font-bold" style={{ color: barColor }}>{item.probability}%</span>
-                    </div>
-                    <div className={`text-[12px] leading-relaxed text-slate-400 mb-3 ${arText}`}>{item.text}</div>
-                    <div className="h-1 w-full bg-white/[0.06]">
-                      <div className="h-full transition-all duration-700" style={{ width: `${item.probability}%`, backgroundColor: barColor }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-          {briefData?.anticipate?.wildcard && (
-            <div className="mt-3 border border-red-500/10 bg-red-500/[0.03] p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-[9px] tracking-wider text-red-400">⚠ {t("morning.wildcard")}</span>
-                <span className="font-mono text-[10px] text-red-400/60">{briefData.anticipate.wildcard.probability}%</span>
-              </div>
-              <div className={`text-[12px] text-slate-500 ${arText}`}>{briefData.anticipate.wildcard.text}</div>
-            </div>
-          )}
-        </div>
-
-        {/* ═══ BLOCK 5: RECOMMENDATIONS ═══ */}
-        <div className="px-6 py-5 border-b border-white/[0.06]" style={{ background: "#080d1a" }}>
-          <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-3">{t("morning.recommendations")}</div>
-          {briefData?.recommendations ? (
-            <div className="space-y-2 max-w-3xl">
-              {briefData.recommendations.map((rec, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <span className="font-mono text-[11px] font-bold text-blue-500 mt-0.5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                  <span className={`text-[13px] leading-relaxed text-slate-400 ${arText}`}>{rec}</span>
-                </div>
+                {isAr ? "الكل" : "All"}
+              </button>
+              {availableSectors.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSelectedSector(s === selectedSector ? "ALL" : s)}
+                  className={`font-mono text-[9px] tracking-wider px-2.5 py-1 rounded-full border transition-colors ${
+                    selectedSector === s
+                      ? "bg-blue-500/20 text-blue-400 border-blue-500/40"
+                      : "text-slate-500 border-white/[0.08] hover:border-white/[0.15] hover:text-slate-400"
+                  }`}
+                >
+                  {isAr ? (SECTOR_AR[s] || s) : s}
+                </button>
               ))}
             </div>
-          ) : null}
+          </div>
+        </div>
+
+        {/* ═══ SPLIT-SCREEN MAIN AREA ═══ */}
+        <div className="flex border-b border-white/[0.06]" style={{ background: "#080d1a", minHeight: 400 }}>
+
+          {/* ── LEFT PANEL: THE SITUATION NOW ── */}
+          <div className="w-1/2 border-r border-white/[0.06] overflow-y-auto" style={{ maxHeight: "calc(100vh - 240px)" }}>
+
+            {/* Situation Now */}
+            <div className={`px-6 py-5 border-b border-white/[0.06] transition-colors ${highlightedKeys.has("situation") ? "bg-blue-500/[0.05]" : ""}`}>
+              <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-3">
+                {isAr ? "الموقف الآن" : "THE SITUATION NOW"}
+              </div>
+              {loading && !briefData ? (
+                <div className="py-8 text-center">
+                  <div className="font-mono text-[11px] text-blue-400 animate-pulse mb-2">
+                    {t("morning.generatingBrief")}
+                  </div>
+                  <div className="font-mono text-[9px] text-slate-600">
+                    {t("morning.analyzingEvents", { count: String(events.length) })}
+                  </div>
+                </div>
+              ) : (
+                <div className={`text-[14px] leading-[1.9] text-white/90 ${arText}`} style={{ fontFamily: isAr ? "'Noto Sans Arabic', 'IBM Plex Sans', sans-serif" : "'IBM Plex Sans', sans-serif" }}>
+                  {briefData?.situation_now || t("morning.noData")}
+                </div>
+              )}
+            </div>
+
+            {/* What We Anticipate */}
+            <div className="px-6 py-5 border-b border-white/[0.06]" style={{ background: "#0c1426" }}>
+              <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-4">{isAr ? "ما نتوقعه" : "WHAT WE ANTICIPATE"}</div>
+              {briefData?.anticipate ? (
+                <div className="space-y-3">
+                  {([
+                    { key: "h24", label: t("morning.next24") },
+                    { key: "h48", label: t("morning.next48") },
+                    { key: "h72", label: t("morning.next72") },
+                  ] as const).map(({ key, label }) => {
+                    const item = briefData.anticipate[key];
+                    if (!item) return null;
+                    const barColor = item.probability >= 70 ? "#ef4444" : item.probability >= 50 ? "#f97316" : "#eab308";
+                    return (
+                      <div key={key} className="border border-white/[0.06] bg-white/[0.02] p-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-mono text-[9px] tracking-wider text-blue-400">{label}</span>
+                          <span className="font-mono text-[10px] font-bold" style={{ color: barColor }}>{item.probability}%</span>
+                        </div>
+                        <div className={`text-[11px] leading-relaxed text-slate-400 mb-2 ${arText}`}>{item.text}</div>
+                        <div className="h-1 w-full bg-white/[0.06]">
+                          <div className="h-full transition-all duration-700" style={{ width: `${item.probability}%`, backgroundColor: barColor }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {briefData?.anticipate?.wildcard && (
+                <div className="mt-3 border border-red-500/10 bg-red-500/[0.03] p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-[9px] tracking-wider text-red-400">{isAr ? "⚠ سيناريو مفاجئ" : "⚠ WILDCARD"}</span>
+                    <span className="font-mono text-[10px] text-red-400/60">{briefData.anticipate.wildcard.probability}%</span>
+                  </div>
+                  <div className={`text-[11px] text-slate-500 ${arText}`}>{briefData.anticipate.wildcard.text}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Recommendations */}
+            <div className="px-6 py-5" style={{ background: "#080d1a" }}>
+              <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-3">{isAr ? "التوصيات" : "RECOMMENDATIONS"}</div>
+              {briefData?.recommendations ? (
+                <div className="space-y-2">
+                  {briefData.recommendations.map((rec, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="font-mono text-[11px] font-bold text-blue-500 mt-0.5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                      <span className={`text-[12px] leading-relaxed text-slate-400 ${arText}`}>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* ── RIGHT PANEL: TOP EVENTS RIGHT NOW ── */}
+          <div className="w-1/2 overflow-y-auto" style={{ maxHeight: "calc(100vh - 240px)" }}>
+            <div className="px-6 py-4 border-b border-white/[0.06] sticky top-0 z-10" style={{ background: "#080d1a" }}>
+              <div className="flex items-center justify-between">
+                <div className="font-mono text-[10px] tracking-[3px] text-blue-500">
+                  {isAr ? "أبرز الأحداث الآن" : "TOP EVENTS RIGHT NOW"}
+                </div>
+                <span className="font-mono text-[9px] text-slate-600">
+                  {filteredEvents.length} {isAr ? "حدث" : "events"}
+                </span>
+              </div>
+            </div>
+
+            <div className="px-6 py-2 space-y-2">
+              {topEvents.length === 0 ? (
+                <div className="py-8 text-center font-mono text-[11px] text-slate-600">
+                  {isAr ? "لا توجد أحداث مطابقة" : "No matching events"}
+                </div>
+              ) : (
+                topEvents.map((ev, i) => {
+                  const color = RISK_COLORS[ev.risk_level] || "#64748b";
+                  const title = getLocalizedField(ev, "title", lang) || ev.title;
+                  const sit = isAr && ev.situation_ar ? ev.situation_ar : ev.situation_en;
+                  const shortDesc = typeof sit === "string" ? sit.slice(0, 80) : "";
+                  const ago = isAr ? timeAgoAr(ev.event_time) : timeAgo(ev.event_time);
+
+                  return (
+                    <div
+                      key={ev.id ?? i}
+                      className="border border-white/[0.04] bg-white/[0.015] p-4 hover:bg-white/[0.03] transition-colors"
+                      style={{ borderLeftWidth: 3, borderLeftColor: color }}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {/* Risk dot */}
+                        <span className="flex h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        <span
+                          className="font-mono text-[8px] font-semibold tracking-wider px-1.5 py-0.5 uppercase"
+                          style={{ color, backgroundColor: color + "15" }}
+                        >
+                          {isAr ? (ev.risk_level === "CRITICAL" ? "حرج" : ev.risk_level === "HIGH" ? "مرتفع" : ev.risk_level === "MEDIUM" ? "متوسط" : "منخفض") : ev.risk_level}
+                        </span>
+                      </div>
+                      <div className={`text-[13px] font-medium text-slate-200 mb-1 ${arText}`}>
+                        {title}
+                      </div>
+                      <div className={`text-[11px] leading-relaxed text-slate-500 mb-2 ${isAr && ev.situation_ar ? "arabic-text" : ""}`}>
+                        {shortDesc}{shortDesc.length >= 80 ? "..." : ""}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 font-mono text-[9px] text-slate-600">
+                          <span>{isAr ? "خطر" : "Risk"}: <span className="font-bold" style={{ color }}>{ev.risk_score}</span></span>
+                          <span>·</span>
+                          <span>{ago}</span>
+                          <span>·</span>
+                          <span>{ev.region}</span>
+                        </div>
+                        <button
+                          onClick={() => handleViewOnMap(ev)}
+                          className="font-mono text-[8px] tracking-wider text-blue-400 border border-blue-500/30 px-2 py-0.5 hover:bg-blue-500/10 transition-colors uppercase"
+                        >
+                          {isAr ? "عرض على الخريطة" : "VIEW ON MAP"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ BOTTOM STATUS BAR ═══ */}
+        <div className="flex items-center justify-between px-6 py-2.5 border-b border-white/[0.06]" style={{ background: "#0a1020" }}>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[9px] tracking-wider text-slate-500 uppercase">{isAr ? "التهديد" : "THREAT"}:</span>
+            <span
+              className="font-mono text-[9px] font-bold tracking-wider px-2 py-0.5"
+              style={{ backgroundColor: postureInfo.bg, color: postureInfo.text }}
+            >
+              {isAr ? postureInfo.labelAr : postureInfo.label}
+            </span>
+          </div>
+          <span className="font-mono text-[9px] text-slate-500">
+            {filteredEvents.length} {isAr ? "حدث يؤثر على" : "events affecting"} {selectedCountry === "ALL" ? (isAr ? "جميع الدول" : "all countries") : selectedCountry}
+          </span>
+          <span className="font-mono text-[9px] text-slate-500">
+            {isAr ? (SECTOR_AR[topSector] || topSector) : topSector} {topSectorPct}%
+          </span>
         </div>
 
         {/* ═══ DIVIDER ═══ */}
@@ -622,7 +816,7 @@ Return ONLY valid JSON in this exact structure:
             onToggle={toggleSection}
           >
             <div className="space-y-2">
-              {topEvents.map((ev, i) => {
+              {[...events].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5).map((ev, i) => {
                 const color = RISK_COLORS[ev.risk_level] || "#64748b";
                 const sit = isAr && ev.situation_ar ? ev.situation_ar : ev.situation_en;
                 return (
@@ -698,7 +892,7 @@ Return ONLY valid JSON in this exact structure:
             onToggle={toggleSection}
           >
             <div className="space-y-2">
-              {topEvents.slice(0, 3).map((ev, i) => {
+              {[...events].sort((a, b) => b.risk_score - a.risk_score).slice(0, 3).map((ev, i) => {
                 const color = RISK_COLORS[ev.risk_level] || "#64748b";
                 return (
                   <div key={i} className="border border-white/[0.04] bg-white/[0.015] p-3">
