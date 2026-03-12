@@ -137,25 +137,25 @@ export const LIBRARY_SOURCES: LibrarySource[] = [
 
   // ── Health & Humanitarian (3) ──
   { id: "who", name: "WHO Disease Alerts", category: "health", type: "RSS", tier: "active", reliability: 99, frequency: "Daily", description: "Disease Outbreak News — official notifications worldwide", description_ar: "تنبيهات منظمة الصحة العالمية — إشعارات رسمية بتفشي الأمراض حول العالم", url: "who.int", lastSynced: "3h ago", eventsToday: 1 },
-  { id: "ocha", name: "OCHA ReliefWeb", category: "health", type: "API", tier: "active", reliability: 95, frequency: "Hourly", description: "UN humanitarian reports — crisis updates", url: "reliefweb.int", lastSynced: "20m ago", eventsToday: 6 },
-  { id: "unicef", name: "UNICEF Alerts", category: "health", type: "RSS", tier: "active", reliability: 96, frequency: "Daily", description: "Child welfare — emergency updates, humanitarian response", url: "unicef.org", lastSynced: "5h ago", eventsToday: 1 },
+  { id: "ocha", name: "OCHA ReliefWeb", category: "health", type: "API", tier: "active", reliability: 95, frequency: "Hourly", description: "UN humanitarian reports — crisis updates", description_ar: "تقارير المساعدات الإنسانية للأمم المتحدة — تحديثات الأزمات وتقارير الأوضاع", url: "reliefweb.int", lastSynced: "20m ago", eventsToday: 6 },
+  { id: "unicef", name: "UNICEF Alerts", category: "health", type: "RSS", tier: "active", reliability: 96, frequency: "Daily", description: "Child welfare — emergency updates, humanitarian response", description_ar: "رعاية الطفل — تحديثات الطوارئ والاستجابة الإنسانية", url: "unicef.org", lastSynced: "5h ago", eventsToday: 1 },
 
   // ── Space & Satellites (2) ──
-  { id: "maxar", name: "Maxar Satellite", category: "space", type: "API", tier: "premium", reliability: 97, frequency: "Daily", description: "High-res imagery — base monitoring, damage assessment" },
-  { id: "planetsky", name: "Planet Labs SkySat", category: "space", type: "API", tier: "premium", reliability: 91, frequency: "Daily", description: "Sub-meter resolution — rapid revisit tasking" },
+  { id: "maxar", name: "Maxar Satellite", category: "space", type: "API", tier: "premium", reliability: 97, frequency: "Daily", description: "High-res imagery — base monitoring, damage assessment", description_ar: "صور عالية الدقة — مراقبة القواعد وتقييم الأضرار" },
+  { id: "planetsky", name: "Planet Labs SkySat", category: "space", type: "API", tier: "premium", reliability: 91, frequency: "Daily", description: "Sub-meter resolution — rapid revisit tasking", description_ar: "دقة أقل من متر — مهام إعادة الزيارة السريعة" },
 
   // ── Government & Official (4) ──
-  { id: "unsc", name: "UN Security Council", category: "government", type: "RSS", tier: "active", reliability: 99, frequency: "Daily", description: "Press releases, resolutions, sanctions", url: "un.org", lastSynced: "4h ago", eventsToday: 0 },
-  { id: "usstatedept", name: "US State Dept", category: "government", type: "RSS", tier: "active", reliability: 99, frequency: "As needed", description: "Travel advisories and worldwide caution alerts", url: "travel.state.gov", lastSynced: "6h ago", eventsToday: 1 },
-  { id: "eeas", name: "EU External Action", category: "government", type: "RSS", tier: "active", reliability: 94, frequency: "Daily", description: "EU foreign policy — sanctions, statements, missions", url: "eeas.europa.eu", lastSynced: "8h ago", eventsToday: 0 },
-  { id: "ukfcdo", name: "UK FCDO", category: "government", type: "RSS", tier: "active", reliability: 96, frequency: "As needed", description: "UK foreign affairs — travel advisories, policy", url: "gov.uk", lastSynced: "5h ago", eventsToday: 1 },
+  { id: "unsc", name: "UN Security Council", category: "government", type: "RSS", tier: "active", reliability: 99, frequency: "Daily", description: "Press releases, resolutions, sanctions", description_ar: "بيانات صحفية وقرارات وعقوبات مجلس الأمن الدولي", url: "un.org", lastSynced: "4h ago", eventsToday: 0 },
+  { id: "usstatedept", name: "US State Dept", category: "government", type: "RSS", tier: "active", reliability: 99, frequency: "As needed", description: "Travel advisories and worldwide caution alerts", description_ar: "تحذيرات السفر وتنبيهات الحذر العالمية", url: "travel.state.gov", lastSynced: "6h ago", eventsToday: 1 },
+  { id: "eeas", name: "EU External Action", category: "government", type: "RSS", tier: "active", reliability: 94, frequency: "Daily", description: "EU foreign policy — sanctions, statements, missions", description_ar: "السياسة الخارجية للاتحاد الأوروبي — عقوبات وبيانات وبعثات", url: "eeas.europa.eu", lastSynced: "8h ago", eventsToday: 0 },
+  { id: "ukfcdo", name: "UK FCDO", category: "government", type: "RSS", tier: "active", reliability: 96, frequency: "As needed", description: "UK foreign affairs — travel advisories, policy", description_ar: "الشؤون الخارجية البريطانية — تحذيرات السفر والسياسات", url: "gov.uk", lastSynced: "5h ago", eventsToday: 1 },
 
   // ── Defense & Military (5) ──
-  { id: "gfp", name: "Global Firepower", category: "defense", type: "Scrape", tier: "active", reliability: 88, frequency: "Annual", description: "145 countries — military strength ranking", url: "globalfirepower.com", lastSynced: "7d ago", eventsToday: 0 },
-  { id: "iiss-defense", name: "IISS Military Balance", category: "defense", type: "Report", tier: "premium", reliability: 97, frequency: "Annual", description: "170 countries — authoritative military capabilities" },
-  { id: "sipri-arms", name: "SIPRI Arms Transfers", category: "defense", type: "API", tier: "active", reliability: 95, frequency: "Quarterly", description: "Arms transfers, defense spending data", url: "sipri.org", lastSynced: "14d ago", eventsToday: 0 },
-  { id: "acled-military", name: "ACLED Military Events", category: "defense", type: "API", tier: "premium", reliability: 92, frequency: "Daily", description: "Geolocated armed engagement data" },
-  { id: "heritage", name: "Heritage Military Index", category: "defense", type: "Report", tier: "premium", reliability: 85, frequency: "Annual", description: "US military strength — capabilities, force readiness" },
+  { id: "gfp", name: "Global Firepower", category: "defense", type: "Scrape", tier: "active", reliability: 88, frequency: "Annual", description: "145 countries — military strength ranking", description_ar: "145 دولة — تصنيف القوة العسكرية", url: "globalfirepower.com", lastSynced: "7d ago", eventsToday: 0 },
+  { id: "iiss-defense", name: "IISS Military Balance", category: "defense", type: "Report", tier: "premium", reliability: 97, frequency: "Annual", description: "170 countries — authoritative military capabilities", description_ar: "170 دولة — قدرات عسكرية موثوقة" },
+  { id: "sipri-arms", name: "SIPRI Arms Transfers", category: "defense", type: "API", tier: "active", reliability: 95, frequency: "Quarterly", description: "Arms transfers, defense spending data", description_ar: "نقل الأسلحة وبيانات الإنفاق الدفاعي", url: "sipri.org", lastSynced: "14d ago", eventsToday: 0 },
+  { id: "acled-military", name: "ACLED Military Events", category: "defense", type: "API", tier: "premium", reliability: 92, frequency: "Daily", description: "Geolocated armed engagement data", description_ar: "بيانات الاشتباكات المسلحة المحددة جغرافياً" },
+  { id: "heritage", name: "Heritage Military Index", category: "defense", type: "Report", tier: "premium", reliability: 85, frequency: "Annual", description: "US military strength — capabilities, force readiness", description_ar: "القوة العسكرية الأمريكية — القدرات والجاهزية القتالية" },
 ];
 
 // ─── Feed Items ────────────────────────────────────────────────

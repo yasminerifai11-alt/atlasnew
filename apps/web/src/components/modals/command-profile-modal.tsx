@@ -30,11 +30,19 @@ export function CommandProfileModal() {
 
   const isAr = lang === "ar";
 
-  // Pre-fill from existing profile when opening in edit mode
-  if (modalOpen && existingProfile && !initialized) {
-    setRole(existingProfile.role);
-    setRegion(existingProfile.region);
-    setWatchlist(existingProfile.watchlist || "");
+  // Reset and pre-fill when modal opens
+  if (modalOpen && !initialized) {
+    setStep(1);
+    setComplete(false);
+    if (existingProfile) {
+      setRole(existingProfile.role);
+      setRegion(existingProfile.region);
+      setWatchlist(existingProfile.watchlist || "");
+    } else {
+      setRole(null);
+      setRegion(null);
+      setWatchlist("");
+    }
     setInitialized(true);
   }
   if (!modalOpen && initialized) {
