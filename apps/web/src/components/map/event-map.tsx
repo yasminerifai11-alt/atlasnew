@@ -1199,6 +1199,43 @@ async function loadCountryBoundaries(map: any) {
       f.properties.iso_a2 = iso2;
     }
 
+    // Fix antimeridian-crossing polygons that render as horizontal bands.
+    // For MultiPolygon features, remove sub-polygons that span > 180° longitude.
+    // Also remove Antarctica and features without valid country codes.
+    geojson.features = geojson.features.filter((f: any) => {
+      const id = Number(f.id);
+      if (id <= 0 || id === 10) return false;
+      if (!f.properties?.iso_a2) return false;
+      return true;
+    });
+
+    for (const f of geojson.features) {
+      if (f.geometry?.type === "MultiPolygon") {
+        f.geometry.coordinates = f.geometry.coordinates.filter((poly: number[][][]) => {
+          let minLon = 999, maxLon = -999;
+          for (const ring of poly) {
+            for (const coord of ring) {
+              if (coord[0] < minLon) minLon = coord[0];
+              if (coord[0] > maxLon) maxLon = coord[0];
+            }
+          }
+          // If a single polygon ring spans > 180° of longitude, it crosses the antimeridian
+          return (maxLon - minLon) < 180;
+        });
+      } else if (f.geometry?.type === "Polygon") {
+        let minLon = 999, maxLon = -999;
+        for (const ring of f.geometry.coordinates) {
+          for (const coord of ring) {
+            if (coord[0] < minLon) minLon = coord[0];
+            if (coord[0] > maxLon) maxLon = coord[0];
+          }
+        }
+        if ((maxLon - minLon) >= 180) {
+          f.geometry.coordinates = [];
+        }
+      }
+    }
+
     map.addSource("atlas-countries", { type: "geojson", data: geojson });
 
     // Find a label layer to insert beneath
