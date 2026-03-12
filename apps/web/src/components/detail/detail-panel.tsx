@@ -86,7 +86,7 @@ export function DetailPanel() {
       return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #1e2530;">
         <div style="border-left:3px solid ${dc};padding-left:10px;flex:1;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${dc};font-weight:600;">STEP ${c.step_number} · ${c.domain}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${dc};font-weight:600;">${isArabic ? "خطوة" : "STEP"} ${c.step_number} · ${c.domain}</span>
             <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b7280;">${c.timeframe} · P: ${c.probability}%</span>
           </div>
           <div style="color:#e5e7eb;font-size:12px;line-height:1.6;${isArabic && c.consequence_ar ? "direction:rtl;text-align:right;" : ""}">${isArabic && c.consequence_ar ? c.consequence_ar : c.consequence_en}</div>
@@ -124,16 +124,16 @@ export function DetailPanel() {
 <body>
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;margin-bottom:0;">
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:white;letter-spacing:3px;font-weight:600;">ATLAS COMMAND</div>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6b7280;text-align:right;">
-      INTELLIGENCE BRIEF<br>${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:white;letter-spacing:3px;font-weight:600;">${isArabic ? "أطلس كوماند" : "ATLAS COMMAND"}</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6b7280;text-align:${isArabic ? "left" : "right"};">
+      ${isArabic ? "نشرة استخباراتية" : "INTELLIGENCE BRIEF"}<br>${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC
     </div>
   </div>
   <div style="height:1px;background:#3b82f6;margin-bottom:16px;"></div>
 
   <!-- Classification bar -->
   <div style="background:${rc};padding:6px 12px;margin-bottom:20px;">
-    <span style="font-family:'IBM Plex Mono',monospace;color:white;font-weight:700;font-size:10px;letter-spacing:1px;">${event.risk_level} — RISK SCORE: ${event.risk_score}/100 — CONFIDENCE: ${event.confidence_score}%</span>
+    <span style="font-family:'IBM Plex Mono',monospace;color:white;font-weight:700;font-size:10px;letter-spacing:1px;">${event.risk_level} — ${isArabic ? "درجة الخطر" : "RISK SCORE"}: ${event.risk_score}/100 — ${isArabic ? "الموثوقية" : "CONFIDENCE"}: ${event.confidence_score}%</span>
   </div>
 
   <!-- Title -->
@@ -167,8 +167,8 @@ export function DetailPanel() {
   <!-- Footer -->
   <div style="height:1px;background:#3b82f6;margin-top:30px;margin-bottom:12px;"></div>
   <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b7280;">
-    <span>Based on ${event.source_count} sources · Confidence: ${event.confidence_score}%</span>
-    <span>ATLAS COMMAND</span>
+    <span>${isArabic ? `بناءً على ${event.source_count} مصادر · الموثوقية: ${event.confidence_score}%` : `Based on ${event.source_count} sources · Confidence: ${event.confidence_score}%`}</span>
+    <span>${isArabic ? "أطلس كوماند" : "ATLAS COMMAND"}</span>
     <span>REF: AC-${String(event.id).padStart(4, "0")} · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
   </div>
 </body>
@@ -209,8 +209,8 @@ export function DetailPanel() {
       {/* Print version — classified document style */}
       <div className="hidden print-only print-brief">
         <div className="doc-header">
-          <div className="doc-logo">ATLAS COMMAND</div>
-          <div className="doc-class">INTELLIGENCE BRIEF</div>
+          <div className="doc-logo">{isAr ? "أطلس كوماند" : "ATLAS COMMAND"}</div>
+          <div className="doc-class">{isAr ? "نشرة استخباراتية" : "INTELLIGENCE BRIEF"}</div>
         </div>
 
         <div className="doc-title">{event.title}</div>
@@ -219,7 +219,7 @@ export function DetailPanel() {
         </div>
 
         <div className={`risk-badge-print risk-${event.risk_level.toLowerCase()}`}>
-          {event.risk_level} — RISK SCORE: {event.risk_score}/100 — CONFIDENCE: {event.confidence_score}%
+          {event.risk_level} — {isAr ? "درجة الخطر" : "RISK SCORE"}: {event.risk_score}/100 — {isAr ? "الموثوقية" : "CONFIDENCE"}: {event.confidence_score}%
         </div>
 
         <h2>{isAr ? "تقييم الموقف" : "SITUATION ASSESSMENT"}</h2>
@@ -255,7 +255,7 @@ export function DetailPanel() {
             <h2>{isAr ? "سلسلة التبعات" : "CONSEQUENCE CHAIN"}</h2>
             {consequences.map((c) => (
               <div key={c.step_number} className="consequence-step">
-                <strong>Step {c.step_number} [{c.domain}]</strong> — {isAr && c.consequence_ar ? c.consequence_ar : c.consequence_en} (P: {c.probability}%, {c.timeframe})
+                <strong>{isAr ? "خطوة" : "Step"} {c.step_number} [{c.domain}]</strong> — {isAr && c.consequence_ar ? c.consequence_ar : c.consequence_en} (P: {c.probability}%, {c.timeframe})
               </div>
             ))}
           </>
@@ -273,7 +273,7 @@ export function DetailPanel() {
         )}
 
         <div className="doc-footer">
-          <span>ATLAS COMMAND — AI PLANETARY DECISION INTELLIGENCE</span>
+          <span>{isAr ? "أطلس كوماند — منصة الذكاء الاستراتيجي" : "ATLAS COMMAND — AI PLANETARY DECISION INTELLIGENCE"}</span>
           <span>{new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
           <span>REF: AC-{String(event.id).padStart(4, "0")}</span>
         </div>
@@ -573,8 +573,8 @@ function PersonalisedCard({
 Event: ${event.title}
 Risk: ${event.risk_level} (${event.risk_score}/100)
 Sector: ${event.sector} | Region: ${event.region}
-Situation: ${event.situation_en}
-Why it matters: ${event.why_matters_en}
+Situation: ${isAr && event.situation_ar ? event.situation_ar : event.situation_en}
+Why it matters: ${isAr && event.why_matters_ar ? event.why_matters_ar : event.why_matters_en}
 
 ${isAr ? "Respond in Arabic." : "Respond in English."} Maximum 4 sentences, classified memo style.`;
 

@@ -46,11 +46,12 @@ export async function POST(req: NextRequest) {
   try {
     const { messages, events, lang, profile } = await req.json();
 
+    const isAr = lang === "ar";
     const eventsContext = events
       ?.slice(0, 10)
       .map(
         (e: any) =>
-          `[${e.risk_level}] ${e.title} — ${e.region} (Risk: ${e.risk_score}/100, Sector: ${e.sector})\n  Situation: ${e.situation_en || e.description}`
+          `[${e.risk_level}] ${isAr ? e.title_ar || e.title : e.title} — ${e.region} (${isAr ? "خطر" : "Risk"}: ${e.risk_score}/100, ${isAr ? "قطاع" : "Sector"}: ${e.sector})\n  ${isAr ? "الوضع" : "Situation"}: ${isAr ? (e.situation_ar || e.situation_en || e.description) : (e.situation_en || e.description)}`
       )
       .join("\n\n");
 

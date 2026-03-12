@@ -796,17 +796,17 @@ Rules:
             {/* Print version */}
             <div className="hidden print-only print-brief">
               <div className="doc-header">
-                <div className="doc-logo">ATLAS COMMAND</div>
-                <div className="doc-class">COUNTRY BRIEF</div>
+                <div className="doc-logo">{isAr ? "أطلس كوماند" : "ATLAS COMMAND"}</div>
+                <div className="doc-class">{isAr ? "نشرة الدولة" : "COUNTRY BRIEF"}</div>
               </div>
-              <div className="doc-title">{(ISO3_TO_NAME[selectedCountry] || selectedCountry).toUpperCase()} — INTELLIGENCE BRIEF</div>
+              <div className="doc-title">{(countryName || "").toUpperCase()} — {isAr ? "نشرة استخباراتية" : "INTELLIGENCE BRIEF"}</div>
               <div className="doc-meta">
-                {new Date().toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-                {" · "}RISK: {riskLevel} · INSTABILITY: {instabilityScore}/100
+                {new Date().toLocaleDateString(isAr ? "ar-SA" : "en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                {" · "}{isAr ? "الخطر" : "RISK"}: {riskLevel} · {isAr ? "عدم الاستقرار" : "INSTABILITY"}: {instabilityScore}/100
               </div>
               <div style={{ whiteSpace: "pre-wrap" }} className={isAr ? "arabic-text" : ""}>{fullBrief}</div>
               <div className="doc-footer">
-                <span>ATLAS COMMAND — AI PLANETARY DECISION INTELLIGENCE</span>
+                <span>{isAr ? "أطلس كوماند — منصة الذكاء الاستراتيجي" : "ATLAS COMMAND — AI PLANETARY DECISION INTELLIGENCE"}</span>
                 <span>{new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
               </div>
             </div>

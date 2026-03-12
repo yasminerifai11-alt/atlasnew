@@ -324,9 +324,9 @@ ${arabicRules}`;
 </head>
 <body>
   <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;">
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:white;letter-spacing:3px;font-weight:600;">ATLAS COMMAND</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:white;letter-spacing:3px;font-weight:600;">${isAr ? "أطلس كوماند" : "ATLAS COMMAND"}</div>
     <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6b7280;text-align:${isAr ? "left" : "right"};">
-      INTELLIGENCE BRIEF<br>${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC
+      ${isAr ? "النشرة الاستخباراتية" : "INTELLIGENCE BRIEF"}<br>${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC
     </div>
   </div>
   <div style="height:1px;background:#3b82f6;margin-bottom:16px;"></div>
@@ -355,7 +355,7 @@ ${arabicRules}`;
   <div style="height:1px;background:#3b82f6;margin-top:30px;margin-bottom:12px;"></div>
   <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b7280;">
     <span>${events.length} ${isAr ? "حدث" : "events"} · ${totalSources} ${isAr ? "مصدر" : "sources"}</span>
-    <span>ATLAS COMMAND</span>
+    <span>${isAr ? "أطلس كوماند" : "ATLAS COMMAND"}</span>
     <span>${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
   </div>
 </body>

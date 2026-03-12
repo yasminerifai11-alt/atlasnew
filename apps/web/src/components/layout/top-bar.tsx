@@ -48,8 +48,8 @@ export function TopBar() {
               <circle cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="1.5" />
               <path d="M2 12h20M12 2c-3 4-3 14 0 20M12 2c3 4 3 14 0 20" stroke="#3b82f6" strokeWidth="1" />
             </svg>
-            <span className="font-mono text-xs font-semibold tracking-widest text-slate-300">
-              ATLAS COMMAND
+            <span className={`font-mono text-xs font-semibold tracking-widest text-slate-300 ${isAr ? "arabic-nav" : ""}`}>
+              {t("brand.name")}
             </span>
           </div>
 
