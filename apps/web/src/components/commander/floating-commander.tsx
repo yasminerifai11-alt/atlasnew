@@ -331,36 +331,66 @@ export function FloatingCommander() {
       {/* ─── Floating Radar Button ─── */}
       {!isOpen && (
         <div className="fixed z-[1000]" style={{ bottom: 24, right: 24 }}>
-          <div className="flex items-center gap-3">
-            {/* Label pill — shows once, fades after 4s */}
-            {showLabel && (
+          <div className="flex flex-col items-end gap-2">
+            {/* Persistent label next to radar */}
+            <button
+              onClick={handleFabClick}
+              className="radar-fab group flex items-center gap-3"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
+              {/* Text label — always visible */}
               <div
-                className="radar-label-pill font-mono text-[10px] tracking-wider px-3 py-1.5"
+                className="flex items-center gap-2 px-3 py-2 transition-all group-hover:border-blue-500/40"
                 style={{
-                  color: "#94a3b8",
                   backgroundColor: "#0d1117",
                   border: "1px solid #1e3a5f",
+                  borderRadius: "8px",
+                }}
+              >
+                <span className="font-mono text-[9px] tracking-[1.5px] text-blue-400 font-semibold whitespace-nowrap">
+                  {isAr ? "قائد أطلس" : "ATLAS COMMANDER"}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-green-500"
+                    style={{ boxShadow: "0 0 4px rgba(34,197,94,0.6)" }}
+                  />
+                  <span className="font-mono text-[8px] tracking-wider text-green-500/80">
+                    {isAr ? "متصل" : "ONLINE"}
+                  </span>
+                </span>
+              </div>
+              {/* Radar FAB */}
+              <div
+                className="flex h-14 w-14 items-center justify-center rounded-full shrink-0"
+                style={{
+                  backgroundColor: "#0a1628",
+                  border: `1.5px solid ${isHovering ? "#3b82f6" : "#1e3a5f"}`,
+                  boxShadow: isHovering
+                    ? "0 0 30px rgba(59,130,246,0.5)"
+                    : "0 0 20px rgba(59,130,246,0.3)",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <RadarIcon size={40} sweepDuration={isHovering ? 2 : 3} />
+              </div>
+            </button>
+            {/* One-time intro pill — fades after 4s */}
+            {showLabel && (
+              <div
+                className="radar-label-pill font-mono text-[9px] tracking-wider px-3 py-1.5"
+                style={{
+                  color: "#64748b",
+                  backgroundColor: "#0d1117",
+                  border: "1px solid #1e3a5f30",
                   borderRadius: "20px",
                   whiteSpace: "nowrap",
                 }}
               >
-                {isAr ? "قائد أطلس — متصل" : "ATLAS COMMANDER ONLINE"}
+                {isAr ? "اسأل عن أي تهديد أو حدث" : "Ask about any threat or event"}
               </div>
             )}
-            {/* Radar FAB */}
-            <button
-              onClick={handleFabClick}
-              onMouseEnter={() => setIsHovering(true)}
-              onMouseLeave={() => setIsHovering(false)}
-              className="radar-fab flex h-14 w-14 items-center justify-center rounded-full"
-              style={{
-                backgroundColor: "#0a1628",
-                border: "1.5px solid #1e3a5f",
-                boxShadow: "0 0 20px rgba(59,130,246,0.3)",
-              }}
-            >
-              <RadarIcon size={40} sweepDuration={isHovering ? 2 : 3} />
-            </button>
           </div>
         </div>
       )}
