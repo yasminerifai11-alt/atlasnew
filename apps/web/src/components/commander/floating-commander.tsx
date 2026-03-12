@@ -18,18 +18,27 @@ interface StoredMessage {
 }
 
 const ERROR_PHRASES = [
+  "offline",
   "initializing",
+  "unavailable",
+  "API key",
+  "API Key",
   "ANTHROPIC_API_KEY",
+  "shortly",
+  "currently",
   "env.local",
   "restart",
-  "API key",
   "configure",
   "غير متصل حالياً",
   "قيد التهيئة",
+  "سيتوفر",
+  "غير متوفر",
 ];
 
-function isErrorMessage(content: string): boolean {
-  return ERROR_PHRASES.some((phrase) => content.includes(phrase));
+function isErrorMessage(msg: StoredMessage): boolean {
+  if (msg.role !== "assistant") return false;
+  const lower = msg.content.toLowerCase();
+  return ERROR_PHRASES.some((phrase) => lower.includes(phrase.toLowerCase()));
 }
 
 function loadStoredMessages(): StoredMessage[] {
@@ -39,7 +48,7 @@ function loadStoredMessages(): StoredMessage[] {
     if (!raw) return [];
     const parsed: StoredMessage[] = JSON.parse(raw);
     // Clean out any error/system messages from history
-    const cleaned = parsed.filter((m) => !isErrorMessage(m.content));
+    const cleaned = parsed.filter((m) => !isErrorMessage(m));
     if (cleaned.length !== parsed.length) {
       // Persist the cleaned version
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned.slice(-MAX_STORED_MESSAGES)));
@@ -53,7 +62,7 @@ function loadStoredMessages(): StoredMessage[] {
 function saveMessages(msgs: StoredMessage[]) {
   try {
     // Never persist error/system messages
-    const clean = msgs.filter((m) => !isErrorMessage(m.content));
+    const clean = msgs.filter((m) => !isErrorMessage(m));
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify(clean.slice(-MAX_STORED_MESSAGES))

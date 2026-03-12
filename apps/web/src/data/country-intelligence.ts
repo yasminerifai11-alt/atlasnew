@@ -66,8 +66,8 @@ export const SEEDED_COUNTRY_INTEL: Record<string, SeededCountryIntel> = {
     ],
     infrastructure_en: "Critical: Mina Al-Ahmadi (2.4M bpd), Mina Abdullah refinery, Az-Zour LNG, Camp Arifjan (US), Ali Al Salem Air Base. All operational, no current threats.",
     infrastructure_ar: "حرج: ميناء الأحمدي (٢.٤ مليون برميل/يوم)، مصفاة ميناء عبدالله، الزور للغاز المسال، معسكر عريفجان (أمريكي)، قاعدة علي السالم الجوية. جميعها تعمل بشكل طبيعي، لا تهديدات حالية.",
-    instability_score: 28,
-    risk_level: "LOW",
+    instability_score: 57,
+    risk_level: "ELEVATED",
   },
 
   SAU: {
@@ -156,8 +156,8 @@ export const SEEDED_COUNTRY_INTEL: Record<string, SeededCountryIntel> = {
     ],
     infrastructure_en: "Critical: Jebel Ali port (15% global containers), ADNOC offshore fields, Barakah nuclear plant, Al Dhafra Air Base (US/FR), Dubai International Airport. Cyber threats ELEVATED.",
     infrastructure_ar: "حرج: ميناء جبل علي (١٥٪ حاويات عالمية)، حقول أدنوك البحرية، محطة براكة النووية، قاعدة الظفرة الجوية (أمريكية/فرنسية)، مطار دبي الدولي. التهديدات السيبرانية مرتفعة.",
-    instability_score: 38,
-    risk_level: "MEDIUM",
+    instability_score: 58,
+    risk_level: "ELEVATED",
   },
 
   IRN: {
@@ -201,7 +201,7 @@ export const SEEDED_COUNTRY_INTEL: Record<string, SeededCountryIntel> = {
     ],
     infrastructure_en: "Threat sources: Natanz & Fordow enrichment, Bushehr reactor, Bandar Abbas naval base, Chabahar port, Kharg Island terminal (90% of Iran's oil exports). Internal vulnerability: aging oil infrastructure, power grid under stress.",
     infrastructure_ar: "مصادر التهديد: تخصيب نطنز وفردو، مفاعل بوشهر، قاعدة بندر عباس البحرية، ميناء تشابهار، محطة جزيرة خرج (٩٠٪ من صادرات إيران النفطية). ثغرة داخلية: بنية نفطية متقادمة، شبكة كهرباء تحت ضغط.",
-    instability_score: 78,
+    instability_score: 85,
     risk_level: "CRITICAL",
   },
 };

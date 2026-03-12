@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
 import { useProfileStore, ROLE_META } from "@/stores/profile-store";
@@ -15,11 +15,21 @@ import {
 } from "@/data/defense-profiles";
 import { DefenseComparisonModal } from "./defense-comparison-modal";
 import { getSeededIntel, getSeededFullBrief } from "@/data/country-intelligence";
+import {
+  computeInstabilityScore,
+  scoreToLevel,
+  levelToColor,
+  type InstabilityResult,
+} from "@/utils/instability-score";
 
 const RISK_COLORS: Record<string, string> = {
+  "CRITICAL+": "#7f1d1d",
   CRITICAL: "#dc2626",
   HIGH: "#ea580c",
+  ELEVATED: "#ca8a04",
   MEDIUM: "#ca8a04",
+  MONITORING: "#3b82f6",
+  STABLE: "#16a34a",
   LOW: "#16a34a",
 };
 
@@ -114,11 +124,13 @@ export function CountryIntelPanel() {
     return evIso3 !== selectedCountry && e.region === regionTag?.split(" · ")[0];
   });
 
-  // Compute aggregate risk
-  const maxRiskScore = countryEvents.length > 0
-    ? Math.max(...countryEvents.map((e) => e.risk_score))
-    : nearbyEvents.length > 0 ? Math.max(...nearbyEvents.map((e) => e.risk_score)) * 0.5 : 0;
-  const computedRiskLevel = maxRiskScore >= 80 ? "CRITICAL" : maxRiskScore >= 60 ? "HIGH" : maxRiskScore >= 40 ? "MEDIUM" : "LOW";
+  // Compute 4-component instability score
+  const instabilityResult: InstabilityResult = useMemo(() => {
+    if (!selectedCountry) return { score: 0, level: "STABLE" as const, components: { internal: 0, regional: 0, infrastructure: 0, events: 0 } };
+    return computeInstabilityScore(selectedCountry, events, COUNTRY_TO_ISO3);
+  }, [selectedCountry, events]);
+  const maxRiskScore = instabilityResult.score;
+  const computedRiskLevel = instabilityResult.level;
 
   // ESC key closes panel
   useEffect(() => {
@@ -385,9 +397,9 @@ Rules:
 
   if (!selectedCountry) return null;
 
-  const riskColor = RISK_COLORS[intel?.risk_level || computedRiskLevel] || "#64748b";
-  const instabilityScore = intel?.instability_score || Math.round(maxRiskScore) || 0;
-  const riskLevel = intel?.risk_level || computedRiskLevel;
+  const riskLevel = computedRiskLevel;
+  const riskColor = RISK_COLORS[riskLevel] || levelToColor(riskLevel) || "#64748b";
+  const instabilityScore = instabilityResult.score;
 
   // 7-day signal timeline
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -447,6 +459,31 @@ Rules:
                 />
               </div>
             </div>
+          </div>
+          {/* Component breakdown */}
+          <div className="mt-3 grid grid-cols-4 gap-1.5">
+            {([
+              { key: "internal", label: isAr ? "داخلي" : "INTERNAL", weight: "25%" },
+              { key: "regional", label: isAr ? "إقليمي" : "REGIONAL", weight: "35%" },
+              { key: "infrastructure", label: isAr ? "بنية تحتية" : "INFRA", weight: "25%" },
+              { key: "events", label: isAr ? "أحداث" : "EVENTS", weight: "15%" },
+            ] as const).map((comp) => {
+              const val = instabilityResult.components[comp.key as keyof typeof instabilityResult.components];
+              const barColor = val >= 76 ? "#dc2626" : val >= 61 ? "#ea580c" : val >= 41 ? "#ca8a04" : val >= 21 ? "#3b82f6" : "#16a34a";
+              return (
+                <div key={comp.key} className="text-center">
+                  <div className="font-mono text-[7px] tracking-wider text-slate-600 mb-0.5">
+                    {comp.label}
+                  </div>
+                  <div className="h-1 w-full mx-auto" style={{ backgroundColor: "#1e2530" }}>
+                    <div className="h-full transition-all duration-700" style={{ width: `${val}%`, backgroundColor: barColor }} />
+                  </div>
+                  <div className="font-mono text-[8px] mt-0.5" style={{ color: barColor }}>
+                    {val}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <div className="mt-2 font-mono text-[8px] tracking-wider text-slate-600">
             {t("morning.lastUpdated")}: {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC
@@ -900,7 +937,7 @@ Rules:
               <div className="doc-metrics">
                 <div className="doc-metric-box">
                   <span className="metric-label">{isAr ? "مستوى التهديد" : "THREAT LEVEL"}</span>
-                  <span className={`metric-value metric-${riskLevel === "CRITICAL" ? "critical" : riskLevel === "HIGH" ? "high" : riskLevel === "MEDIUM" ? "medium" : "low"}`}>{riskLevel}</span>
+                  <span className={`metric-value metric-${riskLevel === "CRITICAL" || riskLevel === "CRITICAL+" ? "critical" : riskLevel === "HIGH" ? "high" : riskLevel === "ELEVATED" ? "medium" : "low"}`}>{riskLevel}</span>
                 </div>
                 <div className="doc-metric-box">
                   <span className="metric-label">{isAr ? "درجة عدم الاستقرار" : "INSTABILITY"}</span>

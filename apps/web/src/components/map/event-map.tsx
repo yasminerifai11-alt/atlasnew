@@ -6,6 +6,10 @@ import { useCommandStore } from "@/stores/command-store";
 import { getFilterViewport, GLOBAL_VIEW } from "@/data/regions";
 import { setMapLanguage, getLocalizedField, translateTag } from "@/utils/translate";
 import type { ApiEvent } from "@/lib/api";
+import {
+  computeAllInstabilityScores,
+  instabilityToMapLevels,
+} from "@/utils/instability-score";
 
 const RISK_COLORS: Record<string, string> = {
   CRITICAL: "#ef4444",
@@ -88,20 +92,23 @@ const DEFAULT_LAYERS: MapLayers = {
 // ─── Static Threat Level Data ─────────────────────────────────────
 type ThreatLevel = "CRITICAL" | "HIGH" | "ELEVATED" | "MONITORING" | "STABLE";
 
+// Static threat levels — used as fallback when dynamic computation is unavailable.
+// Dynamic computation (computeAllInstabilityScores) overrides these based on
+// 4-component formula: Internal (25%) + Regional (35%) + Infrastructure (25%) + Events (15%)
 const STATIC_THREAT_LEVELS: Record<string, ThreatLevel> = {
-  // CRITICAL
-  IR: "CRITICAL", YE: "CRITICAL", SD: "CRITICAL", MM: "CRITICAL",
-  HT: "CRITICAL", ML: "CRITICAL", BF: "CRITICAL", SO: "CRITICAL",
-  KP: "CRITICAL", SY: "CRITICAL", LY: "CRITICAL",
-  // HIGH
-  IQ: "HIGH", LB: "HIGH", PK: "HIGH", AF: "HIGH",
-  ET: "HIGH", NE: "HIGH", TD: "HIGH", CF: "HIGH",
-  CD: "HIGH", UA: "HIGH", RU: "HIGH", PS: "HIGH",
+  // CRITICAL (91-100)
+  YE: "CRITICAL", SY: "CRITICAL", PS: "CRITICAL", UA: "CRITICAL",
+  SD: "CRITICAL", MM: "CRITICAL", HT: "CRITICAL", SO: "CRITICAL",
+  // CRITICAL (76-90)
+  IR: "CRITICAL", IQ: "CRITICAL", LB: "CRITICAL",
+  AF: "CRITICAL", ML: "CRITICAL", BF: "CRITICAL", LY: "CRITICAL", KP: "CRITICAL",
+  // HIGH (61-75)
+  SA: "HIGH", PK: "HIGH", RU: "HIGH",
+  ET: "HIGH", NE: "HIGH", TD: "HIGH", CF: "HIGH", CD: "HIGH",
   VE: "HIGH", MX: "HIGH",
-  // GCC elevated to HIGH due to missile attacks
-  SA: "HIGH", KW: "HIGH", AE: "HIGH", QA: "HIGH",
-  BH: "HIGH", OM: "HIGH",
-  // ELEVATED
+  // ELEVATED (41-60) — GCC countries, Egypt, Jordan, etc.
+  KW: "ELEVATED", AE: "ELEVATED", QA: "ELEVATED",
+  BH: "ELEVATED", OM: "ELEVATED",
   JO: "ELEVATED", EG: "ELEVATED",
   TR: "ELEVATED", AZ: "ELEVATED", AM: "ELEVATED", XK: "ELEVATED",
   RS: "ELEVATED", BA: "ELEVATED", BY: "ELEVATED", MD: "ELEVATED",
@@ -201,12 +208,23 @@ const NUMERIC_TO_ISO3: Record<string, string> = {
 const COUNTRIES_TOPO_URL =
   "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
+// Map country names in event data to ISO3
+const COUNTRY_NAME_TO_ISO3: Record<string, string> = {
+  Kuwait: "KWT", "Saudi Arabia": "SAU", UAE: "ARE", "United Arab Emirates": "ARE",
+  Qatar: "QAT", Bahrain: "BHR", Oman: "OMN", Iraq: "IRQ", Iran: "IRN",
+  Yemen: "YEM", Egypt: "EGY", Jordan: "JOR", Syria: "SYR",
+  Lebanon: "LBN", Palestine: "PSE", Cyprus: "CYP", Turkey: "TUR",
+  Afghanistan: "AFG", Pakistan: "PAK", India: "IND", Sudan: "SDN",
+  Eritrea: "ERI", Djibouti: "DJI", Somalia: "SOM", Libya: "LBY",
+  Ukraine: "UKR", Russia: "RUS",
+};
+
 type CountryRiskMap = Record<string, { score: number; level: string; events: ApiEvent[] }>;
 
 function computeCountryRisk(events: ApiEvent[]): CountryRiskMap {
   const map: CountryRiskMap = {};
   for (const e of events) {
-    const iso3 = ISO2_TO_ISO3[e.country] || e.country;
+    const iso3 = COUNTRY_NAME_TO_ISO3[e.country] || ISO2_TO_ISO3[e.country] || e.country;
     if (!iso3) continue;
     if (!map[iso3]) map[iso3] = { score: 0, level: "LOW", events: [] };
     map[iso3].events.push(e);
@@ -413,7 +431,7 @@ export function EventMap() {
         countryLayerReady.current = true;
         // Apply initial risk colors and threat fills
         applyCountryRiskColors(map, countryRiskRef.current);
-        applyThreatFills(map);
+        applyThreatFills(map, eventsRef.current);
         // Setup hover interaction
         setupCountryHover(map, popup, maplibregl);
         // Setup country click → opens CountryIntelPanel
@@ -449,12 +467,13 @@ export function EventMap() {
     map.flyTo({ center: viewport.center, zoom: viewport.zoom, duration: 1200, essential: true });
   }, [regionFilter]);
 
-  // Update country risk shading when events change
+  // Update country risk shading and threat fills when events change
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !countryLayerReady.current) return;
     applyCountryRiskColors(map, countryRisk);
-  }, [countryRisk]);
+    applyThreatFills(map, events);
+  }, [countryRisk, events]);
 
   // Toggle threat fill visibility
   useEffect(() => {
@@ -1126,19 +1145,33 @@ export function EventMap() {
 
 // ─── Apply static threat fills ────────────────────────────────────
 
-function applyThreatFills(map: any) {
+function applyThreatFills(map: any, events?: ApiEvent[]) {
   try {
     if (!map.getLayer("atlas-threat-fill")) return;
+
+    // Compute dynamic threat levels from instability scores if events available
+    let dynamicLevels: Record<string, ThreatLevel> = {};
+    if (events && events.length > 0) {
+      const allScores = computeAllInstabilityScores(events, COUNTRY_NAME_TO_ISO3);
+      dynamicLevels = instabilityToMapLevels(allScores);
+    }
+
+    // Merge: dynamic scores override static, static fills gaps
+    const mergedLevels: Record<string, ThreatLevel> = { ...STATIC_THREAT_LEVELS };
+    for (const [iso2, level] of Object.entries(dynamicLevels)) {
+      mergedLevels[iso2] = level;
+    }
 
     // Build match expression for ISO-2 codes
     const fillExpr: any[] = ["match", ["get", "iso_a2"]];
     const borderExpr: any[] = ["match", ["get", "iso_a2"]];
 
-    // Add all static threat level entries
-    for (const [iso2, level] of Object.entries(STATIC_THREAT_LEVELS)) {
+    for (const [iso2, level] of Object.entries(mergedLevels)) {
       fillExpr.push(iso2, THREAT_COLORS[level]);
       if (level === "CRITICAL") {
         borderExpr.push(iso2, THREAT_BORDER_COLORS.CRITICAL);
+      } else if (level === "HIGH") {
+        borderExpr.push(iso2, THREAT_BORDER_COLORS.HIGH);
       }
     }
     // Default: MONITORING for unlisted countries

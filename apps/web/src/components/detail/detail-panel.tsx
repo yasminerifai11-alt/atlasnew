@@ -75,12 +75,22 @@ export function DetailPanel() {
       TRADE: "#3b82f6", DIPLOMATIC: "#7c3aed", HUMANITARIAN: "#6b7280",
     };
 
-    const actionsHtml = (acts || []).map((a, i) =>
-      `<div style="display:flex;gap:10px;padding:8px 12px;border-left:3px solid #3b82f6;margin-bottom:4px;">
-        <span style="color:#3b82f6;font-family:'IBM Plex Mono',monospace;font-weight:600;min-width:20px;">${String(i + 1).padStart(2, "0")}</span>
+    const priorityLabels = isArabic
+      ? ["فوري", "اليوم", "اليوم", "هذا الأسبوع", "استراتيجي"]
+      : ["IMMEDIATE", "TODAY", "TODAY", "THIS WEEK", "STRATEGIC"];
+    const priorityColors = ["#dc2626", "#ea580c", "#ea580c", "#ca8a04", "#3b82f6"];
+    const actionsHtml = (acts || []).map((a, i) => {
+      const pIdx = Math.min(i, priorityLabels.length - 1);
+      const pc = priorityColors[pIdx];
+      const pl = priorityLabels[pIdx];
+      return `<div style="display:flex;gap:10px;padding:8px 12px;border-left:3px solid ${pc};margin-bottom:4px;background:${pc}08;">
+        <div style="min-width:32px;text-align:center;">
+          <div style="color:${pc};font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;">${String(i + 1).padStart(2, "0")}</div>
+          <div style="color:${pc};font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:1px;">${pl}</div>
+        </div>
         <span style="color:#e5e7eb;font-size:12px;line-height:1.6;">${a}</span>
-      </div>`
-    ).join("");
+      </div>`;
+    }).join("");
 
     const consequenceHtml = consequences.map((c) => {
       const dc = DOMAIN_CLR[c.domain] || "#6b7280";
@@ -376,11 +386,47 @@ export function DetailPanel() {
               <div className="mb-2 font-mono text-[10px] tracking-widest text-red-400">
                 {t("intel.actions")}
               </div>
-              <ol className={`list-decimal space-y-1.5 pl-4 text-[13px] leading-relaxed text-slate-400 ${isAr && event.actions_ar?.length ? "arabic-text" : ""}`}>
-                {actions?.map((action, i) => (
-                  <li key={i}>{action}</li>
-                ))}
-              </ol>
+              <div className={`space-y-2 ${isAr && event.actions_ar?.length ? "arabic-text" : ""}`}>
+                {actions?.map((action, i) => {
+                  const priorities = isAr
+                    ? [
+                        { label: "فوري", color: "#dc2626" },
+                        { label: "اليوم", color: "#ea580c" },
+                        { label: "اليوم", color: "#ea580c" },
+                        { label: "هذا الأسبوع", color: "#ca8a04" },
+                        { label: "استراتيجي", color: "#3b82f6" },
+                      ]
+                    : [
+                        { label: "IMMEDIATE", color: "#dc2626" },
+                        { label: "TODAY", color: "#ea580c" },
+                        { label: "TODAY", color: "#ea580c" },
+                        { label: "THIS WEEK", color: "#ca8a04" },
+                        { label: "STRATEGIC", color: "#3b82f6" },
+                      ];
+                  const p = priorities[Math.min(i, priorities.length - 1)];
+                  return (
+                    <div
+                      key={i}
+                      className="flex gap-3 py-2 px-3"
+                      style={{
+                        borderLeft: isAr ? "none" : `3px solid ${p.color}`,
+                        borderRight: isAr ? `3px solid ${p.color}` : "none",
+                        backgroundColor: `${p.color}08`,
+                      }}
+                    >
+                      <div className="shrink-0 flex flex-col items-center" style={{ minWidth: 28 }}>
+                        <span className="font-mono text-[11px] font-bold" style={{ color: p.color }}>
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span className="font-mono text-[7px] tracking-wider mt-0.5" style={{ color: p.color }}>
+                          {p.label}
+                        </span>
+                      </div>
+                      <span className="text-[13px] leading-relaxed text-slate-300">{action}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
