@@ -19,7 +19,7 @@ const OPERATOR_COLORS: Record<string, string> = {
   GCC: "#16a34a",
   IRAN: "#dc2626",
   RUSSIA: "#ea580c",
-  ISRAEL: "#7c3aed",
+  PALESTINE: "#7c3aed",
 };
 
 const BASE_TYPE_ICONS: Record<string, string> = {
@@ -56,20 +56,122 @@ const PORT_TYPE_COLORS: Record<string, string> = {
   CANAL_PORT: "#0284c7",
 };
 
+// ─── Extended layers interface ────────────────────────────────────
 interface MapLayers {
+  // Threat
+  threatFills: boolean;
+  activeEvents: boolean;
+  // Military
   militaryBases: boolean;
   nuclearFacilities: boolean;
+  // Infrastructure
   oilGas: boolean;
   desalination: boolean;
   ports: boolean;
   telecomCables: boolean;
+  // Overlays
+  chokepoints: boolean;
 }
+
+const DEFAULT_LAYERS: MapLayers = {
+  threatFills: true,
+  activeEvents: true,
+  militaryBases: false,
+  nuclearFacilities: false,
+  oilGas: false,
+  desalination: false,
+  ports: false,
+  telecomCables: false,
+  chokepoints: false,
+};
+
+// ─── Static Threat Level Data ─────────────────────────────────────
+type ThreatLevel = "CRITICAL" | "HIGH" | "ELEVATED" | "MONITORING" | "STABLE";
+
+const STATIC_THREAT_LEVELS: Record<string, ThreatLevel> = {
+  // CRITICAL
+  IR: "CRITICAL", YE: "CRITICAL", SD: "CRITICAL", MM: "CRITICAL",
+  HT: "CRITICAL", ML: "CRITICAL", BF: "CRITICAL", SO: "CRITICAL",
+  KP: "CRITICAL", SY: "CRITICAL", LY: "CRITICAL",
+  // HIGH
+  IQ: "HIGH", LB: "HIGH", PK: "HIGH", AF: "HIGH",
+  ET: "HIGH", NE: "HIGH", TD: "HIGH", CF: "HIGH",
+  CD: "HIGH", UA: "HIGH", RU: "HIGH", PS: "HIGH",
+  PS: "HIGH", VE: "HIGH", MX: "HIGH",
+  // ELEVATED
+  SA: "ELEVATED", KW: "ELEVATED", AE: "ELEVATED", QA: "ELEVATED",
+  BH: "ELEVATED", OM: "ELEVATED", JO: "ELEVATED", EG: "ELEVATED",
+  TR: "ELEVATED", AZ: "ELEVATED", AM: "ELEVATED", XK: "ELEVATED",
+  RS: "ELEVATED", BA: "ELEVATED", BY: "ELEVATED", MD: "ELEVATED",
+  NG: "ELEVATED", KE: "ELEVATED", MZ: "ELEVATED", CO: "ELEVATED",
+  EC: "ELEVATED", PE: "ELEVATED", BD: "ELEVATED", LK: "ELEVATED",
+  // STABLE (no fill)
+  US: "STABLE", CA: "STABLE", GB: "STABLE", FR: "STABLE", DE: "STABLE",
+  IT: "STABLE", ES: "STABLE", PT: "STABLE", NL: "STABLE", BE: "STABLE",
+  CH: "STABLE", AT: "STABLE", SE: "STABLE", NO: "STABLE", DK: "STABLE",
+  FI: "STABLE", IE: "STABLE", IS: "STABLE", LU: "STABLE",
+  AU: "STABLE", NZ: "STABLE", JP: "STABLE", KR: "STABLE", SG: "STABLE",
+};
+
+const THREAT_COLORS: Record<ThreatLevel, string> = {
+  CRITICAL: "rgba(220,38,38,0.35)",
+  HIGH: "rgba(234,88,12,0.30)",
+  ELEVATED: "rgba(202,138,4,0.25)",
+  MONITORING: "rgba(37,99,235,0.08)",
+  STABLE: "rgba(0,0,0,0)",
+};
+
+const THREAT_BORDER_COLORS: Record<ThreatLevel, string> = {
+  CRITICAL: "rgba(220,38,38,0.6)",
+  HIGH: "rgba(234,88,12,0.4)",
+  ELEVATED: "rgba(202,138,4,0.3)",
+  MONITORING: "rgba(37,99,235,0.1)",
+  STABLE: "rgba(0,0,0,0)",
+};
+
+// Numeric country IDs → ISO-2
+const NUMERIC_TO_ISO2: Record<string, string> = {
+  "004": "AF", "008": "AL", "012": "DZ", "024": "AO", "031": "AZ",
+  "032": "AR", "036": "AU", "040": "AT", "048": "BH", "050": "BD",
+  "051": "AM", "056": "BE", "064": "BT", "068": "BO", "070": "BA",
+  "072": "BW", "076": "BR", "084": "BZ", "090": "SB", "096": "BN",
+  "100": "BG", "104": "MM", "108": "BI", "112": "BY", "116": "KH",
+  "120": "CM", "124": "CA", "140": "CF", "144": "LK", "148": "TD",
+  "152": "CL", "156": "CN", "158": "TW", "170": "CO", "178": "CG",
+  "180": "CD", "188": "CR", "191": "HR", "192": "CU", "196": "CY",
+  "203": "CZ", "204": "BJ", "208": "DK", "214": "DO", "218": "EC",
+  "222": "SV", "226": "GQ", "231": "ET", "232": "ER", "233": "EE",
+  "242": "FJ", "246": "FI", "250": "FR", "262": "DJ", "266": "GA",
+  "268": "GE", "270": "GM", "275": "PS", "276": "DE", "288": "GH",
+  "300": "GR", "320": "GT", "324": "GN", "328": "GY", "332": "HT",
+  "340": "HN", "348": "HU", "352": "IS", "356": "IN", "360": "ID",
+  "364": "IR", "368": "IQ", "372": "IE", "376": "PS", "380": "IT",
+  "384": "CI", "388": "JM", "392": "JP", "398": "KZ", "400": "JO",
+  "404": "KE", "408": "KP", "410": "KR", "414": "KW", "417": "KG",
+  "418": "LA", "422": "LB", "426": "LS", "428": "LV", "430": "LR",
+  "434": "LY", "440": "LT", "442": "LU", "450": "MG", "454": "MW",
+  "458": "MY", "462": "MV", "466": "ML", "478": "MR", "484": "MX",
+  "496": "MN", "498": "MD", "504": "MA", "508": "MZ", "512": "OM",
+  "516": "NA", "524": "NP", "528": "NL", "540": "NC", "548": "VU",
+  "554": "NZ", "558": "NI", "562": "NE", "566": "NG", "578": "NO",
+  "586": "PK", "591": "PA", "598": "PG", "600": "PY", "604": "PE",
+  "608": "PH", "616": "PL", "620": "PT", "624": "GW", "626": "TL",
+  "630": "PR", "634": "QA", "642": "RO", "643": "RU", "646": "RW",
+  "682": "SA", "686": "SN", "688": "RS", "694": "SL", "702": "SG",
+  "703": "SK", "704": "VN", "705": "SI", "706": "SO", "710": "ZA",
+  "716": "ZW", "724": "ES", "729": "SD", "732": "EH", "740": "SR",
+  "748": "SZ", "752": "SE", "756": "CH", "760": "SY", "762": "TJ",
+  "764": "TH", "768": "TG", "780": "TT", "784": "AE", "788": "TN",
+  "792": "TR", "795": "TM", "800": "UG", "804": "UA", "807": "MK",
+  "818": "EG", "826": "GB", "834": "TZ", "840": "US", "854": "BF",
+  "858": "UY", "860": "UZ", "862": "VE", "887": "YE", "894": "ZM",
+};
 
 // ISO-2 → ISO-3 for countries in scope
 const ISO2_TO_ISO3: Record<string, string> = {
   KW: "KWT", SA: "SAU", AE: "ARE", QA: "QAT", BH: "BHR", OM: "OMN",
   IQ: "IRQ", IR: "IRN", YE: "YEM", EG: "EGY", JO: "JOR", SY: "SYR",
-  LB: "LBN", IL: "ISR", CY: "CYP", TR: "TUR", AF: "AFG", PK: "PAK",
+  LB: "LBN", PS: "PSE", CY: "CYP", TR: "TUR", AF: "AFG", PK: "PAK",
   SD: "SDN", ER: "ERI", DJ: "DJI", SO: "SOM", LY: "LBY",
 };
 
@@ -77,7 +179,7 @@ const ISO3_TO_NAME: Record<string, string> = {
   KWT: "Kuwait", SAU: "Saudi Arabia", ARE: "UAE", QAT: "Qatar",
   BHR: "Bahrain", OMN: "Oman", IRQ: "Iraq", IRN: "Iran",
   YEM: "Yemen", EGY: "Egypt", JOR: "Jordan", SYR: "Syria",
-  LBN: "Lebanon", ISR: "Israel", CYP: "Cyprus", TUR: "Turkey",
+  LBN: "Lebanon", PSE: "Palestine", CYP: "Cyprus", TUR: "Turkey",
   AFG: "Afghanistan", PAK: "Pakistan", IND: "India", SDN: "Sudan",
   ERI: "Eritrea", DJI: "Djibouti", SOM: "Somalia", LBY: "Libya",
 };
@@ -87,7 +189,7 @@ const NUMERIC_TO_ISO3: Record<string, string> = {
   "414": "KWT", "682": "SAU", "784": "ARE", "634": "QAT",
   "048": "BHR", "512": "OMN", "368": "IRQ", "364": "IRN",
   "887": "YEM", "818": "EGY", "400": "JOR", "760": "SYR",
-  "422": "LBN", "376": "ISR", "196": "CYP", "792": "TUR",
+  "422": "LBN", "376": "PSE", "196": "CYP", "792": "TUR",
   "004": "AFG", "586": "PAK", "356": "IND", "729": "SDN",
   "232": "ERI", "262": "DJI", "706": "SOM", "434": "LBY",
   "834": "TZA", "404": "KEN", "800": "UGA", "860": "UZB",
@@ -114,19 +216,56 @@ function computeCountryRisk(events: ApiEvent[]): CountryRiskMap {
   return map;
 }
 
-function riskScoreToFill(score: number): string {
-  if (score >= 80) return "rgba(239, 68, 68, 0.22)";
-  if (score >= 60) return "rgba(249, 115, 22, 0.18)";
-  if (score >= 40) return "rgba(234, 179, 8, 0.13)";
-  return "rgba(34, 197, 94, 0.08)";
+// ─── Layer group definitions ──────────────────────────────────────
+
+interface LayerDef {
+  key: keyof MapLayers;
+  labelKey: string;
+  icon: string;
+  defaultOn: boolean;
 }
 
-function riskScoreToBorder(score: number): string {
-  if (score >= 80) return "rgba(239, 68, 68, 0.50)";
-  if (score >= 60) return "rgba(249, 115, 22, 0.40)";
-  if (score >= 40) return "rgba(234, 179, 8, 0.30)";
-  return "rgba(34, 197, 94, 0.20)";
+interface LayerGroup {
+  headerKey: string;
+  color: string;
+  layers: LayerDef[];
 }
+
+const LAYER_GROUPS: LayerGroup[] = [
+  {
+    headerKey: "map.threatGroup",
+    color: "#ef4444",
+    layers: [
+      { key: "threatFills", labelKey: "map.threatAssessment", icon: "◉", defaultOn: true },
+      { key: "activeEvents", labelKey: "map.activeEvents", icon: "⚡", defaultOn: true },
+    ],
+  },
+  {
+    headerKey: "map.militaryGroup",
+    color: "#3b82f6",
+    layers: [
+      { key: "militaryBases", labelKey: "map.militaryBases", icon: "✈", defaultOn: false },
+      { key: "nuclearFacilities", labelKey: "map.nuclearFacilities", icon: "☢", defaultOn: false },
+    ],
+  },
+  {
+    headerKey: "map.infraGroup",
+    color: "#f59e0b",
+    layers: [
+      { key: "oilGas", labelKey: "map.oilGas", icon: "🛢", defaultOn: false },
+      { key: "desalination", labelKey: "map.desalination", icon: "💧", defaultOn: false },
+      { key: "ports", labelKey: "map.ports", icon: "⚓", defaultOn: false },
+      { key: "telecomCables", labelKey: "map.telecomCables", icon: "◉", defaultOn: false },
+    ],
+  },
+  {
+    headerKey: "map.overlayGroup",
+    color: "#a78bfa",
+    layers: [
+      { key: "chokepoints", labelKey: "map.chokepoints", icon: "🚧", defaultOn: false },
+    ],
+  },
+];
 
 export function EventMap() {
   const { t, lang } = useLanguage();
@@ -146,14 +285,15 @@ export function EventMap() {
   const savedLayersRef = useRef<MapLayers | null>(null);
 
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [layers, setLayers] = useState<MapLayers>(() => {
     if (typeof window !== "undefined") {
       try {
-        const saved = localStorage.getItem("atlas-map-layers");
+        const saved = localStorage.getItem("atlas-map-layers-v2");
         if (saved) return JSON.parse(saved);
       } catch {}
     }
-    return { militaryBases: false, nuclearFacilities: false, oilGas: false, desalination: false, ports: false, telecomCables: false };
+    return { ...DEFAULT_LAYERS };
   });
 
   const isAr = lang === "ar";
@@ -169,6 +309,11 @@ export function EventMap() {
 
   const countryRisk = useMemo(() => computeCountryRisk(events), [events]);
 
+  // Count active layers for badge
+  const activeLayerCount = useMemo(() => {
+    return Object.values(layers).filter(Boolean).length;
+  }, [layers]);
+
   // Fly to target when triggered by chat panel
   useEffect(() => {
     const map = mapRef.current;
@@ -179,40 +324,59 @@ export function EventMap() {
       duration: 1500,
       essential: true,
     });
-    // Clear target after flying
     setMapFlyTarget(null);
   }, [mapFlyTarget, setMapFlyTarget]);
 
   // Auto-toggle all layers in defense view
   useEffect(() => {
     if (situationView === "defense") {
-      // Save current prefs before overriding
       savedLayersRef.current = { ...layers };
       setLayers({
+        threatFills: true,
+        activeEvents: true,
         militaryBases: true,
         nuclearFacilities: true,
         oilGas: true,
         desalination: true,
         ports: true,
         telecomCables: true,
+        chokepoints: true,
       });
     } else if (savedLayersRef.current) {
-      // Restore saved prefs
       setLayers(savedLayersRef.current);
       savedLayersRef.current = null;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [situationView]);
 
-  // Persist layer prefs (only when not in defense override mode)
+  // Persist layer prefs
   useEffect(() => {
     if (situationView !== "defense") {
-      try { localStorage.setItem("atlas-map-layers", JSON.stringify(layers)); } catch {}
+      try { localStorage.setItem("atlas-map-layers-v2", JSON.stringify(layers)); } catch {}
     }
   }, [layers, situationView]);
 
   const toggleLayer = useCallback((key: keyof MapLayers) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const toggleGroupCollapse = useCallback((headerKey: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(headerKey)) next.delete(headerKey);
+      else next.add(headerKey);
+      return next;
+    });
+  }, []);
+
+  const enableAllLayers = useCallback(() => {
+    const all: MapLayers = { ...layers };
+    (Object.keys(all) as (keyof MapLayers)[]).forEach((k) => { all[k] = true; });
+    setLayers(all);
+  }, [layers]);
+
+  const resetLayers = useCallback(() => {
+    setLayers({ ...DEFAULT_LAYERS });
   }, []);
 
   // Keep refs in sync for event handlers
@@ -245,8 +409,9 @@ export function EventMap() {
       map.on("load", async () => {
         await loadCountryBoundaries(map);
         countryLayerReady.current = true;
-        // Apply initial risk colors
+        // Apply initial risk colors and threat fills
         applyCountryRiskColors(map, countryRiskRef.current);
+        applyThreatFills(map);
         // Setup hover interaction
         setupCountryHover(map, popup, maplibregl);
         // Setup country click → opens CountryIntelPanel
@@ -267,7 +432,6 @@ export function EventMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    // Wait for map to be loaded before setting language
     if (map.isStyleLoaded()) {
       setMapLanguage(map, lang);
     } else {
@@ -290,13 +454,27 @@ export function EventMap() {
     applyCountryRiskColors(map, countryRisk);
   }, [countryRisk]);
 
-  // Update event markers
+  // Toggle threat fill visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !countryLayerReady.current) return;
+    try {
+      const vis = layers.threatFills ? "visible" : "none";
+      if (map.getLayer("atlas-threat-fill")) map.setLayoutProperty("atlas-threat-fill", "visibility", vis);
+      if (map.getLayer("atlas-threat-border")) map.setLayoutProperty("atlas-threat-border", "visibility", vis);
+    } catch {}
+  }, [layers.threatFills]);
+
+  // Update event markers — only show when activeEvents layer is on
   useEffect(() => {
     if (!mapRef.current) return;
-    import("maplibre-gl").then((maplibregl) => {
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
+    // Always remove old markers first
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
 
+    if (!layers.activeEvents) return;
+
+    import("maplibre-gl").then((maplibregl) => {
       events.forEach((event: ApiEvent, index: number) => {
         const color = RISK_COLORS[event.risk_level] || "#3b82f6";
         const size = event.risk_level === "CRITICAL" ? 14 : event.risk_level === "HIGH" ? 12 : 10;
@@ -328,7 +506,6 @@ export function EventMap() {
         el.onmouseleave = () => { el.style.transform = "scale(1)"; };
 
         const displayTitle = getLocalizedField(event, "title", lang);
-        const displayType = translateTag(event.event_type, lang);
         const displaySector = translateTag(event.sector, lang);
 
         const popup = new maplibregl.Popup({
@@ -353,15 +530,13 @@ export function EventMap() {
         markersRef.current.push(marker);
       });
     });
-  }, [events, setSelectedEvent, setActiveSection]);
+  }, [events, setSelectedEvent, setActiveSection, layers.activeEvents]);
 
   // Military bases layer
   useEffect(() => {
     if (!mapRef.current) return;
-    // Remove existing base markers
     baseMarkersRef.current.forEach((m) => m.remove());
     baseMarkersRef.current = [];
-
     if (!layers.militaryBases) return;
 
     import("maplibre-gl").then(async (maplibregl) => {
@@ -411,7 +586,6 @@ export function EventMap() {
     if (!mapRef.current) return;
     nuclearMarkersRef.current.forEach((m) => m.remove());
     nuclearMarkersRef.current = [];
-
     if (!layers.nuclearFacilities) return;
 
     import("maplibre-gl").then(async (maplibregl) => {
@@ -460,7 +634,6 @@ export function EventMap() {
     if (!mapRef.current) return;
     oilGasMarkersRef.current.forEach((m) => m.remove());
     oilGasMarkersRef.current = [];
-
     if (!layers.oilGas) return;
 
     import("maplibre-gl").then(async (maplibregl) => {
@@ -511,7 +684,6 @@ export function EventMap() {
     if (!mapRef.current) return;
     desalMarkersRef.current.forEach((m) => m.remove());
     desalMarkersRef.current = [];
-
     if (!layers.desalination) return;
 
     import("maplibre-gl").then(async (maplibregl) => {
@@ -561,7 +733,6 @@ export function EventMap() {
     if (!mapRef.current) return;
     portMarkersRef.current.forEach((m) => m.remove());
     portMarkersRef.current = [];
-
     if (!layers.ports) return;
 
     import("maplibre-gl").then(async (maplibregl) => {
@@ -611,7 +782,6 @@ export function EventMap() {
     if (!mapRef.current) return;
     cableMarkersRef.current.forEach((m) => m.remove());
     cableMarkersRef.current = [];
-
     if (!layers.telecomCables) return;
 
     import("maplibre-gl").then(async (maplibregl) => {
@@ -659,55 +829,113 @@ export function EventMap() {
   return (
     <div className="relative flex-1 min-h-0">
       <div ref={mapContainer} className="h-full w-full" />
-      {/* Layer toggle button + panel */}
-      <div className="absolute top-3 right-3 z-10">
+
+      {/* ═══ LAYERS BUTTON + PANEL ═══ */}
+      <div className="absolute top-3 z-10" style={{ right: isAr ? "auto" : "12px", left: isAr ? "12px" : "auto" }}>
         <button
           onClick={() => setLayerPanelOpen(!layerPanelOpen)}
-          className="flex items-center gap-1.5 bg-atlas-bg/90 border border-white/[0.08] px-3 py-1.5 backdrop-blur-sm font-mono text-[10px] tracking-wider text-slate-400 hover:text-slate-200 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 backdrop-blur-sm font-mono text-[10px] tracking-wider text-slate-400 hover:text-slate-200 transition-colors"
+          style={{ background: "rgba(13,17,23,0.9)", border: "1px solid #1e2530" }}
         >
-          ≡ {isAr ? "الطبقات" : "LAYERS"}
+          ≡ {t("map.layers" as any)}
+          <span
+            className="flex items-center justify-center rounded-full font-mono text-[8px] font-bold text-white"
+            style={{ background: "#3b82f6", width: 16, height: 16, marginLeft: 4 }}
+          >
+            {activeLayerCount}
+          </span>
         </button>
+
         {layerPanelOpen && (
-          <div className="mt-1 bg-atlas-bg/95 border border-white/[0.08] backdrop-blur-sm p-3 min-w-[220px] max-h-[70vh] overflow-y-auto">
-            {/* Military section */}
-            <div className="font-mono text-[8px] tracking-widest text-slate-600 mb-2">
-              {isAr ? "طبقات عسكرية" : "MILITARY LAYERS"}
+          <div
+            className="mt-1 backdrop-blur-sm overflow-y-auto"
+            style={{
+              background: "#0a0e1a",
+              border: "1px solid #1e2530",
+              width: 220,
+              maxHeight: "70vh",
+            }}
+          >
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06]">
+              <span className="font-mono text-[10px] tracking-[2px] text-blue-500">{t("map.layers" as any)}</span>
+              <button
+                onClick={() => setLayerPanelOpen(false)}
+                className="font-mono text-[10px] text-slate-500 hover:text-slate-300"
+              >
+                ×
+              </button>
             </div>
-            <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={layers.militaryBases}
-                onChange={() => toggleLayer("militaryBases")}
-                className="accent-blue-500"
-              />
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px]">🏗</span>
-                <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
-                  {isAr ? "القواعد العسكرية" : "Military Bases"}
-                </span>
-              </div>
-              <span className="ml-auto font-mono text-[8px] text-slate-600">22</span>
-            </label>
-            <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={layers.nuclearFacilities}
-                onChange={() => toggleLayer("nuclearFacilities")}
-                className="accent-yellow-500"
-              />
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px]">☢</span>
-                <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
-                  {isAr ? "المنشآت النووية" : "Nuclear Facilities"}
-                </span>
-              </div>
-              <span className="ml-auto font-mono text-[8px] text-slate-600">5</span>
-            </label>
-            {/* Operator legend */}
+
+            {/* Layer groups */}
+            {LAYER_GROUPS.map((group) => {
+              const isCollapsed = collapsedGroups.has(group.headerKey);
+              return (
+                <div key={group.headerKey}>
+                  {/* Group header */}
+                  <button
+                    onClick={() => toggleGroupCollapse(group.headerKey)}
+                    className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-white/[0.02]"
+                    style={{ background: "#0d1117" }}
+                  >
+                    <span
+                      className="font-mono text-[9px] tracking-[2px]"
+                      style={{ color: group.color }}
+                    >
+                      {t(group.headerKey as any)}
+                    </span>
+                    <span
+                      className="font-mono text-[9px] text-slate-600 transition-transform"
+                      style={{ transform: isCollapsed ? "rotate(180deg)" : "none" }}
+                    >
+                      ∧
+                    </span>
+                  </button>
+
+                  {/* Layer rows */}
+                  {!isCollapsed && group.layers.map((layerDef) => {
+                    const isOn = layers[layerDef.key];
+                    return (
+                      <label
+                        key={layerDef.key}
+                        className="flex items-center gap-2 px-3 cursor-pointer hover:bg-white/[0.02]"
+                        style={{ height: 36 }}
+                      >
+                        {/* Toggle switch */}
+                        <div
+                          className="relative shrink-0"
+                          style={{ width: 28, height: 16 }}
+                          onClick={(e) => { e.preventDefault(); toggleLayer(layerDef.key); }}
+                        >
+                          <div
+                            className="absolute inset-0 rounded-full transition-colors"
+                            style={{ background: isOn ? "#3b82f6" : "#374151" }}
+                          />
+                          <div
+                            className="absolute top-[2px] h-[12px] w-[12px] rounded-full bg-white transition-transform"
+                            style={{ transform: isOn ? "translateX(14px)" : "translateX(2px)" }}
+                          />
+                        </div>
+                        {/* Icon + name */}
+                        <span className="text-[14px] shrink-0" style={{ width: 16, textAlign: "center" }}>{layerDef.icon}</span>
+                        <span
+                          className="font-sans text-[12px] truncate"
+                          style={{ color: isOn ? "#e5e7eb" : "#6b7280" }}
+                        >
+                          {t(layerDef.labelKey as any)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            })}
+
+            {/* Operator legend when military bases on */}
             {layers.militaryBases && (
-              <div className="mt-2 pt-2 border-t border-white/[0.06]">
+              <div className="px-3 py-2 border-t border-white/[0.06]">
                 <div className="font-mono text-[8px] tracking-widest text-slate-600 mb-1">
-                  {isAr ? "المشغّل" : "OPERATOR"}
+                  {t("map.operator" as any)}
                 </div>
                 {Object.entries(OPERATOR_COLORS).map(([key, color]) => (
                   <div key={key} className="flex items-center gap-1.5 py-0.5">
@@ -718,84 +946,56 @@ export function EventMap() {
               </div>
             )}
 
-            {/* Infrastructure section */}
-            <div className="mt-3 pt-3 border-t border-white/[0.06]">
-              <div className="font-mono text-[8px] tracking-widest text-slate-600 mb-2">
-                {isAr ? "البنية التحتية الحيوية" : "CRITICAL INFRASTRUCTURE"}
-              </div>
-              <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={layers.oilGas}
-                  onChange={() => toggleLayer("oilGas")}
-                  className="accent-amber-500"
-                />
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px]">⛽</span>
-                  <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
-                    {isAr ? "النفط والغاز" : "Oil & Gas"}
-                  </span>
-                </div>
-                <span className="ml-auto font-mono text-[8px] text-slate-600">15</span>
-              </label>
-              <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={layers.desalination}
-                  onChange={() => toggleLayer("desalination")}
-                  className="accent-sky-400"
-                />
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px]">💧</span>
-                  <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
-                    {isAr ? "محطات التحلية" : "Desalination"}
-                  </span>
-                </div>
-                <span className="ml-auto font-mono text-[8px] text-slate-600">9</span>
-              </label>
-              <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={layers.ports}
-                  onChange={() => toggleLayer("ports")}
-                  className="accent-cyan-500"
-                />
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px]">⚓</span>
-                  <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
-                    {isAr ? "الموانئ والشحن" : "Ports & Shipping"}
-                  </span>
-                </div>
-                <span className="ml-auto font-mono text-[8px] text-slate-600">12</span>
-              </label>
-              <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={layers.telecomCables}
-                  onChange={() => toggleLayer("telecomCables")}
-                  className="accent-violet-400"
-                />
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px]">◉</span>
-                  <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
-                    {isAr ? "كابلات الاتصالات" : "Submarine Cables"}
-                  </span>
-                </div>
-                <span className="ml-auto font-mono text-[8px] text-slate-600">9</span>
-              </label>
+            {/* Bottom buttons */}
+            <div className="flex gap-2 px-3 py-2 border-t border-white/[0.06]">
+              <button
+                onClick={enableAllLayers}
+                className="flex-1 py-1.5 font-mono text-[9px] tracking-wider text-blue-400 border border-blue-500/30 hover:bg-blue-500/10 transition-colors"
+              >
+                {t("map.enableAll" as any)}
+              </button>
+              <button
+                onClick={resetLayers}
+                className="flex-1 py-1.5 font-mono text-[9px] tracking-wider text-slate-400 border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
+              >
+                {t("map.reset" as any)}
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Country risk legend */}
+      {/* ═══ THREAT ASSESSMENT LEGEND ═══ */}
+      <div
+        className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 px-3 py-1.5 backdrop-blur-sm z-10"
+        style={{ background: "rgba(0,0,0,0.7)", borderRadius: 2 }}
+      >
+        {([
+          { key: "critical", color: "rgba(220,38,38,0.8)", dot: "●" },
+          { key: "high", color: "rgba(234,88,12,0.8)", dot: "●" },
+          { key: "elevated", color: "rgba(202,138,4,0.8)", dot: "●" },
+          { key: "monitoring", color: "rgba(37,99,235,0.6)", dot: "●" },
+          { key: "stable", color: "#6b7280", dot: "○" },
+        ] as const).map((item) => (
+          <div key={item.key} className="flex items-center gap-1">
+            <span style={{ color: item.color, fontSize: 8 }}>{item.dot}</span>
+            <span className="font-mono text-[9px] tracking-wider" style={{ color: item.color }}>
+              {t(`map.threatLegend.${item.key}` as any)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* ═══ COUNTRY RISK LEGEND ═══ */}
       <div className="absolute bottom-3 right-3 flex items-center gap-3 bg-atlas-bg/80 border border-white/[0.06] px-3 py-1.5 backdrop-blur-sm">
-        <span className="font-mono text-[8px] tracking-wider text-slate-500">RISK</span>
+        <span className="font-mono text-[8px] tracking-wider text-slate-500">
+          {isAr ? "الخطر" : "RISK"}
+        </span>
         {[
-          { label: "CRITICAL", color: "rgba(239,68,68,0.6)" },
-          { label: "HIGH", color: "rgba(249,115,22,0.5)" },
-          { label: "MEDIUM", color: "rgba(234,179,8,0.4)" },
-          { label: "LOW", color: "rgba(34,197,94,0.3)" },
+          { label: isAr ? "حرج" : "CRITICAL", color: "rgba(239,68,68,0.6)" },
+          { label: isAr ? "عالٍ" : "HIGH", color: "rgba(249,115,22,0.5)" },
+          { label: isAr ? "متوسط" : "MEDIUM", color: "rgba(234,179,8,0.4)" },
+          { label: isAr ? "منخفض" : "LOW", color: "rgba(34,197,94,0.3)" },
         ].map((r) => (
           <div key={r.label} className="flex items-center gap-1">
             <div className="h-2.5 w-2.5 rounded-sm" style={{ background: r.color }} />
@@ -813,7 +1013,6 @@ export function EventMap() {
       const iso3 = e.features[0].properties?.iso_a3;
       if (!iso3) return;
 
-      // Highlight clicked country
       try {
         map.setPaintProperty("atlas-country-highlight", "fill-color", [
           "case",
@@ -827,14 +1026,11 @@ export function EventMap() {
           "#3b82f6",
           "rgba(0,0,0,0)",
         ]);
-      } catch {
-        // Highlight layers not ready
-      }
+      } catch {}
 
       setSelectedCountry(iso3);
     });
 
-    // Click on empty area → close panel
     map.on("click", (e: any) => {
       const features = map.queryRenderedFeatures(e.point, { layers: ["atlas-country-fill"] });
       if (!features || features.length === 0) {
@@ -847,51 +1043,64 @@ export function EventMap() {
     });
   }
 
-  // --- Hover handler setup (closure over refs) ---
+  // --- Hover handler setup ---
   function setupCountryHover(map: any, popup: any, maplibregl: any) {
     let hoveredId: string | null = null;
 
     map.on("mousemove", "atlas-country-fill", (e: any) => {
       if (!e.features || e.features.length === 0) return;
       const iso3 = e.features[0].properties?.iso_a3;
+      const iso2 = e.features[0].properties?.iso_a2;
       if (!iso3 || iso3 === hoveredId) return;
       hoveredId = iso3;
 
+      // Get threat level from static data or event-based risk
+      const staticThreat = iso2 ? STATIC_THREAT_LEVELS[iso2] : undefined;
       const risk = countryRiskRef.current[iso3];
-      if (!risk) {
+      const threatLevel = staticThreat || (risk ? risk.level : "MONITORING");
+      const threatColor = THREAT_COLORS[threatLevel as ThreatLevel] || THREAT_COLORS.MONITORING;
+
+      const name = ISO3_TO_NAME[iso3] || iso3;
+      const eventCount = risk?.events.length || 0;
+
+      if (!risk && !staticThreat) {
         popup.remove();
         return;
       }
 
-      const name = ISO3_TO_NAME[iso3] || iso3;
-      const riskColor = RISK_COLORS[risk.level] || "#3b82f6";
-      const eventLines = risk.events
-        .slice(0, 5)
-        .map(
-          (ev) => {
-            const evTitle = getLocalizedField(ev, "title", lang) || ev.title;
-            const evType = translateTag(ev.event_type, lang);
-            const evSector = translateTag(ev.sector, lang);
-            return `<div style="margin: 4px 0; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
-              <div style="color: ${RISK_COLORS[ev.risk_level] || "#3b82f6"}; font-size: 8px; font-weight: 600;">${ev.risk_level} · ${ev.risk_score}</div>
-              <div style="color: #cbd5e1; font-size: 10px;">${evTitle.slice(0, 60)}</div>
-              <div style="color: #64748b; font-size: 8px;">${evType} · ${evSector}</div>
-            </div>`;
-          }
-        )
-        .join("");
+      const eventLines = risk
+        ? risk.events
+            .slice(0, 5)
+            .map((ev) => {
+              const evTitle = getLocalizedField(ev, "title", lang) || ev.title;
+              const evSector = translateTag(ev.sector, lang);
+              return `<div style="margin: 4px 0; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <div style="color: ${RISK_COLORS[ev.risk_level] || "#3b82f6"}; font-size: 8px; font-weight: 600;">${ev.risk_level} · ${ev.risk_score}</div>
+                <div style="color: #cbd5e1; font-size: 10px;">${evTitle.slice(0, 60)}</div>
+                <div style="color: #64748b; font-size: 8px;">${evSector}</div>
+              </div>`;
+            })
+            .join("")
+        : "";
 
-      const moreCount = risk.events.length > 5 ? `<div style="color:#64748b;font-size:8px;margin-top:4px;">+${risk.events.length - 5} more events</div>` : "";
+      const moreCount = risk && risk.events.length > 5 ? `<div style="color:#64748b;font-size:8px;margin-top:4px;">+${risk.events.length - 5} more</div>` : "";
+
+      const threatLabelAr: Record<string, string> = {
+        CRITICAL: "حرج", HIGH: "عالٍ", ELEVATED: "مرتفع", MONITORING: "مراقبة", STABLE: "مستقر",
+      };
 
       popup
         .setLngLat(e.lngLat)
         .setHTML(
-          `<div style="font-family: 'IBM Plex Mono', monospace; min-width: 220px;">
+          `<div style="font-family: 'IBM Plex Mono', monospace; min-width: 200px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.08);">
               <span style="color: #e2e8f0; font-size: 12px; font-weight: 600;">${name}</span>
-              <span style="color: ${riskColor}; font-size: 10px; font-weight: 700; background: ${riskColor}20; padding: 1px 6px; border: 1px solid ${riskColor}40;">${risk.level} · ${risk.score}</span>
+              <span style="font-size: 9px; font-weight: 700; padding: 1px 6px;"
+                    style="color: ${threatColor}; background: ${threatColor}20; border: 1px solid ${threatColor}40;">
+                ${isAr ? threatLabelAr[threatLevel] || threatLevel : threatLevel}
+              </span>
             </div>
-            <div style="color: #94a3b8; font-size: 9px; margin-bottom: 4px;">${risk.events.length} active event${risk.events.length !== 1 ? "s" : ""}</div>
+            ${eventCount > 0 ? `<div style="color: #94a3b8; font-size: 9px; margin-bottom: 4px;">${eventCount} ${isAr ? "حدث نشط" : "active events"}</div>` : `<div style="color: #64748b; font-size: 9px;">${isAr ? "لا أحداث نشطة" : "No active events"}</div>`}
             ${eventLines}
             ${moreCount}
           </div>`
@@ -904,13 +1113,40 @@ export function EventMap() {
       popup.remove();
     });
 
-    // Change cursor on country hover
     map.on("mouseenter", "atlas-country-fill", () => {
       map.getCanvas().style.cursor = "pointer";
     });
     map.on("mouseleave", "atlas-country-fill", () => {
       map.getCanvas().style.cursor = "";
     });
+  }
+}
+
+// ─── Apply static threat fills ────────────────────────────────────
+
+function applyThreatFills(map: any) {
+  try {
+    if (!map.getLayer("atlas-threat-fill")) return;
+
+    // Build match expression for ISO-2 codes
+    const fillExpr: any[] = ["match", ["get", "iso_a2"]];
+    const borderExpr: any[] = ["match", ["get", "iso_a2"]];
+
+    // Add all static threat level entries
+    for (const [iso2, level] of Object.entries(STATIC_THREAT_LEVELS)) {
+      fillExpr.push(iso2, THREAT_COLORS[level]);
+      if (level === "CRITICAL") {
+        borderExpr.push(iso2, THREAT_BORDER_COLORS.CRITICAL);
+      }
+    }
+    // Default: MONITORING for unlisted countries
+    fillExpr.push(THREAT_COLORS.MONITORING);
+    borderExpr.push("rgba(0,0,0,0)");
+
+    map.setPaintProperty("atlas-threat-fill", "fill-color", fillExpr);
+    map.setPaintProperty("atlas-threat-border", "line-color", borderExpr);
+  } catch {
+    // Layers not ready
   }
 }
 
@@ -933,6 +1169,20 @@ function applyCountryRiskColors(map: any, countryRisk: CountryRiskMap) {
   }
 }
 
+function riskScoreToFill(score: number): string {
+  if (score >= 80) return "rgba(239, 68, 68, 0.22)";
+  if (score >= 60) return "rgba(249, 115, 22, 0.18)";
+  if (score >= 40) return "rgba(234, 179, 8, 0.13)";
+  return "rgba(34, 197, 94, 0.08)";
+}
+
+function riskScoreToBorder(score: number): string {
+  if (score >= 80) return "rgba(239, 68, 68, 0.50)";
+  if (score >= 60) return "rgba(249, 115, 22, 0.40)";
+  if (score >= 40) return "rgba(234, 179, 8, 0.30)";
+  return "rgba(34, 197, 94, 0.20)";
+}
+
 async function loadCountryBoundaries(map: any) {
   try {
     const resp = await fetch(COUNTRIES_TOPO_URL);
@@ -944,12 +1194,14 @@ async function loadCountryBoundaries(map: any) {
     for (const f of geojson.features) {
       f.properties = f.properties || {};
       const iso3 = NUMERIC_TO_ISO3[f.id] || "";
+      const iso2 = NUMERIC_TO_ISO2[f.id] || "";
       f.properties.iso_a3 = iso3;
+      f.properties.iso_a2 = iso2;
     }
 
     map.addSource("atlas-countries", { type: "geojson", data: geojson });
 
-    // Try to find a label layer to insert beneath
+    // Find a label layer to insert beneath
     const layers = map.getStyle()?.layers || [];
     let insertBefore: string | undefined;
     for (const l of layers) {
@@ -959,6 +1211,30 @@ async function loadCountryBoundaries(map: any) {
       }
     }
 
+    // Static threat fill layer (below event-based risk)
+    map.addLayer({
+      id: "atlas-threat-fill",
+      type: "fill",
+      source: "atlas-countries",
+      paint: {
+        "fill-color": THREAT_COLORS.MONITORING,
+        "fill-color-transition": { duration: 1000, delay: 0 },
+      },
+    }, insertBefore);
+
+    // Threat border (for CRITICAL countries)
+    map.addLayer({
+      id: "atlas-threat-border",
+      type: "line",
+      source: "atlas-countries",
+      paint: {
+        "line-color": "rgba(0,0,0,0)",
+        "line-width": 1,
+        "line-blur": 2,
+      },
+    }, insertBefore);
+
+    // Event-based risk fill (overlays on top of threat fill)
     map.addLayer({
       id: "atlas-country-fill",
       type: "fill",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useLanguage } from "@/lib/language";
 import { useProfileStore, ROLE_META } from "@/stores/profile-store";
 import {
@@ -15,11 +15,11 @@ import {
 
 const ISO3_TO_NAME: Record<string, string> = {
   KWT: "Kuwait", SAU: "Saudi Arabia", ARE: "UAE", QAT: "Qatar",
-  BHR: "Bahrain", OMN: "Oman", IRQ: "Iraq", IRN: "Iran", ISR: "Israel",
+  BHR: "Bahrain", OMN: "Oman", IRQ: "Iraq", IRN: "Iran", PSE: "Palestine",
 };
 const ISO3_TO_NAME_AR: Record<string, string> = {
   KWT: "الكويت", SAU: "السعودية", ARE: "الإمارات", QAT: "قطر",
-  BHR: "البحرين", OMN: "عُمان", IRQ: "العراق", IRN: "إيران", ISR: "إسرائيل",
+  BHR: "البحرين", OMN: "عُمان", IRQ: "العراق", IRN: "إيران", PSE: "فلسطين",
 };
 
 interface Props {
@@ -37,6 +37,15 @@ export function DefenseComparisonModal({ open, onClose, defaultCountry }: Props)
   const [countryB, setCountryB] = useState(defaultCountry === "IRN" ? "SAU" : "IRN");
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+
+  // Sync when defaultCountry changes (e.g. clicking different country)
+  useEffect(() => {
+    setCountryA(defaultCountry);
+    setCountryB(defaultCountry === "IRN" ? "SAU" : "IRN");
+    setAiAnalysis(null);
+  }, [defaultCountry]);
+
+  const [viewMode, setViewMode] = useState<"regional" | "headToHead">("regional");
 
   const profileA = DEFENSE_PROFILES[countryA];
   const profileB = DEFENSE_PROFILES[countryB];
@@ -190,118 +199,228 @@ Be specific. Name weapon systems and actual vulnerabilities.`;
           </button>
         </div>
 
-        {/* Country selectors */}
-        <div className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: "1px solid #1e2530" }}>
-          <div className="flex-1">
-            <div className="font-mono text-[8px] tracking-wider text-slate-600 mb-1">
-              {isAr ? "الدولة الأولى" : "COUNTRY A"}
-            </div>
-            <select
-              value={countryA}
-              onChange={(e) => { setCountryA(e.target.value); setAiAnalysis(null); }}
-              className="w-full bg-white/[0.03] border border-white/[0.08] px-3 py-2 font-mono text-[11px] text-slate-300 outline-none"
-            >
-              {availableCountries.map((iso3) => (
-                <option key={iso3} value={iso3}>{nameOf(iso3)}</option>
-              ))}
-            </select>
-          </div>
-          <div className="font-mono text-[11px] text-slate-600 mt-4">vs</div>
-          <div className="flex-1">
-            <div className="font-mono text-[8px] tracking-wider text-slate-600 mb-1">
-              {isAr ? "الدولة الثانية" : "COUNTRY B"}
-            </div>
-            <select
-              value={countryB}
-              onChange={(e) => { setCountryB(e.target.value); setAiAnalysis(null); }}
-              className="w-full bg-white/[0.03] border border-white/[0.08] px-3 py-2 font-mono text-[11px] text-slate-300 outline-none"
-            >
-              {availableCountries.map((iso3) => (
-                <option key={iso3} value={iso3}>{nameOf(iso3)}</option>
-              ))}
-            </select>
-          </div>
+        {/* View mode toggle */}
+        <div className="flex px-6 py-2" style={{ borderBottom: "1px solid #1e2530" }}>
+          <button
+            onClick={() => setViewMode("regional")}
+            className={`flex-1 py-2 font-mono text-[10px] tracking-wider transition-colors ${viewMode === "regional" ? "text-blue-400 bg-blue-500/10" : "text-slate-500 hover:text-slate-300"}`}
+            style={{ border: viewMode === "regional" ? "1px solid #3b82f640" : "1px solid transparent" }}
+          >
+            {isAr ? "النظرة الإقليمية" : "REGIONAL VIEW"}
+          </button>
+          <button
+            onClick={() => setViewMode("headToHead")}
+            className={`flex-1 py-2 font-mono text-[10px] tracking-wider transition-colors ${viewMode === "headToHead" ? "text-blue-400 bg-blue-500/10" : "text-slate-500 hover:text-slate-300"}`}
+            style={{ border: viewMode === "headToHead" ? "1px solid #3b82f640" : "1px solid transparent" }}
+          >
+            {isAr ? "مقارنة مباشرة" : "HEAD TO HEAD"}
+          </button>
         </div>
 
-        {/* Summary comparison */}
-        {profileA && profileB && (
-          <div className="px-6 py-4" style={{ borderBottom: "1px solid #1e2530" }}>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              {/* Country A summary */}
-              <div>
-                <div className="font-mono text-[10px] font-bold text-blue-400 tracking-wider mb-1">
-                  {nameOf(countryA)}
-                </div>
-                <div className="font-mono text-[10px] text-slate-500">
-                  #{profileA.gfp_rank} · ${profileA.defense_budget_usd}B
-                </div>
-                <div className="font-mono text-[9px] mt-1" style={{ color: getReadinessColor(profileA.current_readiness) }}>
-                  {getReadinessLabel(profileA.current_readiness, isAr)}
-                </div>
+        {viewMode === "regional" ? (
+          <>
+            {/* Regional Ranking Table */}
+            <div className="px-6 py-4" style={{ borderBottom: "1px solid #1e2530" }}>
+              <div className="font-mono text-[10px] tracking-widest text-slate-500 mb-3">
+                {isAr ? "التوازن العسكري الإقليمي" : "REGIONAL MILITARY BALANCE"}
               </div>
-              {/* VS */}
-              <div className="flex items-center justify-center">
-                <div className="font-mono text-[20px] font-bold text-slate-700">VS</div>
+              <div className="font-mono text-[8px] tracking-wider text-slate-600 mb-2">
+                {isAr ? "الخليج والقوى المجاورة" : "GULF + ADJACENT POWERS"}
               </div>
-              {/* Country B summary */}
-              <div>
-                <div className="font-mono text-[10px] font-bold text-amber-400 tracking-wider mb-1">
-                  {nameOf(countryB)}
-                </div>
-                <div className="font-mono text-[10px] text-slate-500">
-                  #{profileB.gfp_rank} · ${profileB.defense_budget_usd}B
-                </div>
-                <div className="font-mono text-[9px] mt-1" style={{ color: getReadinessColor(profileB.current_readiness) }}>
-                  {getReadinessLabel(profileB.current_readiness, isAr)}
-                </div>
+              {/* Table header */}
+              <div className="flex items-center gap-2 py-1.5 mb-1" style={{ borderBottom: "1px solid #1e2530" }}>
+                <span className="font-mono text-[8px] text-slate-600 w-8">{isAr ? "ترتيب" : "RANK"}</span>
+                <span className="font-mono text-[8px] text-slate-600 flex-1">{isAr ? "الدولة" : "COUNTRY"}</span>
+                <span className="font-mono text-[8px] text-slate-600 w-10 text-right">GFP</span>
+                <span className="font-mono text-[8px] text-slate-600 w-14 text-right">{isAr ? "ميزانية" : "BUDGET"}</span>
               </div>
+              {/* Sorted country rows */}
+              {availableCountries
+                .map((iso3) => DEFENSE_PROFILES[iso3])
+                .filter(Boolean)
+                .sort((a, b) => a.gfp_rank - b.gfp_rank)
+                .map((prof) => {
+                  const isHighlighted = prof.iso3 === defaultCountry;
+                  return (
+                    <div
+                      key={prof.iso3}
+                      className={`flex items-center gap-2 py-1.5 transition-colors ${isHighlighted ? "bg-blue-500/10" : "hover:bg-white/[0.02]"}`}
+                      style={{
+                        borderLeft: isHighlighted ? "2px solid #3b82f6" : "2px solid transparent",
+                        paddingLeft: 4,
+                      }}
+                    >
+                      <span className="font-mono text-[10px] text-slate-500 w-8">#{prof.gfp_rank}</span>
+                      <span className={`font-mono text-[11px] flex-1 ${isHighlighted ? "text-blue-400 font-bold" : "text-slate-300"}`}>
+                        {nameOf(prof.iso3)} {isHighlighted ? "←" : ""}
+                      </span>
+                      <span className="font-mono text-[10px] text-slate-400 w-10 text-right">{prof.gfp_score.toFixed(2)}</span>
+                      <span className="font-mono text-[10px] text-slate-400 w-14 text-right">${prof.defense_budget_usd}B</span>
+                    </div>
+                  );
+                })}
             </div>
-          </div>
-        )}
 
-        {/* Capability comparison bars */}
-        {profileA && profileB && (
-          <div className="px-6 py-4" style={{ borderBottom: "1px solid #1e2530" }}>
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 mb-3">
-              {t("defense.capabilityComparison")}
-            </div>
-            {CAPABILITY_KEYS.map((cap) => capBar(cap.label, cap.labelAr, cap.key))}
-          </div>
-        )}
-
-        {/* Alliance comparison */}
-        {profileA && profileB && (
-          <div className="px-6 py-4" style={{ borderBottom: "1px solid #1e2530" }}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="font-mono text-[9px] tracking-wider text-slate-600 mb-2">
-                  {nameOf(countryA)} — {isAr ? "التحالفات" : "ALLIANCES"}
+            {/* Capability vs Regional Average */}
+            {(() => {
+              const currentProfile = DEFENSE_PROFILES[defaultCountry];
+              if (!currentProfile) return null;
+              const allProfiles = availableCountries.map((iso3) => DEFENSE_PROFILES[iso3]).filter(Boolean);
+              return (
+                <div className="px-6 py-4" style={{ borderBottom: "1px solid #1e2530" }}>
+                  <div className="font-mono text-[10px] tracking-widest text-slate-500 mb-3">
+                    {nameOf(defaultCountry)} {isAr ? "مقابل المتوسط الإقليمي" : "vs REGIONAL AVERAGE"}
+                  </div>
+                  {CAPABILITY_KEYS.map((cap) => {
+                    const val = currentProfile.capabilities[cap.key];
+                    const avg = Math.round(allProfiles.reduce((sum, p) => sum + p.capabilities[cap.key], 0) / allProfiles.length);
+                    const behind = avg - val > 10;
+                    return (
+                      <div key={cap.key} className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-mono text-[9px] tracking-wider text-slate-500">
+                            {isAr ? cap.labelAr : cap.label}
+                          </span>
+                          <span className="font-mono text-[9px]">
+                            <span className={behind ? "text-red-400" : "text-blue-400"}>{val}</span>
+                            <span className="text-slate-600"> / {avg} {isAr ? "متوسط" : "avg"}</span>
+                          </span>
+                        </div>
+                        <div className="relative h-2" style={{ backgroundColor: "#1e2530" }}>
+                          {/* Average marker */}
+                          <div
+                            className="absolute top-0 h-full w-px bg-slate-500"
+                            style={{ left: `${avg}%` }}
+                          />
+                          {/* Value bar */}
+                          <div
+                            className="h-full transition-all duration-500"
+                            style={{
+                              width: `${val}%`,
+                              backgroundColor: behind ? "#dc2626" : "#3b82f6",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {(isAr ? profileA.alliances_ar : profileA.alliances).map((a, i) => (
-                    <span key={i} className="px-2 py-0.5 font-mono text-[9px] text-blue-400/80" style={{ border: "1px solid #1e253080" }}>
-                      {a}
-                    </span>
+              );
+            })()}
+          </>
+        ) : (
+          <>
+            {/* HEAD TO HEAD - Country selectors */}
+            <div className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: "1px solid #1e2530" }}>
+              <div className="flex-1">
+                <div className="font-mono text-[8px] tracking-wider text-slate-600 mb-1">
+                  {isAr ? "الدولة الأولى" : "COUNTRY A"}
+                </div>
+                <select
+                  value={countryA}
+                  onChange={(e) => { setCountryA(e.target.value); setAiAnalysis(null); }}
+                  className="w-full bg-white/[0.03] border border-white/[0.08] px-3 py-2 font-mono text-[11px] text-slate-300 outline-none"
+                >
+                  {availableCountries.map((iso3) => (
+                    <option key={iso3} value={iso3}>{nameOf(iso3)}</option>
                   ))}
-                </div>
+                </select>
               </div>
-              <div>
-                <div className="font-mono text-[9px] tracking-wider text-slate-600 mb-2">
-                  {nameOf(countryB)} — {isAr ? "التحالفات" : "ALLIANCES"}
+              <div className="font-mono text-[11px] text-slate-600 mt-4">vs</div>
+              <div className="flex-1">
+                <div className="font-mono text-[8px] tracking-wider text-slate-600 mb-1">
+                  {isAr ? "الدولة الثانية" : "COUNTRY B"}
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {(isAr ? profileB.alliances_ar : profileB.alliances).map((a, i) => (
-                    <span key={i} className="px-2 py-0.5 font-mono text-[9px] text-amber-400/80" style={{ border: "1px solid #1e253080" }}>
-                      {a}
-                    </span>
+                <select
+                  value={countryB}
+                  onChange={(e) => { setCountryB(e.target.value); setAiAnalysis(null); }}
+                  className="w-full bg-white/[0.03] border border-white/[0.08] px-3 py-2 font-mono text-[11px] text-slate-300 outline-none"
+                >
+                  {availableCountries.map((iso3) => (
+                    <option key={iso3} value={iso3}>{nameOf(iso3)}</option>
                   ))}
-                </div>
+                </select>
               </div>
             </div>
-          </div>
+
+            {/* Summary comparison */}
+            {profileA && profileB && (
+              <div className="px-6 py-4" style={{ borderBottom: "1px solid #1e2530" }}>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="font-mono text-[10px] font-bold text-blue-400 tracking-wider mb-1">
+                      {nameOf(countryA)}
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500">
+                      #{profileA.gfp_rank} · ${profileA.defense_budget_usd}B
+                    </div>
+                    <div className="font-mono text-[9px] mt-1" style={{ color: getReadinessColor(profileA.current_readiness) }}>
+                      {getReadinessLabel(profileA.current_readiness, isAr)}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <div className="font-mono text-[20px] font-bold text-slate-700">VS</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] font-bold text-amber-400 tracking-wider mb-1">
+                      {nameOf(countryB)}
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500">
+                      #{profileB.gfp_rank} · ${profileB.defense_budget_usd}B
+                    </div>
+                    <div className="font-mono text-[9px] mt-1" style={{ color: getReadinessColor(profileB.current_readiness) }}>
+                      {getReadinessLabel(profileB.current_readiness, isAr)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Capability comparison bars */}
+            {profileA && profileB && (
+              <div className="px-6 py-4" style={{ borderBottom: "1px solid #1e2530" }}>
+                <div className="font-mono text-[10px] tracking-widest text-slate-500 mb-3">
+                  {t("defense.capabilityComparison")}
+                </div>
+                {CAPABILITY_KEYS.map((cap) => capBar(cap.label, cap.labelAr, cap.key))}
+              </div>
+            )}
+
+            {/* Alliance comparison */}
+            {profileA && profileB && (
+              <div className="px-6 py-4" style={{ borderBottom: "1px solid #1e2530" }}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="font-mono text-[9px] tracking-wider text-slate-600 mb-2">
+                      {nameOf(countryA)} — {isAr ? "التحالفات" : "ALLIANCES"}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {(isAr ? profileA.alliances_ar : profileA.alliances).map((a, i) => (
+                        <span key={i} className="px-2 py-0.5 font-mono text-[9px] text-blue-400/80" style={{ border: "1px solid #1e253080" }}>
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[9px] tracking-wider text-slate-600 mb-2">
+                      {nameOf(countryB)} — {isAr ? "التحالفات" : "ALLIANCES"}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {(isAr ? profileB.alliances_ar : profileB.alliances).map((a, i) => (
+                        <span key={i} className="px-2 py-0.5 font-mono text-[9px] text-amber-400/80" style={{ border: "1px solid #1e253080" }}>
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* AI Analysis */}
+        {/* AI Analysis (shared between both views) */}
         <div className="px-6 py-4">
           <div className="font-mono text-[10px] tracking-widest text-slate-500 mb-3">
             {t("defense.atlasAnalysis")}

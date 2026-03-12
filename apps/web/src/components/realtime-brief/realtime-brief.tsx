@@ -94,7 +94,7 @@ export function RealtimeBrief() {
 
     const roleMeta = profile ? ROLE_META[profile.role] : null;
     const eventsData = topEvents
-      .map((e) => `[${e.risk_level}/${e.risk_score}] ${e.title} — ${e.region} (${e.sector})\n${isAr && e.situation_ar ? e.situation_ar : e.situation_en}`)
+      .map((e) => `[${e.risk_level}/${e.risk_score}] ${isAr ? (e.title_ar || e.title) : e.title} — ${e.region} (${isAr ? (SECTOR_AR[e.sector] || e.sector) : e.sector})\n${isAr && e.situation_ar ? e.situation_ar : e.situation_en}`)
       .join("\n\n");
 
     // Regional grouping
@@ -265,7 +265,7 @@ Return ONLY valid JSON in this exact structure:
     events.forEach((e) => { if (!sectorMap[e.sector]) sectorMap[e.sector] = []; sectorMap[e.sector].push(e); });
 
     const situationNow = isAr
-      ? `Atlas Command يتتبع ${events.length} حادثة نشطة. ${criticalCount > 0 ? `${criticalCount} حدث مصنف كحرج.` : ""} أعلى درجة خطر: ${topEvents[0]?.risk_score || 0}/100. القطاعات الأكثر تأثراً: ${[...new Set(topEvents.map((e) => e.sector))].join("، ")}.`
+      ? `أطلس كوماند يتتبع ${events.length} حادثة نشطة. ${criticalCount > 0 ? `${criticalCount} حدث مصنف كحرج.` : ""} أعلى درجة خطر: ${topEvents[0]?.risk_score || 0}/100. القطاعات الأكثر تأثراً: ${[...new Set(topEvents.map((e) => SECTOR_AR[e.sector] || e.sector))].join("، ")}.`
       : `Atlas Command tracking ${events.length} active incidents. ${criticalCount > 0 ? `${criticalCount} classified CRITICAL.` : ""} Maximum risk score: ${topEvents[0]?.risk_score || 0}/100. Most affected sectors: ${[...new Set(topEvents.map((e) => e.sector))].join(", ")}.`;
 
     setBriefData({

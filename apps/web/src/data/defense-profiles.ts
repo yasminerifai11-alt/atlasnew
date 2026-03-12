@@ -338,9 +338,9 @@ export const DEFENSE_PROFILES: Record<string, DefenseProfile> = {
     recent_activity: "Ongoing military modernization with US assistance. PMF integration into state forces remains incomplete. Counter-ISIS operations continue in northern regions.",
     recent_activity_ar: "تحديث عسكري مستمر بمساعدة أمريكية. دمج الحشد الشعبي في القوات النظامية لا يزال ناقصاً. عمليات مكافحة داعش مستمرة في المناطق الشمالية.",
   },
-  ISR: {
-    country: "Israel",
-    iso3: "ISR",
+  PSE: {
+    country: "Palestine",
+    iso3: "PSE",
     gfp_rank: 17,
     gfp_score: 0.2596,
     gfp_trend: "UP",

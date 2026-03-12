@@ -548,7 +548,7 @@ function PersonalisedCard({
   event,
   isAr,
 }: {
-  event: { title: string; sector: string; region: string; risk_level: string; risk_score: number; situation_en: string; why_matters_en: string; situation_ar?: string; why_matters_ar?: string };
+  event: { title: string; title_ar?: string; sector: string; region: string; risk_level: string; risk_score: number; situation_en: string; why_matters_en: string; situation_ar?: string; why_matters_ar?: string };
   isAr: boolean;
 }) {
   const { t } = useLanguage();
@@ -569,15 +569,27 @@ function PersonalisedCard({
     setLoading(true);
 
     const roleMeta = ROLE_META[profile.role];
-    const prompt = `You are Atlas Command. In 3-4 sentences, explain what this event means specifically for a ${roleMeta.label} professional focused on ${profile.region}.${profile.watchlist ? ` Their specific interests: ${profile.watchlist}.` : ""} Be direct and operational.
+    const prompt = isAr
+      ? `أنت أطلس كوماند. في ٣-٤ جمل، اشرح ما يعنيه هذا الحدث تحديداً لمتخصص في ${roleMeta.labelAr} يركز على ${profile.region}.${profile.watchlist ? ` اهتماماتهم: ${profile.watchlist}.` : ""} كن مباشراً وعملياً.
+
+اكتب بالعربية الفصحى فقط. لا تستخدم أي كلمات إنجليزية. ترجم أسماء القطاعات والمناطق.
+
+الحدث: ${event.title_ar || event.title}
+الخطر: ${event.risk_level} (${event.risk_score}/100)
+القطاع: ${event.sector} | المنطقة: ${event.region}
+الوضع: ${event.situation_ar || event.situation_en}
+الأهمية: ${event.why_matters_ar || event.why_matters_en}
+
+أجب بالعربية الفصحى فقط. ٤ جمل كحد أقصى، أسلوب مذكرات سرية.`
+      : `You are Atlas Command. In 3-4 sentences, explain what this event means specifically for a ${roleMeta.label} professional focused on ${profile.region}.${profile.watchlist ? ` Their specific interests: ${profile.watchlist}.` : ""} Be direct and operational.
 
 Event: ${event.title}
 Risk: ${event.risk_level} (${event.risk_score}/100)
 Sector: ${event.sector} | Region: ${event.region}
-Situation: ${isAr && event.situation_ar ? event.situation_ar : event.situation_en}
-Why it matters: ${isAr && event.why_matters_ar ? event.why_matters_ar : event.why_matters_en}
+Situation: ${event.situation_en}
+Why it matters: ${event.why_matters_en}
 
-${isAr ? "Respond in Arabic." : "Respond in English."} Maximum 4 sentences, classified memo style.`;
+Respond in English. Maximum 4 sentences, classified memo style.`;
 
     fetch("/api/chat", {
       method: "POST",

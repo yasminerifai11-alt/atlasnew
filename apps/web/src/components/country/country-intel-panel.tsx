@@ -14,6 +14,7 @@ import {
   hasUSPresence,
 } from "@/data/defense-profiles";
 import { DefenseComparisonModal } from "./defense-comparison-modal";
+import { getSeededIntel, getSeededFullBrief } from "@/data/country-intelligence";
 
 const RISK_COLORS: Record<string, string> = {
   CRITICAL: "#dc2626",
@@ -37,7 +38,7 @@ const ISO3_TO_NAME: Record<string, string> = {
   KWT: "Kuwait", SAU: "Saudi Arabia", ARE: "UAE", QAT: "Qatar",
   BHR: "Bahrain", OMN: "Oman", IRQ: "Iraq", IRN: "Iran",
   YEM: "Yemen", EGY: "Egypt", JOR: "Jordan", SYR: "Syria",
-  LBN: "Lebanon", ISR: "Israel", CYP: "Cyprus", TUR: "Turkey",
+  LBN: "Lebanon", PSE: "Palestine", CYP: "Cyprus", TUR: "Turkey",
   AFG: "Afghanistan", PAK: "Pakistan", IND: "India", SDN: "Sudan",
   ERI: "Eritrea", DJI: "Djibouti", SOM: "Somalia", LBY: "Libya",
 };
@@ -46,7 +47,7 @@ const ISO3_TO_NAME_AR: Record<string, string> = {
   KWT: "الكويت", SAU: "السعودية", ARE: "الإمارات", QAT: "قطر",
   BHR: "البحرين", OMN: "عُمان", IRQ: "العراق", IRN: "إيران",
   YEM: "اليمن", EGY: "مصر", JOR: "الأردن", SYR: "سوريا",
-  LBN: "لبنان", ISR: "إسرائيل", CYP: "قبرص", TUR: "تركيا",
+  LBN: "لبنان", PSE: "فلسطين", CYP: "قبرص", TUR: "تركيا",
   AFG: "أفغانستان", PAK: "باكستان", IND: "الهند", SDN: "السودان",
   ERI: "إريتريا", DJI: "جيبوتي", SOM: "الصومال", LBY: "ليبيا",
 };
@@ -55,7 +56,7 @@ const ISO3_TO_REGION: Record<string, string> = {
   KWT: "GCC · Gulf", SAU: "GCC · Gulf", ARE: "GCC · Gulf", QAT: "GCC · Gulf",
   BHR: "GCC · Gulf", OMN: "GCC · Gulf", IRQ: "Levant · Mesopotamia", IRN: "Persian Gulf",
   YEM: "Arabian Peninsula", EGY: "North Africa", JOR: "Levant", SYR: "Levant",
-  LBN: "Levant", ISR: "Levant", TUR: "Anatolia", AFG: "Central Asia",
+  LBN: "Levant", PSE: "Levant", TUR: "Anatolia", AFG: "Central Asia",
   PAK: "South Asia", SDN: "East Africa", SOM: "Horn of Africa", LBY: "North Africa",
 };
 
@@ -64,7 +65,7 @@ const COUNTRY_TO_ISO3: Record<string, string> = {
   Kuwait: "KWT", "Saudi Arabia": "SAU", UAE: "ARE", Qatar: "QAT",
   Bahrain: "BHR", Oman: "OMN", Iraq: "IRQ", Iran: "IRN",
   Yemen: "YEM", Egypt: "EGY", Jordan: "JOR", Syria: "SYR",
-  Lebanon: "LBN", Israel: "ISR", Cyprus: "CYP", Turkey: "TUR",
+  Lebanon: "LBN", Palestine: "PSE", Cyprus: "CYP", Turkey: "TUR",
   Afghanistan: "AFG", Pakistan: "PAK", India: "IND", Sudan: "SDN",
   Eritrea: "ERI", Djibouti: "DJI", Somalia: "SOM", Libya: "LBY",
 };
@@ -191,6 +192,33 @@ Generate this JSON only, no other text:
   "risk_level": "${computedRiskLevel}"
 }`;
 
+    const useFallback = () => {
+      // Try seeded intelligence data first
+      const seeded = getSeededIntel(selectedCountry, isAr ? "ar" : "en");
+      if (seeded) {
+        setIntel(seeded);
+        return;
+      }
+      // Generic fallback
+      setIntel({
+        situation: isAr
+          ? `${countryName} تشهد حالياً ${countryEvents.length} حدث نشط. ${countryEvents.length > 0 ? `أعلى مستوى خطر: ${computedRiskLevel} (${Math.round(maxRiskScore)}/100).` : "لا توجد أحداث مباشرة حالياً، المراقبة مستمرة."}`
+          : `${countryName} currently has ${countryEvents.length} active event${countryEvents.length !== 1 ? "s" : ""}. ${countryEvents.length > 0 ? `Highest risk level: ${computedRiskLevel} (${Math.round(maxRiskScore)}/100).` : "No direct events detected. Continuous monitoring active."}`,
+        gcc_significance: isAr
+          ? `أي تصعيد في ${countryName} يؤثر مباشرة على استقرار منطقة الخليج وطرق التجارة البحرية.`
+          : `Any escalation in ${countryName} directly impacts Gulf regional stability and maritime trade routes.`,
+        watch_next: isAr
+          ? ["مراقبة التطورات الأمنية", "متابعة تأثير الأحداث على أسعار النفط", "رصد التحركات الدبلوماسية الإقليمية"]
+          : ["Monitor security developments along borders", "Track impact on oil prices and energy infrastructure", "Watch for diplomatic signals from regional actors"],
+        instability_score: Math.round(maxRiskScore) || 25,
+        risk_level: computedRiskLevel,
+      });
+    };
+
+    // Race between API call and 5s timeout
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 5000);
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -200,19 +228,33 @@ Generate this JSON only, no other text:
           events: [],
           lang: isAr ? "ar" : "en",
         }),
+        signal: abortController.signal,
       });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         if (data?.response) {
           try {
-            // Try to parse JSON from response
             const jsonMatch = data.response.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               const parsed = JSON.parse(jsonMatch[0]);
               setIntel(parsed);
+            } else {
+              setIntel({
+                situation: data.response.slice(0, 300),
+                gcc_significance: isAr
+                  ? "التقييم قيد التحليل. الأحداث النشطة في المنطقة تتطلب مراقبة مستمرة."
+                  : "Assessment under analysis. Active events in the region require continuous monitoring.",
+                watch_next: [
+                  isAr ? "مراقبة التطورات الأمنية على الحدود" : "Monitor border security developments",
+                  isAr ? "متابعة تحركات الأسواق المالية الإقليمية" : "Track regional financial market movements",
+                  isAr ? "مراقبة تصريحات القيادة والمبعوثين الدبلوماسيين" : "Monitor leadership statements and diplomatic envoys",
+                ],
+                instability_score: Math.round(maxRiskScore) || 25,
+                risk_level: computedRiskLevel,
+              });
             }
           } catch {
-            // If JSON parse fails, create structured intel from text
             setIntel({
               situation: data.response.slice(0, 300),
               gcc_significance: isAr
@@ -227,23 +269,15 @@ Generate this JSON only, no other text:
               risk_level: computedRiskLevel,
             });
           }
+        } else {
+          useFallback();
         }
+      } else {
+        useFallback();
       }
     } catch {
-      // Fallback static intel
-      setIntel({
-        situation: isAr
-          ? `${countryName} تشهد حالياً ${countryEvents.length} حدث نشط. ${countryEvents.length > 0 ? `أعلى مستوى خطر: ${computedRiskLevel} (${Math.round(maxRiskScore)}/100).` : "لا توجد أحداث مباشرة حالياً، المراقبة مستمرة."}`
-          : `${countryName} currently has ${countryEvents.length} active event${countryEvents.length !== 1 ? "s" : ""}. ${countryEvents.length > 0 ? `Highest risk level: ${computedRiskLevel} (${Math.round(maxRiskScore)}/100).` : "No direct events detected. Continuous monitoring active."}`,
-        gcc_significance: isAr
-          ? `أي تصعيد في ${countryName} يؤثر مباشرة على استقرار منطقة الخليج وطرق التجارة البحرية.`
-          : `Any escalation in ${countryName} directly impacts Gulf regional stability and maritime trade routes.`,
-        watch_next: isAr
-          ? ["مراقبة التطورات الأمنية", "متابعة تأثير الأحداث على أسعار النفط", "رصد التحركات الدبلوماسية الإقليمية"]
-          : ["Monitor security developments along borders", "Track impact on oil prices and energy infrastructure", "Watch for diplomatic signals from regional actors"],
-        instability_score: Math.round(maxRiskScore) || 25,
-        risk_level: computedRiskLevel,
-      });
+      clearTimeout(timeoutId);
+      useFallback();
     }
     setIntelLoading(false);
   }, [selectedCountry, countryEvents, nearbyEvents, isAr, maxRiskScore, computedRiskLevel, profile, countryName]);
@@ -303,6 +337,17 @@ Rules:
 - Maximum 500 words
 - Language: English`;
 
+    const briefFallback = () => {
+      const seeded = getSeededFullBrief(selectedCountry, isAr ? "ar" : "en");
+      if (seeded) return seeded;
+      return isAr
+        ? `إحاطة استخباراتية — ${countryName}\n\nالملخص التنفيذي: ${countryName} تشهد ${countryEvents.length} حدث نشط. الوضع يتطلب مراقبة مستمرة.`
+        : `Intelligence Brief — ${countryName}\n\nExecutive Summary: ${countryName} has ${countryEvents.length} active events. Situation requires continuous monitoring.`;
+    };
+
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 8000);
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -312,16 +357,19 @@ Rules:
           events: [],
           lang: isAr ? "ar" : "en",
         }),
+        signal: abortController.signal,
       });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         if (data?.response) setFullBrief(data.response);
+        else setFullBrief(briefFallback());
+      } else {
+        setFullBrief(briefFallback());
       }
     } catch {
-      setFullBrief(isAr
-        ? `إحاطة استخباراتية — ${countryName}\n\nالملخص التنفيذي: ${countryName} تشهد ${countryEvents.length} حدث نشط. الوضع يتطلب مراقبة مستمرة.\n\nجاري تحليل البيانات... يرجى التأكد من اتصال خادم API.`
-        : `Intelligence Brief — ${countryName}\n\nExecutive Summary: ${countryName} has ${countryEvents.length} active event${countryEvents.length !== 1 ? "s" : ""}. Situation requires continuous monitoring.\n\nAnalyzing data... Please ensure API server is connected.`
-      );
+      clearTimeout(timeoutId);
+      setFullBrief(briefFallback());
     }
     setBriefLoading(false);
   }, [selectedCountry, countryEvents, isAr, profile, countryName]);
@@ -835,8 +883,11 @@ Rules:
               ) : null}
             </div>
 
-            {/* Print version */}
+            {/* Print version — dark classified document */}
             <div className="hidden print-only print-brief">
+              <div className="doc-classification">
+                {isAr ? "سري — للاستخدام الرسمي فقط" : "CLASSIFIED — OFFICIAL USE ONLY"}
+              </div>
               <div className="doc-header">
                 <div className="doc-logo">{isAr ? "أطلس كوماند" : "ATLAS COMMAND"}</div>
                 <div className="doc-class">{isAr ? "نشرة الدولة" : "COUNTRY BRIEF"}</div>
@@ -846,10 +897,31 @@ Rules:
                 {new Date().toLocaleDateString(isAr ? "ar-SA" : "en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
                 {" · "}{isAr ? "الخطر" : "RISK"}: {riskLevel} · {isAr ? "عدم الاستقرار" : "INSTABILITY"}: {instabilityScore}/100
               </div>
+              <div className="doc-metrics">
+                <div className="doc-metric-box">
+                  <span className="metric-label">{isAr ? "مستوى التهديد" : "THREAT LEVEL"}</span>
+                  <span className={`metric-value metric-${riskLevel === "CRITICAL" ? "critical" : riskLevel === "HIGH" ? "high" : riskLevel === "MEDIUM" ? "medium" : "low"}`}>{riskLevel}</span>
+                </div>
+                <div className="doc-metric-box">
+                  <span className="metric-label">{isAr ? "درجة عدم الاستقرار" : "INSTABILITY"}</span>
+                  <span className={`metric-value metric-${instabilityScore >= 70 ? "critical" : instabilityScore >= 50 ? "high" : instabilityScore >= 30 ? "medium" : "low"}`}>{instabilityScore}/100</span>
+                </div>
+                <div className="doc-metric-box">
+                  <span className="metric-label">{isAr ? "أحداث نشطة" : "ACTIVE EVENTS"}</span>
+                  <span className="metric-value metric-blue">{countryEvents.length}</span>
+                </div>
+                <div className="doc-metric-box">
+                  <span className="metric-label">{isAr ? "المنطقة" : "REGION"}</span>
+                  <span className="metric-value metric-blue" style={{ fontSize: "10pt" }}>{regionTag}</span>
+                </div>
+              </div>
               <div style={{ whiteSpace: "pre-wrap" }} className={isAr ? "arabic-text" : ""}>{fullBrief}</div>
               <div className="doc-footer">
                 <span>{isAr ? "أطلس كوماند — منصة الذكاء الاستراتيجي" : "ATLAS COMMAND — AI PLANETARY DECISION INTELLIGENCE"}</span>
                 <span>{new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
+              </div>
+              <div className="doc-classification-bottom">
+                {isAr ? "سري — للاستخدام الرسمي فقط" : "CLASSIFIED — OFFICIAL USE ONLY"}
               </div>
             </div>
           </div>

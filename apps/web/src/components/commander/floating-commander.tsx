@@ -17,12 +17,34 @@ interface StoredMessage {
   timestamp: number;
 }
 
+const ERROR_PHRASES = [
+  "initializing",
+  "ANTHROPIC_API_KEY",
+  "env.local",
+  "restart",
+  "API key",
+  "configure",
+  "غير متصل حالياً",
+  "قيد التهيئة",
+];
+
+function isErrorMessage(content: string): boolean {
+  return ERROR_PHRASES.some((phrase) => content.includes(phrase));
+}
+
 function loadStoredMessages(): StoredMessage[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw).slice(-MAX_STORED_MESSAGES);
+    const parsed: StoredMessage[] = JSON.parse(raw);
+    // Clean out any error/system messages from history
+    const cleaned = parsed.filter((m) => !isErrorMessage(m.content));
+    if (cleaned.length !== parsed.length) {
+      // Persist the cleaned version
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned.slice(-MAX_STORED_MESSAGES)));
+    }
+    return cleaned.slice(-MAX_STORED_MESSAGES);
   } catch {
     return [];
   }
@@ -30,9 +52,11 @@ function loadStoredMessages(): StoredMessage[] {
 
 function saveMessages(msgs: StoredMessage[]) {
   try {
+    // Never persist error/system messages
+    const clean = msgs.filter((m) => !isErrorMessage(m.content));
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify(msgs.slice(-MAX_STORED_MESSAGES))
+      JSON.stringify(clean.slice(-MAX_STORED_MESSAGES))
     );
   } catch {
     // ignore quota errors
@@ -241,8 +265,8 @@ export function FloatingCommander() {
         addMessage(
           "assistant",
           isAr
-            ? "قائد أطلس قيد التهيئة. تأكد من إعداد ANTHROPIC_API_KEY في apps/web/.env.local وأعد تشغيل الخادم."
-            : "Atlas Commander is initializing. Ensure ANTHROPIC_API_KEY is set in apps/web/.env.local and restart the Next.js dev server."
+            ? "قائد أطلس غير متصل حالياً. سيتوفر التحليل الذكي قريباً."
+            : "Atlas Commander is currently offline. Live AI analysis will be available shortly."
         );
       }
       setLoading(false);

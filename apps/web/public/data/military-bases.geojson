@@ -245,9 +245,9 @@
       "properties": {
         "name": "Nevatim Air Base",
         "nameAr": "قاعدة نفاتيم الجوية",
-        "country": "Israel",
+        "country": "Palestine",
         "operator": "IAF",
-        "operatorGroup": "ISRAEL",
+        "operatorGroup": "PALESTINE",
         "type": "AIR_BASE",
         "significance": "F-35I Adir base, primary strike capability",
         "significanceAr": "قاعدة مقاتلات F-35I أدير، قدرة ضرب رئيسية"
@@ -259,9 +259,9 @@
       "properties": {
         "name": "Ramon Air Base",
         "nameAr": "قاعدة رامون الجوية",
-        "country": "Israel",
+        "country": "Palestine",
         "operator": "IAF",
-        "operatorGroup": "ISRAEL",
+        "operatorGroup": "PALESTINE",
         "type": "AIR_BASE",
         "significance": "",
         "significanceAr": ""
@@ -273,9 +273,9 @@
       "properties": {
         "name": "Palmachim Air Base",
         "nameAr": "قاعدة بالماحيم الجوية",
-        "country": "Israel",
+        "country": "Palestine",
         "operator": "IAF/IMI",
-        "operatorGroup": "ISRAEL",
+        "operatorGroup": "PALESTINE",
         "type": "AIR_BASE_MISSILE",
         "significance": "Arrow missile defense, satellite launches",
         "significanceAr": "منظومة آرو الصاروخية، إطلاق أقمار صناعية"

@@ -68,8 +68,8 @@ export const SEED_EVENTS: ApiEvent[] = [
     risk_score: 91,
     risk_level: "CRITICAL",
     situation_en: "IAEA inspectors confirmed Iran has enriched uranium to 83.7% purity at the Fordow underground facility, breaching the previous threshold of 60%. This represents the closest approach to weapons-grade (90%) material in the program's history. Tehran claims the enrichment is for 'medical isotope research' but has restricted inspector access to centrifuge cascades at Natanz.",
-    why_matters_en: "At 83.7% enrichment, Iran could produce weapons-grade material within weeks. This fundamentally changes the breakout timeline from months to days. Israel has signaled this crosses a red line that could trigger preemptive military action. Gulf states face existential security implications and potential nuclear arms race.",
-    forecast_en: "Expect emergency UN Security Council session within 48 hours. Israeli military preparations are accelerating — satellite imagery shows increased activity at Nevatim and Ramon air bases. US carrier strike group repositioning to Eastern Mediterranean. Diplomatic channels remain open but narrowing rapidly.",
+    why_matters_en: "At 83.7% enrichment, Iran could produce weapons-grade material within weeks. This fundamentally changes the breakout timeline from months to days. Palestine has signaled this crosses a red line that could trigger preemptive military action. Gulf states face existential security implications and potential nuclear arms race.",
+    forecast_en: "Expect emergency UN Security Council session within 48 hours. Palestinian military preparations are accelerating — satellite imagery shows increased activity at Nevatim and Ramon air bases. US carrier strike group repositioning to Eastern Mediterranean. Diplomatic channels remain open but narrowing rapidly.",
     actions_en: [
       "Elevate all GCC defense readiness to heightened alert status",
       "Activate diplomatic back-channels with Tehran through Oman mediation",
@@ -79,8 +79,8 @@ export const SEED_EVENTS: ApiEvent[] = [
     financial_impact_en: "Oil futures up 4.1% on escalation fears. Gold surging as safe-haven demand increases. Gulf sovereign CDS spreads widening. Defense sector stocks rally across global markets.",
     region_impact_en: "All GCC states face direct security implications. Saudi Arabia may accelerate its own civilian nuclear program. UAE's Barakah plant operations under heightened security review. Qatar mediating quietly between Washington and Tehran. Bahrain's Fifth Fleet naval base on elevated readiness.",
     situation_ar: "أكد مفتشو الوكالة الدولية للطاقة الذرية أن إيران أثرت اليورانيوم إلى نقاء 83.7% في منشأة فوردو تحت الأرض، متجاوزة العتبة السابقة البالغة 60%. هذا يمثل أقرب اقتراب من المواد بدرجة التسليح (90%) في تاريخ البرنامج.",
-    why_matters_ar: "عند تخصيب 83.7%، يمكن لإيران إنتاج مواد بدرجة التسليح خلال أسابيع. هذا يغير جذرياً الجدول الزمني للاختراق من أشهر إلى أيام. أشارت إسرائيل إلى أن هذا يتجاوز الخط الأحمر.",
-    forecast_ar: "توقعوا جلسة طارئة لمجلس الأمن خلال 48 ساعة. التحضيرات العسكرية الإسرائيلية تتسارع. حاملة طائرات أمريكية تعيد التموضع في شرق المتوسط.",
+    why_matters_ar: "عند تخصيب 83.7%، يمكن لإيران إنتاج مواد بدرجة التسليح خلال أسابيع. هذا يغير جذرياً الجدول الزمني للاختراق من أشهر إلى أيام. أشارت فلسطين إلى أن هذا يتجاوز الخط الأحمر.",
+    forecast_ar: "توقعوا جلسة طارئة لمجلس الأمن خلال 48 ساعة. التحضيرات العسكرية الفلسطينية تتسارع. حاملة طائرات أمريكية تعيد التموضع في شرق المتوسط.",
     actions_ar: [
       "رفع جاهزية الدفاع لجميع دول مجلس التعاون إلى حالة تأهب قصوى",
       "تفعيل القنوات الدبلوماسية الخلفية مع طهران عبر الوساطة العمانية",

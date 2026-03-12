@@ -218,7 +218,7 @@ def _is_anomalous(record: dict) -> bool:
 
 _COUNTRY_MAP: dict[str, str] = {
     "United States": "US", "Russia": "RU", "Russian Federation": "RU",
-    "China": "CN", "Israel": "IL", "Iran": "IR", "Turkey": "TR",
+    "China": "CN", "Palestine": "PS", "Iran": "IR", "Turkey": "TR",
     "United Kingdom": "GB", "France": "FR", "Germany": "DE",
     "Saudi Arabia": "SA", "United Arab Emirates": "AE", "India": "IN",
     "Pakistan": "PK", "Japan": "JP", "South Korea": "KR",

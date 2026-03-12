@@ -45,8 +45,8 @@ export function AtlasCommander() {
         addChatMessage({
           role: "assistant",
           content: lang === "ar"
-            ? "قائد أطلس قيد التهيئة. تأكد من إعداد ANTHROPIC_API_KEY في apps/web/.env.local وأعد تشغيل الخادم."
-            : "Atlas Commander is initializing. Ensure ANTHROPIC_API_KEY is set in apps/web/.env.local and restart the Next.js dev server.",
+            ? "قائد أطلس غير متصل حالياً. سيتوفر التحليل الذكي قريباً."
+            : "Atlas Commander is currently offline. Live AI analysis will be available shortly.",
         });
       }
       setChatLoading(false);

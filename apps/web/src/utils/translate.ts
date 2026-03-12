@@ -146,42 +146,41 @@ export const MAP_LABEL_LAYERS = [
 /**
  * Switches map label layers to Arabic or English.
  * Uses coalesce to fall back to default name if translated name unavailable.
+ * Note: CartoDB/OpenMapTiles uses "name:ar" (colon) format, not "name_ar" (underscore).
  */
 export function setMapLanguage(map: any, lang: string): void {
-  const nameField = lang === "ar" ? "name_ar" : "name_en";
+  // OpenMapTiles (CartoDB) uses "name:xx" with colon
+  const nameFieldColon = lang === "ar" ? "name:ar" : "name:en";
+  // Mapbox/MapTiler may use "name_xx" with underscore
+  const nameFieldUnderscore = lang === "ar" ? "name_ar" : "name_en";
 
+  const textFieldExpr = [
+    "coalesce",
+    ["get", nameFieldColon],
+    ["get", nameFieldUnderscore],
+    ["get", "name"],
+  ];
+
+  // Apply to all known label layers
   for (const layerId of MAP_LABEL_LAYERS) {
     try {
       if (map.getLayer(layerId)) {
-        map.setLayoutProperty(layerId, "text-field", [
-          "coalesce",
-          ["get", nameField],
-          ["get", "name"],
-        ]);
+        map.setLayoutProperty(layerId, "text-field", textFieldExpr);
       }
     } catch {
       // Layer doesn't exist or doesn't support text-field — skip
     }
   }
 
-  // Also try generic pattern matching for any label layer
+  // Also apply to ALL symbol layers in the style for comprehensive coverage
   try {
     const allLayers = map.getStyle()?.layers || [];
     for (const layer of allLayers) {
-      if (
-        layer.type === "symbol" &&
-        (layer.id.includes("label") || layer.id.includes("place") || layer.id.includes("name"))
-      ) {
+      if (layer.type === "symbol") {
         try {
-          if (!MAP_LABEL_LAYERS.includes(layer.id)) {
-            map.setLayoutProperty(layer.id, "text-field", [
-              "coalesce",
-              ["get", nameField],
-              ["get", "name"],
-            ]);
-          }
+          map.setLayoutProperty(layer.id, "text-field", textFieldExpr);
         } catch {
-          // skip
+          // skip — some symbol layers may not have text-field
         }
       }
     }

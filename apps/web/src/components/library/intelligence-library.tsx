@@ -49,6 +49,36 @@ for (const s of LIBRARY_SOURCES) {
   categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
 }
 
+// Stats
+const feedCount = LIBRARY_SOURCES.filter((s) => s.type === "feed" || s.type === "data" || s.type === "official").length;
+const socialCount = LIBRARY_SOURCES.filter((s) => s.type === "social").length;
+const webcamCount = LIBRARY_SOURCES.filter((s) => s.type === "webcam").length;
+const liveCount = LIBRARY_SOURCES.filter((s) => s.status === "LIVE").length;
+const premiumCount = LIBRARY_SOURCES.filter((s) => s.tier === "premium").length;
+
+// Badge helpers
+function getSourceBadge(src: LibrarySource): { label: string; labelAr: string; color: string; bg: string } | null {
+  if (src.note?.toLowerCase().includes("state media") || src.note?.toLowerCase().includes("state source") || src.note?.toLowerCase().includes("state-aligned")) {
+    return { label: "STATE MEDIA", labelAr: "مصدر حكومي", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" };
+  }
+  if (src.note?.toLowerCase().includes("unverified") || src.note?.toLowerCase().includes("pro-russian") || src.platform === "Telegram") {
+    return { label: "MONITOR", labelAr: "يُراقب", color: "#6b7280", bg: "rgba(107,114,128,0.12)" };
+  }
+  if (src.tier === "premium") {
+    return { label: "PREMIUM", labelAr: "مميز", color: "#fbbf24", bg: "rgba(251,191,36,0.12)" };
+  }
+  if (src.type === "official") {
+    return { label: "OFFICIAL", labelAr: "رسمي", color: "#3b82f6", bg: "rgba(59,130,246,0.12)" };
+  }
+  return null;
+}
+
+function platformIcon(platform?: string): string {
+  if (platform === "X") return "𝕏";
+  if (platform === "Telegram") return "✈";
+  return "";
+}
+
 // ─── Component ──────────────────────────────────────────────────
 
 export function IntelligenceLibrary() {
@@ -302,57 +332,66 @@ export function IntelligenceLibrary() {
 
             {/* Source cards */}
             <div className="flex flex-col gap-1.5">
-              {filteredSidebarSources.map((src) => (
-                <button
-                  key={src.id}
-                  onClick={() => filterBySource(src.id)}
-                  className="text-left p-2.5 rounded transition-colors w-full"
-                  style={{
-                    background:
-                      activeSource === src.id ? "#111827" : "#0d1117",
-                    border: `1px solid ${
-                      activeSource === src.id ? "#3b82f6" : "#1e2530"
-                    }`,
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="flex items-center gap-1.5 text-[11px] text-slate-300 font-medium truncate">
-                      {src.tier === "active" ? (
-                        <span className="relative flex h-2 w-2 shrink-0">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-40" />
-                          <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-slate-600">🔒</span>
-                      )}
-                      {src.name}
-                    </span>
-                    {src.tier === "active" && src.lastSynced && (
-                      <span
-                        className="text-[8px] font-mono tracking-wider px-1.5 py-0.5 rounded shrink-0"
-                        style={{
-                          background: "rgba(59,130,246,0.15)",
-                          color: "#60a5fa",
-                        }}
-                      >
-                        LIVE
+              {filteredSidebarSources.map((src) => {
+                const badge = getSourceBadge(src);
+                const isSocial = src.type === "social";
+                return (
+                  <button
+                    key={src.id}
+                    onClick={() => filterBySource(src.id)}
+                    className="text-left p-2.5 rounded transition-colors w-full"
+                    style={{
+                      background:
+                        activeSource === src.id ? "#111827" : "#0d1117",
+                      border: `1px solid ${
+                        activeSource === src.id ? "#3b82f6" : "#1e2530"
+                      }`,
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="flex items-center gap-1.5 text-[11px] text-slate-300 font-medium truncate">
+                        {isSocial ? (
+                          <span className="text-[10px] shrink-0" style={{ color: src.platform === "Telegram" ? "#a78bfa" : "#38bdf8" }}>
+                            {platformIcon(src.platform)}
+                          </span>
+                        ) : src.status === "LIVE" ? (
+                          <span className="relative flex h-2 w-2 shrink-0">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-40" />
+                            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                          </span>
+                        ) : src.status === "PREMIUM" ? (
+                          <span className="text-[10px] text-slate-600 shrink-0">🔒</span>
+                        ) : (
+                          <span className="flex h-2 w-2 rounded-full bg-yellow-500/60 shrink-0" />
+                        )}
+                        {src.name}
                       </span>
-                    )}
-                  </div>
-                  <div className="text-[9px] font-mono" style={{ color: "#6b7280" }}>
-                    {isAr
-                      ? LIBRARY_CATEGORIES.find((c) => c.key === src.category)
-                          ?.labelAr
-                      : LIBRARY_CATEGORIES.find((c) => c.key === src.category)
-                          ?.label}
-                  </div>
-                  {src.tier === "active" && src.lastSynced && (
-                    <div className="text-[8px] font-mono mt-0.5" style={{ color: "#4b5563" }}>
-                      {isAr ? "آخر مزامنة" : "Last sync"}: {src.lastSynced}
+                      {badge && (
+                        <span
+                          className="text-[7px] font-mono tracking-wider px-1.5 py-0.5 rounded shrink-0"
+                          style={{ background: badge.bg, color: badge.color }}
+                        >
+                          {isAr ? badge.labelAr : badge.label}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </button>
-              ))}
+                    <div className="text-[9px] font-mono" style={{ color: "#6b7280" }}>
+                      {isSocial && src.twitter
+                        ? `${platformIcon(src.platform)} ${src.twitter}`
+                        : isAr
+                          ? LIBRARY_CATEGORIES.find((c) => c.key === src.category)?.labelAr
+                          : LIBRARY_CATEGORIES.find((c) => c.key === src.category)?.label}
+                    </div>
+                    {src.status === "LIVE" && src.lastSynced && (
+                      <div className="text-[8px] font-mono mt-0.5" style={{ color: "#4b5563" }}>
+                        {isSocial
+                          ? (isAr ? "آخر منشور" : "Last post") + `: ${src.lastSynced}`
+                          : (isAr ? "آخر مزامنة" : "Last sync") + `: ${src.lastSynced}`}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -364,6 +403,30 @@ export function IntelligenceLibrary() {
         className="flex-1 overflow-y-auto"
         style={{ background: "#080b14", padding: 24 }}
       >
+        {/* Stats bar */}
+        <div
+          className="flex items-center gap-4 mb-4 px-4 py-2.5 rounded-lg overflow-x-auto"
+          style={{ background: "#0d1117", border: "1px solid #1e2530" }}
+        >
+          {[
+            { label: isAr ? "الإجمالي" : "TOTAL", value: totalSourceCount, color: "#e5e7eb" },
+            { label: isAr ? "تغذيات" : "FEEDS", value: feedCount, color: "#60a5fa" },
+            { label: isAr ? "اجتماعي" : "SOCIAL", value: socialCount, color: "#38bdf8" },
+            { label: isAr ? "كاميرات" : "WEBCAMS", value: webcamCount, color: "#4ade80" },
+            { label: isAr ? "مباشر" : "LIVE NOW", value: liveCount, color: "#22c55e" },
+            { label: isAr ? "مميز" : "PREMIUM", value: premiumCount, color: "#fbbf24" },
+          ].map((stat) => (
+            <div key={stat.label} className="flex items-center gap-1.5 shrink-0">
+              <span className="font-mono text-[8px] tracking-wider" style={{ color: "#6b7280" }}>
+                {stat.label}
+              </span>
+              <span className="font-mono text-[13px] font-semibold" style={{ color: stat.color }}>
+                {stat.value}
+              </span>
+            </div>
+          ))}
+        </div>
+
         {/* Source filter banner */}
         {activeSourceObj && (
           <div
@@ -398,7 +461,7 @@ export function IntelligenceLibrary() {
             const remainingCount = items.length - 5;
             const catSources = sourcesByCategory(cat.key);
             const activeSources = catSources.filter(
-              (s) => s.tier === "active"
+              (s) => s.status === "LIVE"
             );
             const anomaly = STATIC_ANOMALIES[cat.key];
             const isLoading = anomalyLoading[cat.key];

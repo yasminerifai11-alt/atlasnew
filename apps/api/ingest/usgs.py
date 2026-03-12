@@ -165,7 +165,7 @@ _COUNTRY_ISO2: dict[str, str] = {
     "Yemen": "YE", "Oman": "OM", "UAE": "AE",
     "United Arab Emirates": "AE", "Kuwait": "KW", "Bahrain": "BH",
     "Qatar": "QA", "Jordan": "JO", "Lebanon": "LB", "Syria": "SY",
-    "Israel": "IL", "Egypt": "EG", "Cyprus": "CY", "Greece": "GR",
+    "Palestine": "PS", "Egypt": "EG", "Cyprus": "CY", "Greece": "GR",
     "India": "IN", "China": "CN", "Japan": "JP", "Indonesia": "ID",
     "Philippines": "PH", "Nepal": "NP", "Myanmar": "MM",
     "Tajikistan": "TJ", "Uzbekistan": "UZ", "Turkmenistan": "TM",
