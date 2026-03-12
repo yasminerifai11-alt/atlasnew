@@ -4,6 +4,7 @@ import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
 import { getFilterViewport, GLOBAL_VIEW } from "@/data/regions";
+import { setMapLanguage, getLocalizedField, translateTag } from "@/utils/translate";
 import type { ApiEvent } from "@/lib/api";
 
 const RISK_COLORS: Record<string, string> = {
@@ -250,6 +251,8 @@ export function EventMap() {
         setupCountryHover(map, popup, maplibregl);
         // Setup country click → opens CountryIntelPanel
         setupCountryClick(map);
+        // Apply language to map labels
+        setMapLanguage(map, lang);
       });
 
       return () => {
@@ -259,6 +262,18 @@ export function EventMap() {
     });
     return () => { cancelled = true; };
   }, []);
+
+  // Switch map labels when language changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    // Wait for map to be loaded before setting language
+    if (map.isStyleLoaded()) {
+      setMapLanguage(map, lang);
+    } else {
+      map.once("styledata", () => setMapLanguage(map, lang));
+    }
+  }, [lang]);
 
   // Pan/zoom on region filter change
   useEffect(() => {
@@ -312,13 +327,17 @@ export function EventMap() {
         el.onmouseenter = () => { el.style.transform = "scale(1.4)"; };
         el.onmouseleave = () => { el.style.transform = "scale(1)"; };
 
+        const displayTitle = getLocalizedField(event, "title", lang);
+        const displayType = translateTag(event.event_type, lang);
+        const displaySector = translateTag(event.sector, lang);
+
         const popup = new maplibregl.Popup({
           offset: 8, closeButton: false, maxWidth: "260px",
         }).setHTML(`
-          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;${isAr ? "direction:rtl;text-align:right;" : ""}">
             <div style="color: ${color}; font-weight: 600; margin-bottom: 3px;">${event.risk_level} · ${event.risk_score}/100</div>
-            <div style="color: #e2e8f0; font-weight: 500; margin-bottom: 2px;">${event.title}</div>
-            <div style="color: #64748b;">${event.region} · ${event.sector}</div>
+            <div style="color: #e2e8f0; font-weight: 500; margin-bottom: 2px;">${displayTitle || event.title}</div>
+            <div style="color: #64748b;">${event.region} · ${displaySector}</div>
           </div>
         `);
 
@@ -849,12 +868,16 @@ export function EventMap() {
       const eventLines = risk.events
         .slice(0, 5)
         .map(
-          (ev) =>
-            `<div style="margin: 4px 0; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+          (ev) => {
+            const evTitle = getLocalizedField(ev, "title", lang) || ev.title;
+            const evType = translateTag(ev.event_type, lang);
+            const evSector = translateTag(ev.sector, lang);
+            return `<div style="margin: 4px 0; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
               <div style="color: ${RISK_COLORS[ev.risk_level] || "#3b82f6"}; font-size: 8px; font-weight: 600;">${ev.risk_level} · ${ev.risk_score}</div>
-              <div style="color: #cbd5e1; font-size: 10px;">${ev.title.slice(0, 60)}</div>
-              <div style="color: #64748b; font-size: 8px;">${ev.event_type} · ${ev.sector}</div>
-            </div>`
+              <div style="color: #cbd5e1; font-size: 10px;">${evTitle.slice(0, 60)}</div>
+              <div style="color: #64748b; font-size: 8px;">${evType} · ${evSector}</div>
+            </div>`;
+          }
         )
         .join("");
 

@@ -11,6 +11,7 @@ import {
   type ApiInfraLink,
   type ApiConsequenceStep,
 } from "@/lib/api";
+import { getLocalizedField, translateTag } from "@/utils/translate";
 
 const RISK_COLORS: Record<string, string> = {
   CRITICAL: "#ef4444",
@@ -138,8 +139,8 @@ export function DetailPanel() {
 
   <!-- Title -->
   <div style="margin-bottom:24px;">
-    <div style="font-size:22px;font-weight:600;color:white;line-height:1.3;margin-bottom:6px;${isArabic ? "direction:rtl;text-align:right;font-family:'Noto Sans Arabic','IBM Plex Sans',sans-serif;" : ""}">${event.title}</div>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6b7280;">${event.region} · ${event.sector} · ${new Date(event.event_time).toUTCString()}</div>
+    <div style="font-size:22px;font-weight:600;color:white;line-height:1.3;margin-bottom:6px;${isArabic ? "direction:rtl;text-align:right;font-family:'Noto Sans Arabic','IBM Plex Sans',sans-serif;" : ""}">${getLocalizedField(event, "title", lang) || event.title}</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6b7280;">${event.region} · ${translateTag(event.sector, lang)} · ${new Date(event.event_time).toUTCString()}</div>
   </div>
 
   ${section("01", isArabic ? "تقييم الموقف" : "SITUATION", sit, isArabic)}
@@ -213,9 +214,9 @@ export function DetailPanel() {
           <div className="doc-class">{isAr ? "نشرة استخباراتية" : "INTELLIGENCE BRIEF"}</div>
         </div>
 
-        <div className="doc-title">{event.title}</div>
+        <div className="doc-title">{getLocalizedField(event, "title", lang) || event.title}</div>
         <div className="doc-meta">
-          {event.event_type} · {event.region} · {event.sector} · {new Date(event.event_time).toUTCString()}
+          {translateTag(event.event_type, lang)} · {event.region} · {translateTag(event.sector, lang)} · {new Date(event.event_time).toUTCString()}
         </div>
 
         <div className={`risk-badge-print risk-${event.risk_level.toLowerCase()}`}>
@@ -336,13 +337,13 @@ export function DetailPanel() {
           {/* Event title */}
           <div>
             <div className="font-mono text-[10px] tracking-widest text-slate-500 mb-1">
-              {event.event_type} · {event.region} · {event.source}
+              {translateTag(event.event_type, lang)} · {event.region} · {event.source}
             </div>
-            <h1 className="text-xl font-semibold text-slate-200 mb-1">{event.title}</h1>
+            <h1 className="text-xl font-semibold text-slate-200 mb-1">{getLocalizedField(event, "title", lang) || event.title}</h1>
             <div className="flex items-center gap-3 font-mono text-[10px] text-slate-600">
               <span>{new Date(event.event_time).toUTCString()}</span>
               <span>·</span>
-              <span>{event.sector}</span>
+              <span>{translateTag(event.sector, lang)}</span>
               <span>·</span>
               <span>{event.source_count} {t("event.sources").toLowerCase()}</span>
             </div>

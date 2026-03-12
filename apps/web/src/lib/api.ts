@@ -70,6 +70,8 @@ export interface ApiEvent {
   actions_en: string[];
   financial_impact_en?: string;
   region_impact_en?: string;
+  title_ar?: string;
+  description_ar?: string;
   situation_ar?: string;
   why_matters_ar?: string;
   forecast_ar?: string;

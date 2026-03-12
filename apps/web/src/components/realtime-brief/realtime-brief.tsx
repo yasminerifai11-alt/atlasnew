@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
 import { useProfileStore, ROLE_META, type ProfileRole } from "@/stores/profile-store";
 import { fetchRealtimeBrief, generateRealtimeBrief, type ApiRealtimeBrief } from "@/lib/api";
+import { getLocalizedField, translateTag } from "@/utils/translate";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -631,13 +632,13 @@ Return ONLY valid JSON in this exact structure:
                       <span className="font-mono text-[8px] font-semibold tracking-wider px-1.5 py-0.5" style={{ color, backgroundColor: color + "20" }}>
                         {t(`risk.${ev.risk_level.toLowerCase()}` as any)} · {ev.risk_score}
                       </span>
-                      <span className="text-[13px] font-medium text-slate-200">{ev.title}</span>
+                      <span className="text-[13px] font-medium text-slate-200">{getLocalizedField(ev, "title", lang) || ev.title}</span>
                     </div>
                     <div className={`text-[12px] leading-relaxed text-slate-500 mb-2 ${isAr && ev.situation_ar ? "arabic-text" : ""}`}>
                       {typeof sit === "string" ? sit.slice(0, 250) : ""}
                     </div>
                     <div className="flex items-center gap-3 font-mono text-[9px] text-slate-600">
-                      <span>{ev.region}</span><span>·</span><span>{ev.sector}</span><span>·</span>
+                      <span>{ev.region}</span><span>·</span><span>{translateTag(ev.sector, lang)}</span><span>·</span>
                       <span>{ev.source_count} {isAr ? "مصدر" : "sources"}</span>
                     </div>
                   </div>
@@ -681,7 +682,7 @@ Return ONLY valid JSON in this exact structure:
             <div className="grid grid-cols-3 gap-2">
               {(briefData?.sector_intel || []).map((si, i) => (
                 <div key={i} className="border border-white/[0.04] bg-white/[0.015] p-3 text-center">
-                  <div className="font-mono text-[9px] tracking-wider text-slate-500 mb-1">{si.sector}</div>
+                  <div className="font-mono text-[9px] tracking-wider text-slate-500 mb-1">{translateTag(si.sector, lang)}</div>
                   <div className="font-mono text-lg font-bold text-blue-400">{si.events}</div>
                   <div className={`text-[11px] text-slate-600 mt-1 ${arText}`}>{si.summary}</div>
                 </div>
@@ -702,8 +703,8 @@ Return ONLY valid JSON in this exact structure:
                 return (
                   <div key={i} className="border border-white/[0.04] bg-white/[0.015] p-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-[9px] font-semibold" style={{ color }}>{ev.risk_level}</span>
-                      <span className="text-[12px] text-slate-300">{ev.title}</span>
+                      <span className="font-mono text-[9px] font-semibold" style={{ color }}>{t(`risk.${ev.risk_level.toLowerCase()}` as any)}</span>
+                      <span className="text-[12px] text-slate-300">{getLocalizedField(ev, "title", lang) || ev.title}</span>
                     </div>
                     <div className={`text-[11px] text-slate-500 ${isAr && ev.forecast_ar ? "arabic-text" : ""}`}>
                       {isAr && ev.forecast_ar ? ev.forecast_ar : ev.forecast_en}
@@ -733,7 +734,7 @@ Return ONLY valid JSON in this exact structure:
                         {sector === "ENERGY" ? "⚡" : sector === "MARITIME" ? "🚢" : sector === "SECURITY" ? "🛡" : sector === "FINANCIAL" ? "💰" : "🏗"}
                       </span>
                       <div>
-                        <div className="text-[12px] font-medium text-slate-300">{sector}</div>
+                        <div className="text-[12px] font-medium text-slate-300">{translateTag(sector, lang)}</div>
                         <div className="font-mono text-[8px] text-slate-600">
                           {sectorEvents.length} {isAr ? "حدث" : "events"} · {isAr ? "أعلى خطر" : "MAX"} {maxRisk}
                         </div>

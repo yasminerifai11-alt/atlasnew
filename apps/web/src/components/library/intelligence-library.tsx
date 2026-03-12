@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useLanguage } from "@/lib/language";
+import { getLocalizedField } from "@/utils/translate";
 import {
   LIBRARY_CATEGORIES,
   LIBRARY_SOURCES,

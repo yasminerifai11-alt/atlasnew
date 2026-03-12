@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/language";
 import { useCommandStore, type RiskFilter } from "@/stores/command-store";
 import { useProfileStore, ROLE_META } from "@/stores/profile-store";
 import { REGION_GROUPS, matchesFilter, getFilterLabel } from "@/data/regions";
+import { getLocalizedField, translateTag } from "@/utils/translate";
 import type { ApiEvent } from "@/lib/api";
 
 const RISK_COLORS: Record<string, { text: string; bg: string; border: string }> = {
@@ -227,14 +228,14 @@ export function Sidebar() {
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-mono text-[9px] tracking-wider text-slate-500">
-                      {event.event_type} · {event.sector}
+                      {translateTag(event.event_type, lang)} · {translateTag(event.sector, lang)}
                     </span>
                     <span className={`font-mono text-[8px] font-semibold tracking-wider px-1.5 py-0.5 ${colors.text} ${colors.bg}`}>
-                      {event.risk_level}
+                      {t(`risk.${event.risk_level.toLowerCase()}` as any)}
                     </span>
                   </div>
                   <div className="text-[13px] font-medium text-slate-200 leading-snug mb-1">
-                    {event.title}
+                    {getLocalizedField(event, "title", lang) || event.title}
                   </div>
                   <div className="font-mono text-[10px] text-slate-500 leading-relaxed line-clamp-2 mb-1.5">
                     {isAr && event.situation_ar ? event.situation_ar : event.situation_en}

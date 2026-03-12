@@ -9,7 +9,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 1,
     title: "Houthi Anti-Ship Missile Strike in Red Sea",
+    title_ar: "الحوثيون يستهدفون سفينة تجارية في البحر الأحمر",
     description: "Houthi forces launched anti-ship ballistic missiles targeting commercial vessels in the southern Red Sea, forcing major shipping lines to reroute around the Cape of Good Hope.",
+    description_ar: "أطلقت قوات الحوثيين صواريخ باليستية مضادة للسفن تستهدف سفناً تجارية في جنوب البحر الأحمر، مما أجبر شركات الشحن الكبرى على تحويل مسارها حول رأس الرجاء الصالح.",
     event_time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     latitude: 13.5,
     longitude: 42.5,
@@ -49,7 +51,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 2,
     title: "Iranian Nuclear Enrichment Threshold Breach",
+    title_ar: "إيران تتخطى عتبة تخصيب اليورانيوم",
     description: "IAEA inspectors report Iran has enriched uranium to 83.7% purity, the closest to weapons-grade (90%) since the program began.",
+    description_ar: "أفاد مفتشو الوكالة الدولية للطاقة الذرية بأن إيران أثرت اليورانيوم إلى نقاء 83.7%، وهو الأقرب إلى درجة التسليح (90%) منذ بدء البرنامج.",
     event_time: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     latitude: 33.4,
     longitude: 52.0,
@@ -87,7 +91,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 3,
     title: "Major Cyberattack on Saudi Aramco OT Systems",
+    title_ar: "هجوم إلكتروني كبير على أنظمة أرامكو السعودية",
     description: "Advanced persistent threat group breached operational technology networks at multiple Aramco facilities, triggering emergency shutdowns.",
+    description_ar: "اخترقت مجموعة تهديد متقدمة مستمرة شبكات التكنولوجيا التشغيلية في منشآت أرامكو المتعددة، مما أدى إلى عمليات إغلاق طارئة.",
     event_time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
     latitude: 25.38,
     longitude: 49.66,
@@ -125,7 +131,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 4,
     title: "Iraq-Kurdistan Oil Export Pipeline Sabotage",
+    title_ar: "تخريب خط أنابيب تصدير النفط بين العراق وكردستان",
     description: "Explosive devices detonated along the Kirkuk-Ceyhan pipeline, halting 450,000 bpd of crude exports through Turkey.",
+    description_ar: "انفجرت عبوات ناسفة على طول خط أنابيب كركوك-جيهان، مما أوقف 450 ألف برميل يومياً من صادرات النفط الخام عبر تركيا.",
     event_time: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
     latitude: 36.34,
     longitude: 43.15,
@@ -163,7 +171,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 5,
     title: "UAE-India Trade Corridor Disruption — Port Congestion Crisis",
+    title_ar: "اضطراب ممر التجارة بين الإمارات والهند — أزمة ازدحام الموانئ",
     description: "Severe congestion at Jebel Ali port due to Red Sea diversions creating cascading delays across India-Gulf trade routes.",
+    description_ar: "ازدحام شديد في ميناء جبل علي بسبب تحويلات مسار البحر الأحمر مما يتسبب في تأخيرات متتالية عبر خطوط التجارة بين الهند والخليج.",
     event_time: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
     latitude: 25.0,
     longitude: 55.06,
@@ -201,7 +211,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 6,
     title: "Seismic Event Kuwait",
+    title_ar: "حدث زلزالي في الكويت",
     description: "A 4.7 magnitude earthquake struck southwest Kuwait, causing minor structural damage to oil infrastructure and prompting precautionary shutdowns at nearby gathering centers.",
+    description_ar: "ضرب زلزال بقوة 4.7 درجة جنوب غرب الكويت، مما تسبب في أضرار هيكلية طفيفة للبنية التحتية النفطية وأدى إلى عمليات إغلاق احترازية في مراكز التجميع القريبة.",
     event_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
     latitude: 29.37,
     longitude: 47.98,
@@ -243,7 +255,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 9,
     title: "Cyber Incident Gulf Financial Infrastructure",
+    title_ar: "هجوم إلكتروني على البنية التحتية المالية الخليجية",
     description: "A coordinated cyber attack targeted GCC banking SWIFT network gateways, disrupting interbank settlement systems across Bahrain and neighboring Gulf financial centers.",
+    description_ar: "استهدف هجوم إلكتروني منسق بوابات شبكة سويفت المصرفية لدول مجلس التعاون الخليجي، مما أدى إلى تعطيل أنظمة التسوية بين البنوك في البحرين والمراكز المالية الخليجية المجاورة.",
     event_time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
     latitude: 26.07,
     longitude: 50.55,
@@ -285,7 +299,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 10,
     title: "Airspace Closure Tehran FIR",
+    title_ar: "إغلاق المجال الجوي لمنطقة معلومات الطيران في طهران",
     description: "Iran has closed the Tehran Flight Information Region (FIR) to all international overflights, disrupting major aviation corridors between Europe, Asia, and the Gulf.",
+    description_ar: "أغلقت إيران منطقة معلومات الطيران في طهران أمام جميع الرحلات الدولية العابرة، مما أدى إلى تعطيل ممرات الطيران الرئيسية بين أوروبا وآسيا والخليج.",
     event_time: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
     latitude: 35.69,
     longitude: 51.42,
@@ -327,7 +343,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 7,
     title: "Strait of Hormuz Naval Standoff — IRGC vs US Navy",
+    title_ar: "توتر بحري في مضيق هرمز بين الحرس الثوري والبحرية الأمريكية",
     description: "IRGC fast boats conducted aggressive maneuvers around USS Bataan amphibious group, triggering weapons lock warnings.",
+    description_ar: "نفذت زوارق الحرس الثوري الإيراني السريعة مناورات عدوانية حول مجموعة يو إس إس باتان البرمائية، مما أدى إلى تفعيل تحذيرات القفل التسليحي.",
     event_time: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
     latitude: 26.56,
     longitude: 56.25,
@@ -365,7 +383,9 @@ export const SEED_EVENTS: ApiEvent[] = [
   {
     id: 8,
     title: "Mass Protest Movement in Southern Iraq — Basra Oil Hub",
+    title_ar: "حركة احتجاجية واسعة في جنوب العراق — مركز نفط البصرة",
     description: "Large-scale civilian protests in Basra demanding basic services have spread to the perimeter of major oil installations.",
+    description_ar: "احتجاجات مدنية واسعة النطاق في البصرة تطالب بالخدمات الأساسية امتدت إلى محيط المنشآت النفطية الكبرى.",
     event_time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     latitude: 30.51,
     longitude: 47.81,
