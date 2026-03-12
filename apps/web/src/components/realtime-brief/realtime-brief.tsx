@@ -13,14 +13,15 @@ import { getLocalizedField, translateTag, translateRiskLevel } from "@/utils/tra
 
 interface ForecastItem {
   probability: number;
-  text: string;
+  headline: string;
+  detail: string;
 }
 
 interface ActionItem {
   number: string;
   timing: string;
   action: string;
-  reason: string;
+  driver: string;
 }
 
 interface DetailData {
@@ -29,7 +30,7 @@ interface DetailData {
   consequences: Array<{ from: string; to: string; label: string }>;
   infrastructure: Array<{ name: string; status: string; detail: string }>;
   signals: string[];
-  sources: Array<{ name: string; time: string; reliability: number }>;
+  sources: Array<{ name: string; count: number; time: string; reliability: number }>;
 }
 
 interface BriefCache {
@@ -39,6 +40,8 @@ interface BriefCache {
   actions: ActionItem[];
   detail: DetailData;
   generatedAt: string;
+  eventCount: number;
+  sourceCount: number;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -107,6 +110,25 @@ const INFRA_STATUS_COLORS: Record<string, string> = {
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
+/** Country-specific institution references for prompts */
+const COUNTRY_INSTITUTIONS: Record<string, string> = {
+  Kuwait: "KPC, KIA ($800B+), KNPC, Camp Arifjan, Mina Al-Ahmadi terminal, CBK, 5th Fleet HQ",
+  "Saudi Arabia": "Aramco, Ras Tanura terminal, PIF ($930B+), SABIC, Red Sea Fleet, NEOM, Jeddah Islamic Port, King Abdulaziz Naval Base",
+  UAE: "ADNOC, Jebel Ali Port, ADIA ($990B+), Mubadala, UAE Armed Forces, DXB/DWC airports, Fujairah oil terminal",
+  Qatar: "QatarEnergy, QIA ($500B+), Al Udeid Air Base, Ras Laffan LNG terminal, Hamad Port",
+  Bahrain: "BAPCO, Bahrain Naval Support Activity (US 5th Fleet), Alba smelter, EDB",
+  Oman: "PDO, Duqm Port & SEZ, Sohar Port, Royal Navy of Oman, OIA",
+  Iraq: "Basra Oil Terminal, SOMO, Iraqi SOC, Al-Asad Air Base, Rumaila oil field",
+  Iran: "IRGC, Bushehr nuclear facility, Natanz enrichment site, Kharg Island terminal, Bandar Abbas",
+  Yemen: "Houthi forces, Bab el-Mandeb strait, Hodeidah port, Marib oil fields",
+  Lebanon: "Beirut Port, LAF (Lebanese Armed Forces), Hezbollah positions, UNIFIL zone, MEA airline hub",
+  Syria: "Assad regime forces, Russian Khmeimim Air Base, Tartus naval facility, SDF-held oil fields",
+  Jordan: "RAF, Muwaffaq Salti Air Base, Port of Aqaba, Jordanian Armed Forces",
+  Egypt: "Suez Canal Authority, Egyptian Armed Forces, Cairo Airport, El-Arish gas pipeline",
+  Turkey: "Turkish Armed Forces, Incirlik Air Base, Bosphorus Strait, BTC pipeline terminus, Ceyhan terminal",
+  Pakistan: "Pakistan Armed Forces, Gwadar Port, CPEC corridor, Karachi Port, PAC",
+};
+
 /* ═══════════════════════════════════════════════════════════════════
    Helpers
    ═══════════════════════════════════════════════════════════════════ */
@@ -124,21 +146,27 @@ function timeAgo(dateStr: string, isAr: boolean): string {
 function buildEventContext(events: ApiEvent[]): string {
   return events
     .sort((a, b) => b.risk_score - a.risk_score)
-    .slice(0, 10)
+    .slice(0, 15)
     .map((e) => {
       const ago = timeAgo(e.event_time, false);
-      return `EVENT: ${e.title}
+      return `TITLE: ${e.title}
 SEVERITY: ${e.risk_level}
 DESCRIPTION: ${e.situation_en || e.description}
-RISK SCORE: ${e.risk_score}
-TIME: ${ago}
+RISK: ${e.risk_score}/100
 LOCATION: ${e.country}, ${e.region}
-SECTORS: ${e.sector}`;
+SECTORS: ${e.sector}
+SOURCE: ${e.source || "OSINT"}
+TIME: ${ago}`;
     })
     .join("\n---\n");
 }
 
-const arabicSuffix = `\nRespond in formal Arabic MSA. No English words except proper nouns and source names.`;
+/** Detect whether events are from live news feeds (not seeded) */
+function hasLiveEvents(events: ApiEvent[]): boolean {
+  return events.some((e) => e.id >= 90000 || (e.source && !["Atlas Intel", "OSINT", ""].includes(e.source)));
+}
+
+const arabicSuffix = `\nRespond entirely in formal Arabic (Modern Standard Arabic). Do not use any English words except: proper nouns, source names (Reuters, BBC, Al Jazeera), and the brand أطلس كوماند. All sector names, event types, and locations must be in Arabic.`;
 
 function cacheKey(country: string, sectors: string[], lang: string): string {
   return `brief_${lang}_${country}_${sectors.sort().join("_")}`;
@@ -175,7 +203,7 @@ async function callClaude(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       messages: [{ role: "user", content: prompt }],
-      events: events.slice(0, 10).map((e) => ({
+      events: events.slice(0, 15).map((e) => ({
         id: e.id,
         title: e.title,
         title_ar: e.title_ar,
@@ -314,6 +342,8 @@ export function RealtimeBrief() {
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   const [lastGenerated, setLastGenerated] = useState<string | null>(null);
+  const [briefEventCount, setBriefEventCount] = useState(0);
+  const [briefSourceCount, setBriefSourceCount] = useState(0);
   const [isCached, setIsCached] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
@@ -350,15 +380,22 @@ export function RealtimeBrief() {
     });
   }, [events, selectedCountry, selectedSectors]);
 
-  const topEvents = useMemo(
-    () => [...filteredEvents].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5),
+  const relevantEvents = useMemo(
+    () => [...filteredEvents].sort((a, b) => b.risk_score - a.risk_score).slice(0, 15),
     [filteredEvents],
   );
 
+  const topEvents = useMemo(
+    () => relevantEvents.slice(0, 5),
+    [relevantEvents],
+  );
+
   const totalSources = useMemo(
-    () => filteredEvents.reduce((sum, e) => sum + e.source_count, 0),
+    () => new Set(filteredEvents.map((e) => e.source).filter(Boolean)).size,
     [filteredEvents],
   );
+
+  const isLive = useMemo(() => hasLiveEvents(filteredEvents), [filteredEvents]);
 
   const isSpecificCountry = selectedCountry !== "ALL_GCC";
   const countryLabel = isAr
@@ -387,7 +424,7 @@ export function RealtimeBrief() {
     return { role: meta?.label || profile.role, region: profile.region, watchlist: profile.watchlist };
   }, [profile]);
 
-  /* ─── Generate brief — 4 parallel Claude calls ──────── */
+  /* ─── Generate brief — 5 parallel Claude calls ──────── */
 
   const generateBrief = useCallback(async () => {
     if (filteredEvents.length === 0 && events.length === 0) return;
@@ -398,6 +435,10 @@ export function RealtimeBrief() {
     const langSuffix = isAr ? arabicSuffix : "";
     const sectorsList = selectedSectors.has("ALL") ? "All" : Array.from(selectedSectors).join(", ");
     const countryCtx = selectedCountry === "ALL_GCC" ? "All GCC countries" : selectedCountry;
+    const institutions = COUNTRY_INSTITUTIONS[selectedCountry] || "";
+    const institutionClause = institutions
+      ? `\nKey institutions in ${countryCtx}: ${institutions}`
+      : "";
 
     // Check cache
     const key = cacheKey(selectedCountry, Array.from(selectedSectors), lang);
@@ -409,6 +450,8 @@ export function RealtimeBrief() {
       setActions(cached.actions);
       setDetail(cached.detail);
       setLastGenerated(cached.generatedAt);
+      setBriefEventCount(cached.eventCount);
+      setBriefSourceCount(cached.sourceCount);
       setIsCached(true);
       return;
     }
@@ -423,140 +466,166 @@ export function RealtimeBrief() {
     // ── PROMPT 1: SITUATION ──
     const situationPrompt = `You are a senior intelligence analyst at Atlas Command.
 
-Current active events:
+REAL EVENTS HAPPENING RIGHT NOW:
 ${eventContext}
 
-Selected country: ${countryCtx}
-Selected sectors: ${sectorsList}
+Country focus: ${countryCtx}
+Sector focus: ${sectorsList}
+Current time: ${new Date().toUTCString()}
 
-Write a 4-6 sentence intelligence summary of the current situation.
+Write a 4-6 sentence intelligence situation summary.
 
-Rules:
-- Reference at least 3 of the active events by their exact name
-- Include specific numbers (risk scores, percentages, quantities, dollar amounts)
-- Name specific locations (Strait of Hormuz, Bab el-Mandeb, Mina Al-Ahmadi etc)
-- If country is specific (not All), focus on that country's exposure
-- Do NOT use phrases: "elevated tensions", "monitoring the situation", "heightened alert", "remains fluid"
-- Write like a professional intelligence report, not news
-- Maximum 120 words
+STRICT RULES:
+1. Reference at least 3 events from the list above BY NAME
+2. Include specific numbers, locations, and metrics from the events above
+3. If country is specific (not All GCC), focus on that country's direct exposure to these events
+4. Connect events to each other — show how they relate
+5. Write in present tense — this is happening NOW
+6. DO NOT write: "elevated tensions", "monitoring the situation", "heightened alert", "remains fluid", "coordinate with teams", any phrase not tied to a specific event above
+7. Name specific locations (Strait of Hormuz, Bab el-Mandeb, Mina Al-Ahmadi, etc.)
+8. Include risk scores and percentages from the event data${institutionClause}
 
-Return ONLY the paragraph text, no JSON, no headers.${langSuffix}`;
+Maximum 150 words.
+No preamble. Just the summary.${langSuffix}`;
 
     // ── PROMPT 2: MEANS (only for specific country) ──
     const meansPrompt = isSpecificCountry
       ? `You are a senior intelligence analyst at Atlas Command.
 
-Current active events:
+REAL EVENTS HAPPENING RIGHT NOW:
 ${eventContext}
 
-Country: ${selectedCountry}
+Country: ${selectedCountry}${institutionClause}
 
-Write 3-5 bullet points explaining what these specific events mean for ${selectedCountry}.
+Write exactly 4 bullet points explaining what these specific real events mean for ${selectedCountry}.
 
-Rules:
-- Each bullet starts with a specific asset or institution in ${selectedCountry} followed by colon
-- Include specific numbers and metrics
-- Reference specific events
-- No generic statements
-- Format: "• [Asset]: [consequence]"
-- Maximum 20 words per bullet
+FORMAT for each bullet:
+- [Specific asset or institution in ${selectedCountry}]: [consequence with number or metric]
 
-Return ONLY a JSON array of strings. Example: ["Mina Al-Ahmadi terminal: Within Iranian missile range. 1.5M bpd at risk if Hormuz closes.", "KIA $800B fund: ~12% energy exposure."]${langSuffix}`
+RULES:
+1. Each bullet must reference a specific event from the list above
+2. Name specific institutions, terminals, funds, or assets that exist in ${selectedCountry}
+3. Include dollar amounts, percentages, or quantities
+4. No generic statements
+
+Return ONLY a JSON array of 4 strings.
+Example: ["Mina Al-Ahmadi terminal: Within 280km of Iranian missile batteries. 1.5M bpd at risk if Hormuz standoff escalates — currently 3 Kuwaiti tankers in standoff zone.", "KIA sovereign fund: 12% energy sector exposure ($96B) faces mark-to-market pressure as war risk premiums on Gulf routing hit $2.40/barrel."]${langSuffix}`
       : null;
 
     // ── PROMPT 3: FORECAST ──
     const forecastPrompt = `You are a senior intelligence analyst at Atlas Command.
 
-Current active events:
+REAL EVENTS HAPPENING RIGHT NOW:
 ${eventContext}
 
 Country: ${countryCtx}
 Sectors: ${sectorsList}
 
-Generate 4 forecasts based on these specific events.
+Generate 4 forecasts based ONLY on the real events listed above.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON, no other text:
 {
   "h24": {
     "probability": 70,
-    "text": "2-3 sentences referencing specific events and locations"
+    "headline": "10 words max headline",
+    "detail": "2 sentences referencing specific events by name"
   },
   "h48": {
     "probability": 55,
-    "text": "..."
+    "headline": "10 words max headline",
+    "detail": "2 sentences"
   },
   "h72": {
     "probability": 40,
-    "text": "..."
+    "headline": "10 words max headline",
+    "detail": "2 sentences"
   },
   "wildcard": {
-    "probability": 15,
-    "text": "low probability, extremely high impact scenario"
+    "probability": 12,
+    "headline": "10 words max headline",
+    "detail": "extreme but plausible scenario based on current events"
   }
 }
 
-Each text must reference at least one specific active event by name. Be specific not generic.${langSuffix}`;
+RULES:
+- Every detail must name a specific event, location, or actor from the events list above
+- Probabilities must be realistic (h24: 60-85, h48: 40-65, h72: 25-50, wildcard: 5-20)
+- Wildcard must be low probability but high impact
+- NO generic forecasts like "monitor developments"${langSuffix}`;
 
     // ── PROMPT 4: ACTIONS ──
     const actionsPrompt = `You are a senior intelligence analyst at Atlas Command.
 
-Current active events:
+REAL EVENTS HAPPENING RIGHT NOW:
 ${eventContext}
 
 Country: ${countryCtx}
 Sectors: ${sectorsList}
-User role: ${profileCtx?.role || "Senior Government Official"}
+User role: ${profileCtx?.role || "Senior Government Official"}${institutionClause}
 
-Generate 5 command actions.
+Generate 5 command actions based on the real events above.
 
 Return ONLY valid JSON array:
 [
   {
     "number": "01",
     "timing": "IMMEDIATE",
-    "action": "specific action with named institution and protocol",
-    "reason": "which specific event drives this action"
+    "action": "specific action referencing a named institution and specific protocol",
+    "driver": "which specific event from the list drives this action"
   }
 ]
 
-Timing options: IMMEDIATE, TODAY, THIS WEEK, STRATEGIC
+Timing values: IMMEDIATE, TODAY, THIS WEEK, STRATEGIC
 
-Rules:
-- Name specific institutions (KPC, KIA, CENTCOM, 5th Fleet, Lloyd's, SWIFT, Aramco, etc)
-- Name specific protocols or procedures where possible
-- Include numbers and metrics
-- Each action must reference a specific active event
-- NEVER write: "Elevate monitoring", "Coordinate with teams", "Review contingency plans", "Prepare assessment"${langSuffix}`;
+RULES:
+1. Every action must reference a specific event from the list
+2. Name specific institutions and protocols
+3. Include specific numbers where possible
+4. Actions must be specific enough that a minister could act on them TODAY
+5. NEVER generate:
+   - "Elevate monitoring"
+   - "Coordinate with teams"
+   - "Review contingency plans"
+   - "Prepare assessment"
+   - "Enhance surveillance"
+   These are useless non-actions.
+
+Specific action example:
+"Contact KPC operations director to verify Hormuz contingency protocol activation — 3 Kuwaiti tankers currently in standoff zone"${langSuffix}`;
 
     // ── PROMPT 5: DETAIL SECTIONS ──
-    const detailPrompt = `Active events:
+    const detailPrompt = `You are a senior intelligence analyst at Atlas Command.
+
+REAL EVENTS HAPPENING RIGHT NOW:
 ${eventContext}
 
 Country: ${countryCtx}
-Sectors: ${sectorsList}
+Sectors: ${sectorsList}${institutionClause}
 
 Generate intelligence detail in this exact JSON structure:
 {
-  "regional": "2-3 paragraph analysis of how neighboring countries' events connect and affect ${countryCtx}. Reference specific events.",
+  "regional": "2-3 paragraph analysis of how neighboring countries' events connect and affect ${countryCtx}. Reference specific events from the list above by name.",
   "sector": "2-3 paragraph sector deep dive for ${sectorsList}. Reference specific events and give numbers.",
   "consequences": [
-    {"from":"Event A name","to":"Consequence B","label":"mechanism"},
-    {"from":"Consequence B","to":"Consequence C","label":"mechanism"}
+    {"from":"Exact event name from list","to":"Direct consequence","label":"mechanism"},
+    {"from":"Direct consequence","to":"Second-order effect","label":"mechanism"},
+    {"from":"Second-order effect","to":"Impact on ${countryCtx}","label":"mechanism"}
   ],
   "infrastructure": [
-    {"name":"Specific infrastructure name","status":"NORMAL","detail":"Why this status, referencing events"}
+    {"name":"Specific infrastructure name in ${countryCtx}","status":"NORMAL or ELEVATED or AT RISK or CRITICAL","detail":"Why this status, referencing which specific event affects it"}
   ],
   "signals": [
-    "5-7 specific tripwires. NOT generic. e.g. IRGC patrol vessel count in Hormuz exceeds 8"
+    "Specific measurable tripwire with current value and threshold"
   ],
   "sources": [
-    {"name":"Source name","time":"${new Date().toISOString()}","reliability":85}
+    {"name":"Source name","count":3,"time":"${new Date().toISOString()}","reliability":85}
   ]
 }
 
-Infrastructure: list 5-8 key infrastructure items for ${countryCtx} with current status.
-Signals: 5-7 specific, measurable tripwires. Not generic.
-Sources: list the top sources.
+Infrastructure: list 5-8 key infrastructure items for ${countryCtx} with status derived from whether active events threaten them.
+Signals: 5-7 specific, measurable tripwires. NOT generic like "Watch for official statements." SPECIFIC like: "IRGC patrol vessel count in Hormuz exceeds 8 — currently at 5" or "Houthi targeting range extends north of 15°N latitude"
+Consequences: Build chains showing Event → Consequence → Impact with at least 4 steps
+Sources: list the actual news sources from the events above
 
 Return ONLY valid JSON.${langSuffix}`;
 
@@ -611,6 +680,8 @@ Return ONLY valid JSON.${langSuffix}`;
 
     const now = new Date().toISOString();
     setLastGenerated(now);
+    setBriefEventCount(evts.length);
+    setBriefSourceCount(new Set(evts.map((e) => e.source).filter(Boolean)).size);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredEvents, events, selectedCountry, selectedSectors, isAr, profileCtx, lang]);
 
@@ -625,16 +696,24 @@ Return ONLY valid JSON.${langSuffix}`;
         actions,
         detail,
         generatedAt: lastGenerated,
+        eventCount: briefEventCount,
+        sourceCount: briefSourceCount,
       });
     }
-  }, [situation, means, forecast, actions, detail, lastGenerated, isCached, selectedCountry, selectedSectors, lang]);
+  }, [situation, means, forecast, actions, detail, lastGenerated, isCached, selectedCountry, selectedSectors, lang, briefEventCount, briefSourceCount]);
 
-  /* ─── Auto-generate on mount and filter change ──────── */
+  /* ─── Auto-generate on mount, filter change, and event refresh ── */
+
+  // Track event IDs to detect real event changes (not just length)
+  const eventSignature = useMemo(
+    () => filteredEvents.map((e) => e.id).sort().join(","),
+    [filteredEvents],
+  );
 
   useEffect(() => {
     if (events.length > 0) generateBrief();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCountry, selectedSectors, events.length]);
+  }, [selectedCountry, selectedSectors, eventSignature]);
 
   const prevLangRef = useRef(lang);
   useEffect(() => {
@@ -681,7 +760,7 @@ Return ONLY valid JSON.${langSuffix}`;
         <div>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:${TIMING_COLORS[a.timing] || "#3b82f6"};letter-spacing:1px;">${a.timing}</span>
           <div style="color:#e5e7eb;font-size:12px;line-height:1.6;margin-top:2px;${textStyle}">${a.action}</div>
-          <div style="color:#6b7280;font-size:10px;margin-top:2px;${textStyle}">${a.reason}</div>
+          <div style="color:#6b7280;font-size:10px;margin-top:2px;${textStyle}">↳ ${a.driver}</div>
         </div>
       </div>`).join("");
 
@@ -692,7 +771,8 @@ Return ONLY valid JSON.${langSuffix}`;
           const label = k === "h24" ? "24H" : k === "h48" ? "48H" : k === "h72" ? "72H" : "WILDCARD";
           return `<div style="margin-bottom:12px;">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#3b82f6;letter-spacing:2px;margin-bottom:4px;">${label} · ${item.probability}%</div>
-            <div style="font-size:12px;color:#e5e7eb;line-height:1.6;${textStyle}">${item.text}</div>
+            <div style="font-size:13px;color:white;font-weight:500;margin-bottom:2px;${textStyle}">${item.headline}</div>
+            <div style="font-size:12px;color:#e5e7eb;line-height:1.6;${textStyle}">${item.detail}</div>
           </div>`;
         }).join("")
       : "";
@@ -739,7 +819,7 @@ Return ONLY valid JSON.${langSuffix}`;
   </div>
   <div style="height:1px;background:#3b82f6;margin-top:30px;margin-bottom:12px;"></div>
   <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b7280;">
-    <span>${filteredEvents.length} ${isAr ? "حدث" : "events"} · ${totalSources} ${isAr ? "مصدر" : "sources"}</span>
+    <span>${isAr ? `بناءً على ${briefEventCount} حدث حقيقي · ${briefSourceCount} مصدر` : `Based on ${briefEventCount} real events · ${briefSourceCount} sources`}</span>
     <span>${isAr ? "أطلس كوماند" : "ATLAS COMMAND"}</span>
     <span>${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
   </div>
@@ -747,7 +827,7 @@ Return ONLY valid JSON.${langSuffix}`;
 </html>`);
     w.document.close();
     setTimeout(() => w.print(), 1000);
-  }, [situation, means, forecast, actions, isAr, countryLabel, filteredEvents.length, totalSources]);
+  }, [situation, means, forecast, actions, isAr, countryLabel, briefEventCount, briefSourceCount]);
 
   /* ═══════════════════════════════════════════════════════
      RENDER
@@ -758,7 +838,7 @@ Return ONLY valid JSON.${langSuffix}`;
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Shimmer keyframes */}
-      <style dangerouslySetInnerHTML={{ __html: `@keyframes shimmer{0%{opacity:.4}50%{opacity:.8}100%{opacity:.4}}` }} />
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}.skel-shimmer{background:linear-gradient(90deg,rgba(255,255,255,0.05) 25%,rgba(255,255,255,0.1) 50%,rgba(255,255,255,0.05) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;}` }} />
 
       <div className="flex-1 overflow-y-auto">
 
@@ -769,21 +849,34 @@ Return ONLY valid JSON.${langSuffix}`;
               <span className="font-mono text-[11px] tracking-[3px] text-white font-semibold">
                 {isAr ? "النشرة الاستخباراتية" : "INTELLIGENCE BRIEF"}
               </span>
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-                </span>
-                <span className="font-mono text-[9px] tracking-wider text-green-500">LIVE</span>
-              </div>
+              {/* Live/Seeded indicator */}
+              {isLive ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                  </span>
+                  <span className="font-mono text-[9px] tracking-wider text-green-500">LIVE</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex h-2 w-2 rounded-full border border-slate-600" />
+                  <span className="font-mono text-[9px] tracking-wider text-slate-500">INTEL</span>
+                </div>
+              )}
               <span className="font-mono text-[9px] text-slate-600">
                 {totalSources} {isAr ? "مصدر" : "sources"}
               </span>
+              {briefEventCount > 0 && (
+                <span className="font-mono text-[9px] text-slate-600">
+                  {isAr ? `بناءً على ${briefEventCount} حدث حقيقي` : `Based on ${briefEventCount} real events`}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               {lastGenerated && (
                 <span className="font-mono text-[9px] text-slate-600">
-                  {isAr ? "آخر تحديث" : "LAST UPDATED"}: {new Date(lastGenerated).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC
+                  {isAr ? "آخر تحديث" : "Last generated"}: {timeAgo(lastGenerated, isAr)}
                 </span>
               )}
               {isCached && (
@@ -799,8 +892,8 @@ Return ONLY valid JSON.${langSuffix}`;
                 disabled={isLoading}
                 className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] tracking-wider text-green-400 border border-green-500/30 hover:bg-green-500/10 disabled:opacity-50 transition-colors"
               >
-                <span className={isLoading ? "animate-spin" : ""}>{isLoading ? "⟳" : "▶"}</span>
-                {isLoading ? (isAr ? "جارٍ التحليل..." : "Generating...") : (isAr ? "إنشاء" : "Generate")}
+                <span className={isLoading ? "animate-spin" : ""}>{isLoading ? "⟳" : "↻"}</span>
+                {isLoading ? (isAr ? "جارٍ التحليل..." : "Generating...") : (isAr ? "تحديث الآن" : "UPDATE NOW")}
               </button>
             </div>
           </div>
@@ -868,7 +961,7 @@ Return ONLY valid JSON.${langSuffix}`;
               </div>
             ) : (
               <div className="font-mono text-[11px] text-slate-600">
-                {isAr ? "لا توجد بيانات. اضغط إنشاء." : "No data. Click Generate."}
+                {isAr ? "لا توجد بيانات. اضغط تحديث الآن." : "No data. Click UPDATE NOW."}
               </div>
             )}
 
@@ -948,6 +1041,7 @@ Return ONLY valid JSON.${langSuffix}`;
                           <span>{isAr ? "خطر" : "Risk"}: <span className="font-bold" style={{ color }}>{ev.risk_score}</span></span>
                           <span>·</span>
                           <span>{ago}</span>
+                          {ev.source && <><span>·</span><span>{ev.source}</span></>}
                         </div>
                         <div className="flex items-center gap-1.5">
                           <button
@@ -1055,7 +1149,8 @@ Return ONLY valid JSON.${langSuffix}`;
                       <span className={`font-mono text-[9px] tracking-wider ${key === "wildcard" ? "text-red-400" : "text-blue-400"}`}>{label}</span>
                       <span className="font-mono text-[11px] font-bold" style={{ color: barColor }}>{item.probability}%</span>
                     </div>
-                    <div className={`text-[11px] leading-relaxed text-slate-400 mb-3 ${arText}`}>{item.text}</div>
+                    <div className={`text-[12px] font-medium text-slate-200 mb-1 ${arText}`}>{item.headline}</div>
+                    <div className={`text-[11px] leading-relaxed text-slate-400 mb-3 ${arText}`}>{item.detail}</div>
                     <div className="h-1 w-full bg-white/[0.06]">
                       <div className="h-full transition-all duration-700" style={{ width: `${item.probability}%`, backgroundColor: barColor }} />
                     </div>
@@ -1080,7 +1175,7 @@ Return ONLY valid JSON.${langSuffix}`;
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex gap-3">
-                  <div className="h-4 w-6 rounded" style={{ backgroundColor: "rgba(255,255,255,0.08)", animation: "shimmer 1.5s infinite" }} />
+                  <div className="h-4 w-6 skel-shimmer" />
                   <Skeleton lines={2} className="flex-1" />
                 </div>
               ))}
@@ -1102,14 +1197,14 @@ Return ONLY valid JSON.${langSuffix}`;
                   </div>
                   <div className="flex-1">
                     <div className={`text-[12px] leading-relaxed text-slate-200 ${arText}`}>{a.action}</div>
-                    <div className={`text-[11px] text-slate-500 mt-1 ${arText}`}>{a.reason}</div>
+                    <div className={`text-[11px] text-slate-500 mt-1 ${arText}`}>↳ {a.driver}</div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="font-mono text-[11px] text-slate-600">
-              {isAr ? "لا توجد إجراءات. اضغط إنشاء." : "No actions generated. Click Generate."}
+              {isAr ? "لا توجد إجراءات. اضغط تحديث الآن." : "No actions generated. Click UPDATE NOW."}
             </div>
           )}
         </div>
@@ -1188,6 +1283,9 @@ Return ONLY valid JSON.${langSuffix}`;
                   <div key={i} className="flex items-center justify-between border border-white/[0.04] bg-white/[0.015] p-3">
                     <div className="flex items-center gap-3">
                       <span className="text-[12px] text-slate-300">{src.name}</span>
+                      <span className="font-mono text-[9px] text-slate-600">
+                        {src.count} {isAr ? "حدث" : "events"}
+                      </span>
                       <span className="font-mono text-[9px] text-slate-600">{src.time ? timeAgo(src.time, isAr) : "—"}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1221,9 +1319,15 @@ Return ONLY valid JSON.${langSuffix}`;
         {/* ═══ SECTION 8 — BOTTOM BAR + REPORT BUTTON ═══ */}
         <div className="flex items-center justify-between px-6 py-3 border-t border-white/[0.06]" style={{ background: "#0a1020" }}>
           <div className="font-mono text-[9px] text-slate-500 tracking-wider">
-            {isAr
-              ? `بناءً على ${filteredEvents.length} حدث نشط · ${totalSources} مصدر مراقب · ${lastGenerated ? `تحديث ${new Date(lastGenerated).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC` : ""}`
-              : `Based on ${filteredEvents.length} active events · ${totalSources} sources monitored · ${lastGenerated ? `Updated ${new Date(lastGenerated).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC` : ""}`}
+            {isLive ? (
+              isAr
+                ? `● مباشر · بناءً على ${briefEventCount} حدث حقيقي · ${briefSourceCount} مصدر · ${lastGenerated ? `تحديث ${timeAgo(lastGenerated, true)}` : ""}`
+                : `● LIVE · Based on ${briefEventCount} real events · ${briefSourceCount} sources · ${lastGenerated ? `Last generated ${timeAgo(lastGenerated, false)}` : ""}`
+            ) : (
+              isAr
+                ? `◌ بيانات أولية · ${filteredEvents.length} حدث · ${lastGenerated ? `تحديث ${timeAgo(lastGenerated, true)}` : ""}`
+                : `◌ Seeded intelligence · ${filteredEvents.length} events · ${lastGenerated ? `Last generated ${timeAgo(lastGenerated, false)}` : ""}`
+            )}
           </div>
           <button
             onClick={handleGenerateReport}
