@@ -44,7 +44,9 @@ export function AtlasCommander() {
       } catch {
         addChatMessage({
           role: "assistant",
-          content: "Atlas Commander is initializing. Ensure ANTHROPIC_API_KEY is set in apps/web/.env.local and restart the Next.js dev server.",
+          content: lang === "ar"
+            ? "قائد أطلس قيد التهيئة. تأكد من إعداد ANTHROPIC_API_KEY في apps/web/.env.local وأعد تشغيل الخادم."
+            : "Atlas Commander is initializing. Ensure ANTHROPIC_API_KEY is set in apps/web/.env.local and restart the Next.js dev server.",
         });
       }
       setChatLoading(false);
@@ -75,7 +77,7 @@ export function AtlasCommander() {
             {t("commander.title")}
           </div>
           <div className="font-mono text-[9px] tracking-widest text-slate-600">
-            {t("commander.subtitle")} · {events.length} active events loaded
+            {t("commander.subtitle")} · {t("commander.eventsLoaded", { count: String(events.length) })}
           </div>
         </div>
         <button
@@ -96,12 +98,10 @@ export function AtlasCommander() {
                 <path d="M2 12h20M12 2c-3 4-3 14 0 20M12 2c3 4 3 14 0 20" stroke="#3b82f6" strokeWidth="1" />
               </svg>
               <div className="text-center font-mono text-[11px] text-slate-500 mb-1">
-                Atlas Commander is ready.
+                {t("commander.ready")}
               </div>
-              <div className="text-center font-mono text-[10px] text-slate-600">
-                {lang === "ar"
-                  ? "اسأل عن أي حدث نشط أو اطلب تحليلاً استراتيجياً"
-                  : "Ask about any active event or request strategic analysis."}
+              <div className={`text-center font-mono text-[10px] text-slate-600 ${lang === "ar" ? "arabic-text" : ""}`}>
+                {t("commander.askAbout")}
               </div>
             </div>
 
@@ -130,8 +130,8 @@ export function AtlasCommander() {
               >
                 <div className="font-mono text-[9px] tracking-wider text-slate-600 mb-1">
                   {msg.role === "user"
-                    ? "YOU"
-                    : "ATLAS COMMANDER"}{" "}
+                    ? t("commander.you")
+                    : t("commander.name")}{" "}
                   · {new Date(msg.timestamp).toLocaleTimeString()}
                 </div>
                 <div
@@ -148,7 +148,7 @@ export function AtlasCommander() {
             {chatLoading && (
               <div className="mr-12 animate-slide-up">
                 <div className="font-mono text-[9px] tracking-wider text-slate-600 mb-1">
-                  ATLAS COMMANDER
+                  {t("commander.name")}
                 </div>
                 <div className="border border-white/[0.06] bg-white/[0.02] p-3">
                   <span className="font-mono text-[11px] text-atlas-accent animate-pulse">

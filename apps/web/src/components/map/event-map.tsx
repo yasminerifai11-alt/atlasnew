@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState, useCallback } from "react";
+import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
 import { getFilterViewport, GLOBAL_VIEW } from "@/data/regions";
 import type { ApiEvent } from "@/lib/api";
@@ -11,6 +12,34 @@ const RISK_COLORS: Record<string, string> = {
   MEDIUM: "#eab308",
   LOW: "#22c55e",
 };
+
+const OPERATOR_COLORS: Record<string, string> = {
+  US: "#3b82f6",
+  GCC: "#16a34a",
+  IRAN: "#dc2626",
+  RUSSIA: "#ea580c",
+  ISRAEL: "#7c3aed",
+};
+
+const BASE_TYPE_ICONS: Record<string, string> = {
+  AIR_BASE: "✈",
+  NAVAL_BASE: "⚓",
+  ARMY_BASE: "■",
+  MISSILE_BASE: "▲",
+  AIR_BASE_MISSILE: "✈",
+  NAVAL_AIR_BASE: "✈",
+};
+
+const NUCLEAR_COLORS: Record<string, string> = {
+  NUCLEAR_CIVIL: "#ca8a04",
+  NUCLEAR_MILITARY: "#dc2626",
+  NUCLEAR_UNDECLARED: "#7c3aed",
+};
+
+interface MapLayers {
+  militaryBases: boolean;
+  nuclearFacilities: boolean;
+}
 
 // ISO-2 → ISO-3 for countries in scope
 const ISO2_TO_ISO3: Record<string, string> = {
@@ -76,13 +105,29 @@ function riskScoreToBorder(score: number): string {
 }
 
 export function EventMap() {
+  const { t, lang } = useLanguage();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const baseMarkersRef = useRef<any[]>([]);
+  const nuclearMarkersRef = useRef<any[]>([]);
   const countryLayerReady = useRef(false);
   const hoverPopupRef = useRef<any>(null);
   const eventsRef = useRef<ApiEvent[]>([]);
   const countryRiskRef = useRef<CountryRiskMap>({});
+
+  const [layerPanelOpen, setLayerPanelOpen] = useState(false);
+  const [layers, setLayers] = useState<MapLayers>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("atlas-map-layers");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return { militaryBases: false, nuclearFacilities: false };
+  });
+
+  const isAr = lang === "ar";
 
   const events = useCommandStore((s) => s.events);
   const regionFilter = useCommandStore((s) => s.regionFilter);
@@ -91,6 +136,15 @@ export function EventMap() {
   const setSelectedCountry = useCommandStore((s) => s.setSelectedCountry);
 
   const countryRisk = useMemo(() => computeCountryRisk(events), [events]);
+
+  // Persist layer prefs
+  useEffect(() => {
+    try { localStorage.setItem("atlas-map-layers", JSON.stringify(layers)); } catch {}
+  }, [layers]);
+
+  const toggleLayer = useCallback((key: keyof MapLayers) => {
+    setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   // Keep refs in sync for event handlers
   useEffect(() => { eventsRef.current = events; }, [events]);
@@ -214,9 +268,170 @@ export function EventMap() {
     });
   }, [events, setSelectedEvent, setActiveSection]);
 
+  // Military bases layer
+  useEffect(() => {
+    if (!mapRef.current) return;
+    // Remove existing base markers
+    baseMarkersRef.current.forEach((m) => m.remove());
+    baseMarkersRef.current = [];
+
+    if (!layers.militaryBases) return;
+
+    import("maplibre-gl").then(async (maplibregl) => {
+      try {
+        const res = await fetch("/data/military-bases.geojson");
+        const data = await res.json();
+        for (const feature of data.features) {
+          const p = feature.properties;
+          const [lng, lat] = feature.geometry.coordinates;
+          const color = OPERATOR_COLORS[p.operatorGroup] || "#64748b";
+          const icon = BASE_TYPE_ICONS[p.type] || "●";
+
+          const el = document.createElement("div");
+          el.style.cssText = `
+            width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+            font-size: 9px; cursor: pointer; border-radius: 2px;
+            background: ${color}25; border: 1px solid ${color}60; color: ${color};
+            transition: transform 0.15s ease;
+          `;
+          el.textContent = icon;
+          el.onmouseenter = () => { el.style.transform = "scale(1.3)"; };
+          el.onmouseleave = () => { el.style.transform = "scale(1)"; };
+
+          const name = isAr && p.nameAr ? p.nameAr : p.name;
+          const sig = isAr && p.significanceAr ? p.significanceAr : p.significance;
+          const popupHtml = `
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;min-width:180px;">
+              <div style="color:${color};font-weight:600;margin-bottom:3px;">${name}</div>
+              <div style="color:#94a3b8;font-size:9px;">${p.operator} · ${p.type.replace(/_/g, " ")}</div>
+              ${sig ? `<div style="color:#cbd5e1;font-size:9px;margin-top:4px;">${sig}</div>` : ""}
+              <div style="color:#64748b;font-size:8px;margin-top:3px;">${p.country}</div>
+            </div>
+          `;
+
+          const popup = new maplibregl.Popup({ offset: 10, closeButton: false, maxWidth: "240px" }).setHTML(popupHtml);
+          const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.current);
+          baseMarkersRef.current.push(marker);
+        }
+      } catch (e) {
+        console.warn("Failed to load military bases:", e);
+      }
+    });
+  }, [layers.militaryBases, isAr]);
+
+  // Nuclear facilities layer
+  useEffect(() => {
+    if (!mapRef.current) return;
+    nuclearMarkersRef.current.forEach((m) => m.remove());
+    nuclearMarkersRef.current = [];
+
+    if (!layers.nuclearFacilities) return;
+
+    import("maplibre-gl").then(async (maplibregl) => {
+      try {
+        const res = await fetch("/data/nuclear-facilities.geojson");
+        const data = await res.json();
+        for (const feature of data.features) {
+          const p = feature.properties;
+          const [lng, lat] = feature.geometry.coordinates;
+          const color = NUCLEAR_COLORS[p.type] || "#ca8a04";
+
+          const el = document.createElement("div");
+          el.style.cssText = `
+            width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; cursor: pointer;
+            background: ${color}20; border: 1.5px solid ${color}80; border-radius: 50%;
+            color: ${color}; transition: transform 0.15s ease;
+          `;
+          el.textContent = "☢";
+          el.onmouseenter = () => { el.style.transform = "scale(1.3)"; };
+          el.onmouseleave = () => { el.style.transform = "scale(1)"; };
+
+          const name = isAr && p.nameAr ? p.nameAr : p.name;
+          const sig = isAr && p.significanceAr ? p.significanceAr : p.significance;
+          const popupHtml = `
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;min-width:180px;">
+              <div style="color:${color};font-weight:600;margin-bottom:3px;">☢ ${name}</div>
+              <div style="color:#94a3b8;font-size:9px;">${p.type.replace(/_/g, " ")}</div>
+              ${sig ? `<div style="color:#cbd5e1;font-size:9px;margin-top:4px;">${sig}</div>` : ""}
+              <div style="color:#64748b;font-size:8px;margin-top:3px;">${p.country}</div>
+            </div>
+          `;
+
+          const popup = new maplibregl.Popup({ offset: 10, closeButton: false, maxWidth: "240px" }).setHTML(popupHtml);
+          const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.current);
+          nuclearMarkersRef.current.push(marker);
+        }
+      } catch (e) {
+        console.warn("Failed to load nuclear facilities:", e);
+      }
+    });
+  }, [layers.nuclearFacilities, isAr]);
+
   return (
     <div className="relative flex-1 min-h-0">
       <div ref={mapContainer} className="h-full w-full" />
+      {/* Layer toggle button + panel */}
+      <div className="absolute top-3 right-3 z-10">
+        <button
+          onClick={() => setLayerPanelOpen(!layerPanelOpen)}
+          className="flex items-center gap-1.5 bg-atlas-bg/90 border border-white/[0.08] px-3 py-1.5 backdrop-blur-sm font-mono text-[10px] tracking-wider text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          ≡ {isAr ? "الطبقات" : "LAYERS"}
+        </button>
+        {layerPanelOpen && (
+          <div className="mt-1 bg-atlas-bg/95 border border-white/[0.08] backdrop-blur-sm p-3 min-w-[200px]">
+            <div className="font-mono text-[8px] tracking-widest text-slate-600 mb-2">
+              {isAr ? "طبقات عسكرية" : "MILITARY LAYERS"}
+            </div>
+            <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={layers.militaryBases}
+                onChange={() => toggleLayer("militaryBases")}
+                className="accent-blue-500"
+              />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px]">🏗</span>
+                <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
+                  {isAr ? "القواعد العسكرية" : "Military Bases"}
+                </span>
+              </div>
+              <span className="ml-auto font-mono text-[8px] text-slate-600">22</span>
+            </label>
+            <label className="flex items-center gap-2 py-1.5 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={layers.nuclearFacilities}
+                onChange={() => toggleLayer("nuclearFacilities")}
+                className="accent-yellow-500"
+              />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px]">☢</span>
+                <span className="font-mono text-[10px] text-slate-400 group-hover:text-slate-200">
+                  {isAr ? "المنشآت النووية" : "Nuclear Facilities"}
+                </span>
+              </div>
+              <span className="ml-auto font-mono text-[8px] text-slate-600">5</span>
+            </label>
+            {/* Operator legend */}
+            {layers.militaryBases && (
+              <div className="mt-2 pt-2 border-t border-white/[0.06]">
+                <div className="font-mono text-[8px] tracking-widest text-slate-600 mb-1">
+                  {isAr ? "المشغّل" : "OPERATOR"}
+                </div>
+                {Object.entries(OPERATOR_COLORS).map(([key, color]) => (
+                  <div key={key} className="flex items-center gap-1.5 py-0.5">
+                    <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: color }} />
+                    <span className="font-mono text-[8px] text-slate-500">{key}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Country risk legend */}
       <div className="absolute bottom-3 right-3 flex items-center gap-3 bg-atlas-bg/80 border border-white/[0.06] px-3 py-1.5 backdrop-blur-sm">
         <span className="font-mono text-[8px] tracking-wider text-slate-500">RISK</span>

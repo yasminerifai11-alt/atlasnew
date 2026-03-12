@@ -65,6 +65,13 @@ const PREMIUM_SOURCES: IntelSource[] = [
   { name: "Maxar Satellite", type: "API", category: "satellite", frequency: "Daily", reliability: 97, description: "High-resolution satellite imagery — military base monitoring, damage assessment, before/after analysis", tier: "premium" },
   { name: "Recorded Future", type: "API", category: "cyber", frequency: "Real-time", reliability: 91, description: "Threat intelligence — dark web monitoring, vulnerability exploitation, nation-state actor tracking", tier: "premium" },
   { name: "Palantir Gotham", type: "Platform", category: "intelligence", frequency: "Real-time", reliability: 93, description: "Intelligence fusion platform — entity resolution, network analysis, pattern detection", tier: "premium" },
+  // Defense & Military sources
+  { name: "Global Firepower Index", type: "Scrape", category: "defense", frequency: "Annual", reliability: 88, description: "145 countries, 60+ factors — comprehensive military strength ranking and capability assessment", tier: "active", url: "globalfirepower.com", lastSynced: "7d ago", eventsToday: 0 },
+  { name: "IISS Military Balance", type: "Report", category: "defense", frequency: "Annual", reliability: 97, description: "170 countries — the most authoritative assessment of global military capabilities and defense economics", tier: "premium" },
+  { name: "SIPRI Arms Transfers", type: "API", category: "defense", frequency: "Quarterly", reliability: 95, description: "Stockholm International Peace Research Institute — arms transfers, defense spending, military expenditure data", tier: "active", url: "sipri.org", lastSynced: "14d ago", eventsToday: 0 },
+  { name: "ACLED Military Activity", type: "API", category: "defense", frequency: "Daily", reliability: 92, description: "Conflict-related military events — geolocated armed engagement data, troop movements, military operations", tier: "premium" },
+  { name: "Heritage Military Index", type: "Report", category: "defense", frequency: "Annual", reliability: 85, description: "Index of US Military Strength — annual assessment of US and adversary capabilities, force readiness", tier: "premium" },
+  { name: "Jane's Defence", type: "API", category: "defense", frequency: "Daily", reliability: 96, description: "Most detailed military intelligence — order of battle, equipment databases, procurement, threat assessments", tier: "premium" },
 ];
 
 const ALL_SOURCES = [...ACTIVE_SOURCES, ...PREMIUM_SOURCES];
@@ -79,6 +86,7 @@ const CATEGORIES = [
   { key: "cyber", labelKey: "library.cyber" },
   { key: "satellite", labelKey: "library.satellite" },
   { key: "intelligence", label: "AI / INTEL" },
+  { key: "defense", labelKey: "defense.defenseCategory" },
 ];
 
 type TierFilter = "all" | "active" | "premium";
@@ -115,15 +123,15 @@ export function IntelligenceLibrary() {
               {t("library.title")}
             </div>
             <div className="font-mono text-[9px] tracking-widest text-slate-600">
-              {t("library.subtitle")} · {ALL_SOURCES.length} {isAr ? "مصدر مفهرس" : "sources cataloged"} · {ACTIVE_SOURCES.length} {isAr ? "نشط الآن" : "active now"}
+              {t("library.subtitle")} · {ALL_SOURCES.length} {t("library.sourcesCataloged")} · {ACTIVE_SOURCES.length} {t("library.activeNowLabel")}
             </div>
           </div>
           {/* Tier filter toggle */}
           <div className="flex items-center gap-0.5 font-mono text-[10px]">
             {([
-              { key: "all" as TierFilter, label: isAr ? "جميع المصادر" : "ALL SOURCES", count: ALL_SOURCES.length },
-              { key: "active" as TierFilter, label: isAr ? "نشط الآن" : "ACTIVE NOW", count: ACTIVE_SOURCES.length },
-              { key: "premium" as TierFilter, label: isAr ? "متميز" : "PREMIUM", count: PREMIUM_SOURCES.length },
+              { key: "all" as TierFilter, label: t("library.allSources"), count: ALL_SOURCES.length },
+              { key: "active" as TierFilter, label: t("library.activeNow"), count: ACTIVE_SOURCES.length },
+              { key: "premium" as TierFilter, label: t("library.premium"), count: PREMIUM_SOURCES.length },
             ]).map((f) => (
               <button
                 key={f.key}
@@ -170,19 +178,19 @@ export function IntelligenceLibrary() {
           {/* Active sources summary */}
           <div className="mt-4 pt-4 border-t border-white/[0.06]">
             <div className="font-mono text-[9px] tracking-widest text-slate-600 mb-2">
-              {isAr ? "ملخص الاستيعاب" : "INGESTION SUMMARY"}
+              {t("library.ingestionSummary")}
             </div>
             <div className="space-y-1.5 font-mono text-[10px]">
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">{isAr ? "نشط" : "Active"}</span>
+                <span className="text-slate-500">{t("library.active")}</span>
                 <span className="text-green-400">{ACTIVE_SOURCES.length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">{isAr ? "متميز" : "Premium"}</span>
+                <span className="text-slate-500">{t("library.premium")}</span>
                 <span className="text-purple-400">{PREMIUM_SOURCES.length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">{isAr ? "اليوم" : "Events today"}</span>
+                <span className="text-slate-500">{t("library.eventsToday")}</span>
                 <span className="text-atlas-accent">
                   {ACTIVE_SOURCES.reduce((sum, s) => sum + (s.eventsToday || 0), 0)}
                 </span>
@@ -206,9 +214,9 @@ export function IntelligenceLibrary() {
 
           {/* Table header */}
           <div className="grid grid-cols-12 gap-2 px-4 py-2 font-mono text-[8px] tracking-widest text-slate-600 border-b border-white/[0.04]">
-            <div className="col-span-1">{isAr ? "الحالة" : "STATUS"}</div>
+            <div className="col-span-1">{t("library.status")}</div>
             <div className="col-span-3">{t("library.name")}</div>
-            <div className="col-span-4">DESCRIPTION</div>
+            <div className="col-span-4">{t("library.description")}</div>
             <div className="col-span-2">{t("library.frequency")}</div>
             <div className="col-span-2">{t("library.reliability")}</div>
           </div>
@@ -239,11 +247,11 @@ export function IntelligenceLibrary() {
                   <div className="text-[12px] font-medium text-slate-300">{source.name}</div>
                   {source.tier === "active" ? (
                     <div className="font-mono text-[8px] text-slate-600 mt-0.5">
-                      {isAr ? "آخر مزامنة:" : "Last synced:"} {source.lastSynced} · {source.eventsToday || 0} {isAr ? "اليوم" : "today"}
+                      {t("library.lastSynced")}: {source.lastSynced} · {source.eventsToday || 0} {t("library.today")}
                     </div>
                   ) : (
                     <div className="font-mono text-[8px] text-purple-400/60 mt-0.5">
-                      {isAr ? "طبقة متقدمة" : "ENHANCED TIER"}
+                      {t("library.enhancedTier")}
                     </div>
                   )}
                 </div>
@@ -288,7 +296,7 @@ export function IntelligenceLibrary() {
 
           {/* Count footer */}
           <div className="px-4 py-3 border-t border-white/[0.04] font-mono text-[9px] text-slate-600">
-            {isAr ? `عرض ${filtered.length} من ${sources.length} مصدر` : `Showing ${filtered.length} of ${sources.length} sources`}
+            {t("library.showing", { filtered: String(filtered.length), total: String(sources.length) })}
           </div>
         </div>
       </div>

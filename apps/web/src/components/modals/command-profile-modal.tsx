@@ -13,7 +13,7 @@ const STEPS = [1, 2, 3] as const;
 const ROLES = Object.keys(ROLE_META) as ProfileRole[];
 
 export function CommandProfileModal() {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const modalOpen = useProfileStore((s) => s.modalOpen);
   const setModalOpen = useProfileStore((s) => s.setModalOpen);
   const setProfile = useProfileStore((s) => s.setProfile);
@@ -72,7 +72,7 @@ export function CommandProfileModal() {
             onClick={handleEnter}
             className="font-mono text-[10px] text-slate-600 hover:text-slate-400"
           >
-            {isAr ? "إغلاق" : "CLOSE"} ×
+            {t("common.close")} ×
           </button>
         </div>
 
@@ -83,14 +83,10 @@ export function CommandProfileModal() {
               <span className="text-green-400 text-xl">✓</span>
             </div>
             <div className="font-mono text-sm font-semibold tracking-wider text-slate-200 mb-2 text-center">
-              {isAr
-                ? "تم إعداد ملفك الشخصي"
-                : "Your profile is set."}
+              {t("profileModal.profileSet")}
             </div>
             <div className="font-mono text-[11px] text-slate-500 mb-6 text-center max-w-sm">
-              {isAr
-                ? "أطلس كوماند يتحدث إليك الآن بشكل مباشر."
-                : "Atlas Command now speaks directly to you."}
+              {t("profileModal.speaksToYou")}
             </div>
             <div className="flex items-center gap-3 mb-6 font-mono text-[10px]">
               <span className="px-2 py-1 border border-atlas-accent/30 bg-atlas-accent/10 text-atlas-accent">
@@ -105,7 +101,7 @@ export function CommandProfileModal() {
               onClick={handleEnter}
               className="px-6 py-2.5 font-mono text-[10px] tracking-wider text-slate-200 bg-atlas-accent/20 border border-atlas-accent/30 hover:bg-atlas-accent/30 transition-colors"
             >
-              {isAr ? "ادخل أطلس كوماند ←" : "Enter Atlas Command →"}
+              {t("profileModal.enter")}
             </button>
           </div>
         ) : (
@@ -113,12 +109,10 @@ export function CommandProfileModal() {
             {/* ─── Header ─────────────────────────────────── */}
             <div className="px-8 pt-2 pb-4">
               <div className="font-mono text-sm font-semibold tracking-wider text-slate-200 mb-1">
-                {isAr ? "ملفك القيادي" : "Your Command Profile"}
+                {t("profileModal.title")}
               </div>
               <div className="font-mono text-[10px] text-slate-600">
-                {isAr
-                  ? "60 ثانية. أطلس كوماند سيصمم كل إحاطة ورؤية لدورك."
-                  : "60 seconds. Atlas Command will tailor every brief and insight to your role."}
+                {t("profileModal.desc")}
               </div>
             </div>
 
@@ -137,13 +131,13 @@ export function CommandProfileModal() {
               </div>
               <div className="flex justify-between mt-1.5 font-mono text-[8px] tracking-wider text-slate-600">
                 <span className={step === 1 ? "text-atlas-accent" : ""}>
-                  {isAr ? "الدور" : "ROLE"}
+                  {t("profileModal.role")}
                 </span>
                 <span className={step === 2 ? "text-atlas-accent" : ""}>
-                  {isAr ? "المنطقة" : "REGION"}
+                  {t("profileModal.region")}
                 </span>
                 <span className={step === 3 ? "text-atlas-accent" : ""}>
-                  {isAr ? "المراقبة" : "WATCHLIST"}
+                  {t("profileModal.watchlist")}
                 </span>
               </div>
             </div>
@@ -153,9 +147,7 @@ export function CommandProfileModal() {
               {step === 1 && (
                 <div>
                   <div className="font-mono text-[11px] text-slate-400 mb-4">
-                    {isAr
-                      ? "كيف تستخدم الاستخبارات؟"
-                      : "How do you use intelligence?"}
+                    {t("profileModal.howUse")}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {ROLES.map((r) => {
@@ -187,9 +179,7 @@ export function CommandProfileModal() {
               {step === 2 && (
                 <div>
                   <div className="font-mono text-[11px] text-slate-400 mb-4">
-                    {isAr
-                      ? "منطقة تركيزك الأساسية؟"
-                      : "Your primary region focus?"}
+                    {t("profileModal.primaryRegion")}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {PROFILE_REGIONS.map((r) => {
@@ -216,30 +206,24 @@ export function CommandProfileModal() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="font-mono text-[11px] text-slate-400">
-                      {isAr
-                        ? "أي شيء محدد تريد مراقبته؟"
-                        : "Anything specific to watch?"}
+                      {t("profileModal.anythingWatch")}
                     </div>
                     {watchlist && (
                       <button
                         onClick={() => setWatchlist("")}
                         className="font-mono text-[9px] text-slate-600 hover:text-red-400 transition-colors"
                       >
-                        {isAr ? "مسح" : "Clear"}
+                        {t("profileModal.clear")}
                       </button>
                     )}
                   </div>
                   <div className="font-mono text-[9px] text-slate-600 mb-4">
-                    {isAr ? "(اختياري)" : "(optional)"}
+                    {t("profileModal.optional")}
                   </div>
                   <textarea
                     value={watchlist}
                     onChange={(e) => setWatchlist(e.target.value)}
-                    placeholder={
-                      isAr
-                        ? "مثال: خطوط الشحن الخليجية، تعرض قطاع الطاقة، مصفاة قرب البصرة"
-                        : "e.g. Gulf shipping routes, energy sector exposure, refinery near Basra"
-                    }
+                    placeholder={t("profileModal.placeholder")}
                     rows={4}
                     className="w-full bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-[13px] text-slate-300 placeholder-slate-600 outline-none focus:border-atlas-accent/30 resize-none font-mono"
                   />
@@ -255,7 +239,7 @@ export function CommandProfileModal() {
                   step === 1 ? "invisible" : ""
                 }`}
               >
-                ← {isAr ? "السابق" : "BACK"}
+                ← {t("profileModal.back")}
               </button>
 
               {step < 3 ? (
@@ -264,7 +248,7 @@ export function CommandProfileModal() {
                   disabled={(step === 1 && !role) || (step === 2 && !region)}
                   className="px-5 py-2 font-mono text-[10px] tracking-wider text-atlas-accent border border-atlas-accent/30 hover:bg-atlas-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isAr ? "التالي →" : "NEXT →"}
+                  {t("profileModal.next")}
                 </button>
               ) : (
                 <button
@@ -273,8 +257,8 @@ export function CommandProfileModal() {
                   className="px-5 py-2 font-mono text-[10px] tracking-wider text-slate-200 bg-atlas-accent/20 border border-atlas-accent/30 hover:bg-atlas-accent/30 disabled:opacity-30 transition-colors"
                 >
                   {isEditing
-                    ? (isAr ? "تحديث الملف" : "UPDATE PROFILE")
-                    : (isAr ? "تفعيل الملف" : "ACTIVATE PROFILE")}
+                    ? t("profileModal.update")
+                    : t("profileModal.activate")}
                 </button>
               )}
             </div>

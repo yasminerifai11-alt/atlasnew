@@ -65,7 +65,7 @@ export function TopBar() {
                   activeSection === s.key
                     ? "text-slate-200 border-b-[2px] border-atlas-accent"
                     : "text-slate-500 border-b-[2px] border-transparent hover:text-slate-400"
-                }`}
+                } ${isAr ? "arabic-nav" : ""}`}
               >
                 {t(s.labelKey as any)}
               </button>
@@ -98,13 +98,13 @@ export function TopBar() {
                 onClick={() => setProfileModalOpen(true)}
                 className="px-1.5 py-1 font-mono text-[8px] tracking-wider text-slate-500 hover:text-atlas-accent transition-colors"
               >
-                {isAr ? "تعديل" : "Edit"}
+                {t("profile.edit")}
               </button>
               <button
                 onClick={() => setShowResetConfirm(true)}
                 className="px-1.5 py-1 font-mono text-[8px] tracking-wider text-slate-600 hover:text-red-400 transition-colors"
               >
-                {isAr ? "إعادة" : "Reset"}
+                {t("profile.reset")}
               </button>
             </div>
           ) : (
@@ -112,7 +112,7 @@ export function TopBar() {
               onClick={() => setProfileModalOpen(true)}
               className="px-2 py-1 font-mono text-[10px] tracking-wider text-slate-500 hover:text-slate-300"
             >
-              {isAr ? "أنشئ ملفك القيادي →" : "Set up Command Profile →"}
+              {t("profile.setup")}
             </button>
           )}
 
@@ -122,7 +122,7 @@ export function TopBar() {
             onClick={toggleLanguage}
             className="px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-400 border border-white/[0.08] hover:border-white/[0.15] hover:text-slate-200"
           >
-            {lang === "en" ? "AR عربي" : "EN"}
+            {lang === "en" ? "عربي" : "English"}
           </button>
 
           <span className="font-mono text-[10px] tracking-wider text-slate-600">
@@ -146,9 +146,7 @@ export function TopBar() {
             className="font-mono text-[10px] tracking-wider text-atlas-accent/80 hover:text-atlas-accent transition-colors"
           >
             <span className="mr-1.5">✦</span>
-            {isAr
-              ? "خصّص استخباراتك ← أنشئ ملفك القيادي"
-              : "Personalise your intelligence → Set up your Command Profile"}
+            {t("profile.personalise")}
           </button>
           <button
             onClick={dismissPrompt}
@@ -163,19 +161,17 @@ export function TopBar() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm border border-white/[0.08] bg-[#0c0f16] p-6 shadow-2xl">
             <div className="font-mono text-sm font-semibold tracking-wider text-slate-200 mb-2">
-              {isAr ? "إعادة تعيين الملف الشخصي؟" : "Reset your Command Profile?"}
+              {t("profile.resetConfirm")}
             </div>
             <div className="font-mono text-[11px] text-slate-500 mb-5">
-              {isAr
-                ? "سيعود أطلس كوماند إلى عرض الاستخبارات العام."
-                : "Atlas Command will return to general intelligence view."}
+              {t("profile.resetDesc")}
             </div>
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={() => setShowResetConfirm(false)}
                 className="px-4 py-2 font-mono text-[10px] tracking-wider text-slate-500 border border-white/[0.08] hover:text-slate-300 transition-colors"
               >
-                {isAr ? "إلغاء" : "Cancel"}
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => {
@@ -184,7 +180,7 @@ export function TopBar() {
                 }}
                 className="px-4 py-2 font-mono text-[10px] tracking-wider text-red-400 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 transition-colors"
               >
-                {isAr ? "إعادة تعيين" : "Reset Profile"}
+                {t("profile.resetBtn")}
               </button>
             </div>
           </div>

@@ -19,11 +19,40 @@
   .arabic-text {
     font-family: "Noto Sans Arabic", "IBM Plex Sans", sans-serif;
     direction: rtl;
+    text-align: right;
     line-height: 2;
+    letter-spacing: 0;
   }
 
   .font-mono {
     font-family: "IBM Plex Mono", monospace;
+  }
+
+  /* RTL nav items — keep monospace labels LTR but allow natural Arabic flow */
+  html[dir="rtl"] .arabic-nav {
+    font-family: "Noto Sans Arabic", "IBM Plex Sans", sans-serif;
+    letter-spacing: 0;
+  }
+
+  /* RTL layout overrides */
+  html[dir="rtl"] body {
+    font-family: "Noto Sans Arabic", "IBM Plex Sans", sans-serif;
+  }
+
+  /* Keep monospace elements in their original font even in RTL */
+  html[dir="rtl"] .font-mono {
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  /* RTL-specific overrides for common layout patterns */
+  html[dir="rtl"] aside {
+    border-right: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Slide-in from left in RTL */
+  html[dir="rtl"] .animate-slide-in-right {
+    animation: slide-in-left 0.25s ease-out;
   }
 }
 
@@ -83,6 +112,11 @@
 }
 .animate-slide-in-right {
   animation: slide-in-right 0.25s ease-out;
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }
 
 /* MapLibre */

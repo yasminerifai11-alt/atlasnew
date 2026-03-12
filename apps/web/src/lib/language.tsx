@@ -62,10 +62,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     [lang]
   );
 
-  // Sync HTML lang attribute — NOT dir, since UI labels stay LTR
-  // Arabic content blocks use className="arabic-text" for RTL
+  // Sync HTML lang and dir attributes for full RTL support
   useEffect(() => {
     document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
   }, [lang]);
 
   return (

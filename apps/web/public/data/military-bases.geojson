@@ -1,0 +1,313 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [51.3147, 25.1173]},
+      "properties": {
+        "name": "Al Udeid Air Base",
+        "nameAr": "قاعدة العديد الجوية",
+        "country": "Qatar",
+        "operator": "US/USAF",
+        "operatorGroup": "US",
+        "type": "AIR_BASE",
+        "significance": "CENTCOM HQ, largest US base in Middle East",
+        "significanceAr": "مقر القيادة المركزية، أكبر قاعدة أمريكية في الشرق الأوسط"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [48.0642, 29.0697]},
+      "properties": {
+        "name": "Camp Arifjan",
+        "nameAr": "معسكر عريفجان",
+        "country": "Kuwait",
+        "operator": "US Army",
+        "operatorGroup": "US",
+        "type": "ARMY_BASE",
+        "significance": "Primary US Army hub in Gulf",
+        "significanceAr": "المقر الرئيسي للجيش الأمريكي في الخليج"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [47.5736, 29.3467]},
+      "properties": {
+        "name": "Ali Al Salem Air Base",
+        "nameAr": "قاعدة علي السالم الجوية",
+        "country": "Kuwait",
+        "operator": "US/Kuwait AF",
+        "operatorGroup": "US",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.6100, 26.2285]},
+      "properties": {
+        "name": "NSA Bahrain (5th Fleet HQ)",
+        "nameAr": "قاعدة البحرين (مقر الأسطول الخامس)",
+        "country": "Bahrain",
+        "operator": "US Navy",
+        "operatorGroup": "US",
+        "type": "NAVAL_BASE",
+        "significance": "US 5th Fleet HQ, commands Gulf naval operations",
+        "significanceAr": "مقر الأسطول الخامس الأمريكي، يقود العمليات البحرية في الخليج"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [54.5476, 24.2482]},
+      "properties": {
+        "name": "Al Dhafra Air Base",
+        "nameAr": "قاعدة الظفرة الجوية",
+        "country": "UAE",
+        "operator": "US/UAE AF",
+        "operatorGroup": "US",
+        "type": "AIR_BASE",
+        "significance": "F-35, Reaper drones, key strike capability",
+        "significanceAr": "مقاتلات F-35، طائرات ريبر المسيّرة، قدرة ضرب رئيسية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [47.5804, 24.0627]},
+      "properties": {
+        "name": "Prince Sultan Air Base",
+        "nameAr": "قاعدة الأمير سلطان الجوية",
+        "country": "Saudi Arabia",
+        "operator": "US/Saudi AF",
+        "operatorGroup": "US",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [72.4231, -7.3131]},
+      "properties": {
+        "name": "Diego Garcia",
+        "nameAr": "دييغو غارسيا",
+        "country": "British Indian Ocean Territory",
+        "operator": "US/UK",
+        "operatorGroup": "US",
+        "type": "NAVAL_AIR_BASE",
+        "significance": "Strategic bomber staging base, Indian Ocean",
+        "significanceAr": "قاعدة إطلاق قاذفات استراتيجية، المحيط الهندي"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [39.1566, 21.4795]},
+      "properties": {
+        "name": "King Abdulaziz Air Base",
+        "nameAr": "قاعدة الملك عبدالعزيز الجوية",
+        "country": "Saudi Arabia",
+        "operator": "Royal Saudi AF",
+        "operatorGroup": "GCC",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [40.5623, 29.0951]},
+      "properties": {
+        "name": "King Faisal Air Base",
+        "nameAr": "قاعدة الملك فيصل الجوية",
+        "country": "Saudi Arabia",
+        "operator": "Royal Saudi AF",
+        "operatorGroup": "GCC",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [36.7872, 31.8276]},
+      "properties": {
+        "name": "Muwaffaq Salti Air Base",
+        "nameAr": "قاعدة الموفق السلطي الجوية",
+        "country": "Jordan",
+        "operator": "Royal Jordanian AF",
+        "operatorGroup": "GCC",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [47.7919, 28.9348]},
+      "properties": {
+        "name": "Ahmed Al Jaber Air Base",
+        "nameAr": "قاعدة أحمد الجابر الجوية",
+        "country": "Kuwait",
+        "operator": "Kuwait AF",
+        "operatorGroup": "GCC",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [55.3666, 25.0268]},
+      "properties": {
+        "name": "Al Minhad Air Base",
+        "nameAr": "قاعدة المنهاد الجوية",
+        "country": "UAE",
+        "operator": "UAE AF",
+        "operatorGroup": "GCC",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [46.5000, 34.5500]},
+      "properties": {
+        "name": "Imam Ali Base",
+        "nameAr": "قاعدة الإمام علي",
+        "country": "Iran",
+        "operator": "IRGC",
+        "operatorGroup": "IRAN",
+        "type": "MISSILE_BASE",
+        "significance": "Ballistic missile storage and launch facility",
+        "significanceAr": "منشأة تخزين وإطلاق صواريخ باليستية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [48.6534, 35.2112]},
+      "properties": {
+        "name": "Shahid Nojeh Air Base",
+        "nameAr": "قاعدة الشهيد نوجه الجوية",
+        "country": "Iran",
+        "operator": "IRIAF",
+        "operatorGroup": "IRAN",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [56.2666, 27.1832]},
+      "properties": {
+        "name": "Bandar Abbas Naval Base",
+        "nameAr": "قاعدة بندر عباس البحرية",
+        "country": "Iran",
+        "operator": "IRIN/IRGCN",
+        "operatorGroup": "IRAN",
+        "type": "NAVAL_BASE",
+        "significance": "Primary Iranian Gulf naval command",
+        "significanceAr": "القيادة البحرية الإيرانية الرئيسية في الخليج"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.8351, 28.9576]},
+      "properties": {
+        "name": "Bushehr Naval Base",
+        "nameAr": "قاعدة بوشهر البحرية",
+        "country": "Iran",
+        "operator": "IRGCN",
+        "operatorGroup": "IRAN",
+        "type": "NAVAL_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [60.5528, 25.2919]},
+      "properties": {
+        "name": "Chahbahar Naval Base",
+        "nameAr": "قاعدة تشابهار البحرية",
+        "country": "Iran",
+        "operator": "IRIN",
+        "operatorGroup": "IRAN",
+        "type": "NAVAL_BASE",
+        "significance": "Indian Ocean access, strategic expansion",
+        "significanceAr": "وصول للمحيط الهندي، توسع استراتيجي"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [35.0125, 31.2083]},
+      "properties": {
+        "name": "Nevatim Air Base",
+        "nameAr": "قاعدة نفاتيم الجوية",
+        "country": "Israel",
+        "operator": "IAF",
+        "operatorGroup": "ISRAEL",
+        "type": "AIR_BASE",
+        "significance": "F-35I Adir base, primary strike capability",
+        "significanceAr": "قاعدة مقاتلات F-35I أدير، قدرة ضرب رئيسية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [34.6669, 30.7761]},
+      "properties": {
+        "name": "Ramon Air Base",
+        "nameAr": "قاعدة رامون الجوية",
+        "country": "Israel",
+        "operator": "IAF",
+        "operatorGroup": "ISRAEL",
+        "type": "AIR_BASE",
+        "significance": "",
+        "significanceAr": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [34.6908, 31.8964]},
+      "properties": {
+        "name": "Palmachim Air Base",
+        "nameAr": "قاعدة بالماحيم الجوية",
+        "country": "Israel",
+        "operator": "IAF/IMI",
+        "operatorGroup": "ISRAEL",
+        "type": "AIR_BASE_MISSILE",
+        "significance": "Arrow missile defense, satellite launches",
+        "significanceAr": "منظومة آرو الصاروخية، إطلاق أقمار صناعية"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [35.9489, 35.4011]},
+      "properties": {
+        "name": "Hmeimim Air Base",
+        "nameAr": "قاعدة حميميم الجوية",
+        "country": "Syria",
+        "operator": "Russian AF",
+        "operatorGroup": "RUSSIA",
+        "type": "AIR_BASE",
+        "significance": "Russia's primary Middle East power projection",
+        "significanceAr": "قاعدة الإسقاط الروسية الرئيسية في الشرق الأوسط"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [35.8717, 34.8889]},
+      "properties": {
+        "name": "Tartus Naval Base",
+        "nameAr": "قاعدة طرطوس البحرية",
+        "country": "Syria",
+        "operator": "Russian Navy",
+        "operatorGroup": "RUSSIA",
+        "type": "NAVAL_BASE",
+        "significance": "Only Russian naval base in Mediterranean",
+        "significanceAr": "القاعدة البحرية الروسية الوحيدة في البحر المتوسط"
+      }
+    }
+  ]
+}

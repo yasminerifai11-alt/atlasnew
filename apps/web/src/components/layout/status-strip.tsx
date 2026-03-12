@@ -6,9 +6,11 @@ import { useCommandStore } from "@/stores/command-store";
 import { getSyncStatus } from "@/lib/api";
 
 export function StatusStrip() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const events = useCommandStore((s) => s.events);
   const [syncInfo, setSyncInfo] = useState({ lastSync: null as string | null, isLive: false, activeSourceCount: 0 });
+
+  const isAr = lang === "ar";
 
   // Update sync status every 10 seconds
   useEffect(() => {
@@ -38,15 +40,15 @@ export function StatusStrip() {
         ▲ {t("posture.label")}: {t(`posture.${posture}` as any)}
       </span>
       <span className="font-mono text-[10px] tracking-wider text-slate-500">
-        {t("posture.incidents")}: {events.length} · MAX RISK: {maxRisk}
+        {t("posture.incidents")}: {events.length} · {t("status.maxRisk")}: {maxRisk}
       </span>
       <span className="ml-auto font-mono text-[9px] tracking-wider text-slate-600">
         {syncInfo.isLive ? (
           <>
-            Last sync: {syncInfo.lastSync || "—"} · {events.length} events monitored · {syncInfo.activeSourceCount} sources active
+            {t("status.lastSync")}: {syncInfo.lastSync || "—"} · {events.length} {t("status.eventsMonitored")} · {syncInfo.activeSourceCount} {t("status.sourcesActive")}
           </>
         ) : (
-          <>Live data temporarily unavailable. Displaying last known intelligence.</>
+          <>{t("status.unavailable")}</>
         )}
       </span>
     </div>

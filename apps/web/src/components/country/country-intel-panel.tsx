@@ -5,6 +5,15 @@ import { useLanguage } from "@/lib/language";
 import { useCommandStore } from "@/stores/command-store";
 import { useProfileStore, ROLE_META } from "@/stores/profile-store";
 import type { ApiEvent } from "@/lib/api";
+import {
+  DEFENSE_PROFILES,
+  CAPABILITY_KEYS,
+  getRankTier,
+  getReadinessColor,
+  getReadinessLabel,
+  hasUSPresence,
+} from "@/data/defense-profiles";
+import { DefenseComparisonModal } from "./defense-comparison-modal";
 
 const RISK_COLORS: Record<string, string> = {
   CRITICAL: "#dc2626",
@@ -82,6 +91,8 @@ export function CountryIntelPanel() {
   const [fullBrief, setFullBrief] = useState<string | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefModalOpen, setBriefModalOpen] = useState(false);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [assetsExpanded, setAssetsExpanded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const isAr = lang === "ar";
@@ -333,7 +344,7 @@ Rules:
             <div className="flex-1">
               <div className="flex items-center justify-between mb-0.5">
                 <span className="font-mono text-[9px] text-slate-600">
-                  {isAr ? "مؤشر عدم الاستقرار" : "INSTABILITY SCORE"}
+                  {t("country.instabilityScore")}
                 </span>
                 <span className="font-mono text-[11px] font-bold" style={{ color: riskColor }}>
                   {instabilityScore}/100
@@ -348,14 +359,14 @@ Rules:
             </div>
           </div>
           <div className="mt-2 font-mono text-[8px] tracking-wider text-slate-600">
-            {isAr ? "آخر تحديث:" : "LAST UPDATED:"} {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC
+            {t("morning.lastUpdated")}: {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} UTC
           </div>
         </div>
 
         {/* 2. Situation */}
         <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
           <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
-            {isAr ? "تقييم الموقف" : "SITUATION"}
+            {t("country.situation")}
           </div>
           {intelLoading ? (
             <div className="space-y-2">
@@ -373,12 +384,12 @@ Rules:
         {/* 3. Active Events */}
         <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
           <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
-            {isAr ? "الأحداث النشطة" : "ACTIVE EVENTS"}
+            {t("country.activeEvents")}
             <span className="ml-2 text-slate-600">({countryEvents.length})</span>
           </div>
           {countryEvents.length === 0 ? (
             <div className="font-mono text-[11px] text-slate-600 py-2">
-              {isAr ? "لا أحداث نشطة. المراقبة مستمرة." : "No active events. Monitoring signals."}
+              {t("country.noEvents")}
             </div>
           ) : (
             <div className="space-y-2">
@@ -429,7 +440,7 @@ Rules:
         {/* 4. GCC Significance */}
         <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
           <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
-            {isAr ? "الأهمية الخليجية" : "GCC SIGNIFICANCE"}
+            {t("country.gccSignificance")}
           </div>
           {intelLoading ? (
             <div className="space-y-2">
@@ -446,7 +457,7 @@ Rules:
         {/* 5. 7-Day Signal Timeline */}
         <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
           <div className="font-mono text-[10px] tracking-widest mb-3" style={{ color: "#6b7280" }}>
-            {isAr ? "إشارات 7 أيام" : "7-DAY SIGNALS"}
+            {t("country.signals7day")}
           </div>
           <div className="relative h-8">
             {/* Timeline line */}
@@ -466,7 +477,7 @@ Rules:
             {recentEvents.length === 0 ? (
               <div className="absolute top-0 left-0 right-0 flex items-center justify-center h-5">
                 <span className="font-mono text-[9px] text-slate-700">
-                  {isAr ? "الإشارات طبيعية" : "Signals nominal"}
+                  {t("country.signalsNominal")}
                 </span>
               </div>
             ) : (
@@ -503,7 +514,7 @@ Rules:
         {/* 6. What to Watch */}
         <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
           <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
-            {isAr ? "ما يجب مراقبته" : "WATCH"}
+            {t("country.watch")}
           </div>
           {intelLoading ? (
             <div className="space-y-2">
@@ -530,11 +541,11 @@ Rules:
         {/* 7. Key Infrastructure */}
         <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
           <div className="font-mono text-[10px] tracking-widest mb-2" style={{ color: "#6b7280" }}>
-            {isAr ? "البنية التحتية الحيوية" : "CRITICAL INFRASTRUCTURE"}
+            {t("country.criticalInfra")}
           </div>
           {countryEvents.length === 0 ? (
             <div className="font-mono text-[11px] text-slate-600 py-1">
-              {isAr ? "لا توجد بنية تحتية معرضة للخطر" : "No infrastructure at risk"}
+              {t("country.noInfraRisk")}
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -564,7 +575,148 @@ Rules:
           )}
         </div>
 
-        {/* 8. Generate Full Country Brief Button */}
+        {/* 8. Defense Profile */}
+        {(() => {
+          const defProfile = DEFENSE_PROFILES[selectedCountry || ""];
+          if (!defProfile) return null;
+          const rankTier = getRankTier(defProfile.gfp_rank);
+          const readinessColor = getReadinessColor(defProfile.current_readiness);
+          const stars = "★".repeat(rankTier.stars) + "☆".repeat(5 - rankTier.stars);
+          return (
+            <div className="p-5" style={{ borderBottom: "1px solid #1e2530" }}>
+              <div className="font-mono text-[10px] tracking-widest mb-3" style={{ color: "#6b7280" }}>
+                {t("defense.title")}
+              </div>
+
+              {/* Rank + tier */}
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="font-mono text-[11px] text-slate-300">
+                    {t("defense.globalRank")}: <span className="text-white font-bold">#{defProfile.gfp_rank}</span>
+                  </div>
+                  <div className="font-mono text-[10px] text-yellow-500/80">
+                    [{stars}] {isAr ? rankTier.labelAr : rankTier.label}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-[10px] text-slate-400">
+                    ${defProfile.defense_budget_usd}B
+                  </div>
+                  <div className="font-mono text-[8px] text-slate-600">
+                    {defProfile.defense_budget_gdp_pct}% {t("defense.gdp")}
+                  </div>
+                </div>
+              </div>
+
+              {/* Capability bars */}
+              <div className="space-y-2 mb-3">
+                {CAPABILITY_KEYS.map((cap) => {
+                  const val = defProfile.capabilities[cap.key];
+                  const barColor = val >= 80 ? "#22c55e" : val >= 60 ? "#3b82f6" : val >= 40 ? "#f59e0b" : "#ef4444";
+                  return (
+                    <div key={cap.key} className="flex items-center gap-2">
+                      <span className="font-mono text-[8px] tracking-wider text-slate-500 w-20 shrink-0">
+                        {isAr ? cap.labelAr : cap.label}
+                      </span>
+                      <div className="flex-1 h-1.5" style={{ backgroundColor: "#1e2530" }}>
+                        <div
+                          className="h-full transition-all duration-700"
+                          style={{ width: `${val}%`, backgroundColor: barColor }}
+                        />
+                      </div>
+                      <span className="font-mono text-[9px] text-slate-400 w-5 text-right">{val}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Readiness + Posture */}
+              <div className="flex items-center gap-2 mb-3">
+                <span
+                  className="font-mono text-[9px] font-bold tracking-wider px-2 py-0.5"
+                  style={{
+                    color: readinessColor,
+                    backgroundColor: readinessColor + "15",
+                    border: `1px solid ${readinessColor}40`,
+                  }}
+                >
+                  {getReadinessLabel(defProfile.current_readiness, isAr)}
+                </span>
+                <span className="font-mono text-[9px] text-slate-500">
+                  {isAr ? defProfile.threat_posture_ar : defProfile.threat_posture}
+                </span>
+              </div>
+
+              {/* Key Assets (collapsible) */}
+              <div className="mb-3">
+                <button
+                  onClick={() => setAssetsExpanded(!assetsExpanded)}
+                  className="font-mono text-[9px] tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {assetsExpanded ? "▼" : "▶"} {t("defense.keyAssets")}
+                </button>
+                {assetsExpanded && (
+                  <div className="mt-2 space-y-1">
+                    {(isAr ? defProfile.key_assets_ar : defProfile.key_assets).map((asset, i) => (
+                      <div key={i} className={`font-mono text-[10px] text-slate-400 ${isAr ? "arabic-text" : ""}`}>
+                        · {asset}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Alliances */}
+              <div className="flex flex-wrap gap-1 mb-3">
+                {(isAr ? defProfile.alliances_ar : defProfile.alliances).map((a, i) => (
+                  <span
+                    key={i}
+                    className={`px-2 py-0.5 font-mono text-[8px] text-slate-400 ${isAr ? "arabic-text" : ""}`}
+                    style={{ border: "1px solid #1e2530" }}
+                  >
+                    {a}
+                  </span>
+                ))}
+              </div>
+
+              {/* US Presence indicator */}
+              {hasUSPresence(selectedCountry || "") && (
+                <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5" style={{ backgroundColor: "#3b82f610", border: "1px solid #3b82f625" }}>
+                  <span className="text-[10px]">🇺🇸</span>
+                  <span className="font-mono text-[9px] text-blue-400/80 tracking-wider">
+                    {t("defense.usPresence")}
+                  </span>
+                </div>
+              )}
+
+              {/* Recent Activity */}
+              <div className="mb-3">
+                <div className="font-mono text-[9px] tracking-wider text-slate-600 mb-1">
+                  {t("defense.recentActivity")}
+                </div>
+                <p className={`text-[11px] leading-relaxed text-slate-400 ${isAr ? "arabic-text" : ""}`}>
+                  {isAr ? defProfile.recent_activity_ar : defProfile.recent_activity}
+                </p>
+              </div>
+
+              {/* Compare Defense button */}
+              <button
+                onClick={() => setComparisonOpen(true)}
+                className="w-full py-2 font-mono text-[10px] font-semibold tracking-wider text-slate-300 transition-colors hover:text-white"
+                style={{ backgroundColor: "#1e2530", border: "1px solid #2e3540" }}
+              >
+                ⚔ {t("defense.compareDefense")}
+              </button>
+
+              {/* Source */}
+              <div className="font-mono text-[7px] text-slate-700 mt-2 tracking-wider">
+                {t("defense.source")}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 9. Generate Full Country Brief Button */}
         <div className="p-5">
           <button
             onClick={generateFullBrief}
@@ -573,11 +725,18 @@ Rules:
             style={{ backgroundColor: "#3b82f6" }}
           >
             {briefLoading
-              ? (isAr ? "جاري إنشاء الإحاطة..." : "GENERATING BRIEF...")
-              : (isAr ? "إنشاء إحاطة شاملة للدولة" : "GENERATE FULL COUNTRY BRIEF")}
+              ? t("country.generatingBrief")
+              : t("country.generateBrief")}
           </button>
         </div>
       </div>
+
+      {/* Defense Comparison Modal */}
+      <DefenseComparisonModal
+        open={comparisonOpen}
+        onClose={() => setComparisonOpen(false)}
+        defaultCountry={selectedCountry || "SAU"}
+      />
 
       {/* Full Brief Modal */}
       {briefModalOpen && (
@@ -594,7 +753,7 @@ Rules:
             <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 backdrop-blur" style={{ backgroundColor: "#0d1117ee", borderBottom: "1px solid #1e2530" }}>
               <div>
                 <div className="font-mono text-[10px] tracking-widest text-slate-500">
-                  {isAr ? "إحاطة استخباراتية شاملة" : "FULL INTELLIGENCE BRIEF"}
+                  {t("country.fullBrief")}
                 </div>
                 <div className="text-sm font-semibold text-white">{countryName}</div>
               </div>
@@ -604,7 +763,7 @@ Rules:
                   className="px-3 py-1.5 font-mono text-[10px] tracking-wider text-slate-400 hover:text-white transition-colors"
                   style={{ border: "1px solid #1e2530" }}
                 >
-                  {isAr ? "تصدير PDF" : "EXPORT PDF"}
+                  {t("intel.exportPdf")}
                 </button>
                 <button
                   onClick={() => setBriefModalOpen(false)}
@@ -621,10 +780,10 @@ Rules:
               {briefLoading ? (
                 <div className="py-12 text-center">
                   <div className="font-mono text-[11px] text-blue-400 animate-pulse mb-2">
-                    {isAr ? "أطلس يولد الإحاطة الشاملة..." : "Atlas generating comprehensive brief..."}
+                    {t("country.atlasGenerating")}
                   </div>
                   <div className="font-mono text-[9px] text-slate-600">
-                    {isAr ? `تحليل ${countryEvents.length} حدث` : `Analyzing ${countryEvents.length} events`}
+                    {t("country.analyzingCount", { count: String(countryEvents.length) })}
                   </div>
                 </div>
               ) : fullBrief ? (

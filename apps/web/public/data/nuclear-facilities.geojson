@@ -1,0 +1,65 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.8876, 28.8297]},
+      "properties": {
+        "name": "Bushehr Nuclear Power Plant",
+        "nameAr": "محطة بوشهر النووية",
+        "country": "Iran",
+        "type": "NUCLEAR_CIVIL",
+        "significance": "Operational civilian nuclear reactor",
+        "significanceAr": "مفاعل نووي مدني عامل"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [50.0131, 34.8847]},
+      "properties": {
+        "name": "Fordow Fuel Enrichment Plant",
+        "nameAr": "منشأة فوردو لتخصيب الوقود",
+        "country": "Iran",
+        "type": "NUCLEAR_MILITARY",
+        "significance": "Underground enrichment facility",
+        "significanceAr": "منشأة تخصيب تحت الأرض"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [51.7268, 33.7237]},
+      "properties": {
+        "name": "Natanz Enrichment Complex",
+        "nameAr": "مجمع نطنز للتخصيب",
+        "country": "Iran",
+        "type": "NUCLEAR_MILITARY",
+        "significance": "Primary enrichment site, previously attacked",
+        "significanceAr": "موقع التخصيب الرئيسي، تعرض لهجمات سابقة"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [35.1497, 31.0028]},
+      "properties": {
+        "name": "Dimona Nuclear Facility",
+        "nameAr": "منشأة ديمونة النووية",
+        "country": "Israel",
+        "type": "NUCLEAR_UNDECLARED",
+        "significance": "Undeclared nuclear weapons program",
+        "significanceAr": "برنامج أسلحة نووية غير معلن"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [52.2167, 23.9733]},
+      "properties": {
+        "name": "Barakah Nuclear Plant",
+        "nameAr": "محطة براكة النووية",
+        "country": "UAE",
+        "type": "NUCLEAR_CIVIL",
+        "significance": "First Arab nuclear power plant",
+        "significanceAr": "أول محطة طاقة نووية عربية"
+      }
+    }
+  ]
+}

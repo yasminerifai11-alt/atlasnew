@@ -188,7 +188,7 @@ export function DetailPanel() {
         <div className="text-center">
           <div className="font-mono text-sm text-slate-500 mb-1">{t("intel.noData")}</div>
           <div className="font-mono text-[10px] text-slate-600">
-            Select an event from the Situation Room
+            {t("intel.selectEvent")}
           </div>
         </div>
       </div>
@@ -494,15 +494,15 @@ export function DetailPanel() {
               <div className="mt-2 border border-white/[0.04] bg-white/[0.015] p-4 animate-slide-up">
                 <div className="grid grid-cols-3 gap-4 font-mono text-[11px]">
                   <div>
-                    <div className="text-slate-600 text-[9px] tracking-wider mb-1">PRIMARY SOURCE</div>
+                    <div className="text-slate-600 text-[9px] tracking-wider mb-1">{t("intel.primarySource")}</div>
                     <div className="text-slate-300">{event.source}</div>
                   </div>
                   <div>
-                    <div className="text-slate-600 text-[9px] tracking-wider mb-1">CORROBORATING SOURCES</div>
+                    <div className="text-slate-600 text-[9px] tracking-wider mb-1">{t("intel.corroboratingSource")}</div>
                     <div className="text-slate-300">{event.source_count}</div>
                   </div>
                   <div>
-                    <div className="text-slate-600 text-[9px] tracking-wider mb-1">CONFIDENCE SCORE</div>
+                    <div className="text-slate-600 text-[9px] tracking-wider mb-1">{t("intel.confidenceScore")}</div>
                     <div className="text-slate-300">{event.confidence_score}%</div>
                   </div>
                 </div>
@@ -550,6 +550,7 @@ function PersonalisedCard({
   event: { title: string; sector: string; region: string; risk_level: string; risk_score: number; situation_en: string; why_matters_en: string; situation_ar?: string; why_matters_ar?: string };
   isAr: boolean;
 }) {
+  const { t } = useLanguage();
   const profile = useProfileStore((s) => s.profile);
   const [insight, setInsight] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -609,7 +610,7 @@ ${isAr ? "Respond in Arabic." : "Respond in English."} Maximum 4 sentences, clas
     <div className="intel-card" style={{ borderTop: "2px solid #8b5cf6" }}>
       <div className="flex items-center justify-between mb-2">
         <div className="font-mono text-[10px] tracking-widest text-purple-400">
-          {isAr ? "ماذا يعني هذا لك" : "WHAT THIS MEANS FOR YOU"}
+          {t("intel.whatMeansForYou")}
         </div>
         <div className="flex items-center gap-1.5 font-mono text-[8px] tracking-wider text-slate-600">
           <span>{roleMeta.icon}</span>
@@ -620,7 +621,7 @@ ${isAr ? "Respond in Arabic." : "Respond in English."} Maximum 4 sentences, clas
       </div>
       {loading ? (
         <div className="font-mono text-[11px] text-purple-400/60 animate-pulse">
-          {isAr ? "أطلس يحلل التأثير على ملفك..." : "Atlas analyzing impact for your profile..."}
+          {t("intel.analyzingImpact")}
         </div>
       ) : insight ? (
         <div className={`text-[13px] leading-relaxed text-slate-400 ${isAr ? "arabic-text" : ""}`}>
