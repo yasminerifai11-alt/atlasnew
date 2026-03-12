@@ -3,7 +3,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useCommandStore } from "@/stores/command-store";
 import { useProfileStore } from "@/stores/profile-store";
-import { fetchEvents, retryApiConnection } from "@/lib/api";
+import { fetchEvents, fetchNewsEvents, retryApiConnection } from "@/lib/api";
 import { TopBar } from "@/components/layout/top-bar";
 import { StatusStrip } from "@/components/layout/status-strip";
 import { EventMap } from "@/components/map/event-map";
@@ -36,14 +36,31 @@ export function CommandCenter() {
   const setSituationView = useCommandStore((s) => s.setSituationView);
 
   // Load events on mount + refresh every 5 minutes
+  // Merges backend/seed events with live news feed events
   const loadEvents = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setEventsLoading(true);
     try {
-      retryApiConnection(); // retry API if previously failed
-      const data = await fetchEvents({ limit: 50 });
-      setEvents(data.events || []);
+      retryApiConnection();
+      // Fetch backend events and live news in parallel
+      const [backendResult, newsEvents] = await Promise.all([
+        fetchEvents({ limit: 50 }).catch(() => ({ events: [], total: 0 })),
+        fetchNewsEvents().catch(() => []),
+      ]);
+
+      const backendEvents = backendResult.events || [];
+
+      // Merge: deduplicate by title similarity, news events get IDs starting at 90000
+      const seenTitles = new Set(backendEvents.map(e => e.title.toLowerCase().slice(0, 40)));
+      const uniqueNews = newsEvents.filter(
+        (ne) => !seenTitles.has(ne.title.toLowerCase().slice(0, 40))
+      );
+
+      const merged = [...backendEvents, ...uniqueNews].sort(
+        (a, b) => new Date(b.event_time).getTime() - new Date(a.event_time).getTime()
+      );
+
+      setEvents(merged.length > 0 ? merged : backendEvents);
     } catch {
-      // Keep existing events on refresh failure; clear on first load only
       if (!isRefresh) setEvents([]);
     }
     if (!isRefresh) setEventsLoading(false);

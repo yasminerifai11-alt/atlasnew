@@ -265,7 +265,7 @@ Generate this JSON only, no other text:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [{ role: "user", content: prompt }],
-          events: [],
+          events: allRelevantEvents,
           lang: isAr ? "ar" : "en",
         }),
         signal: abortController.signal,
@@ -394,7 +394,7 @@ Rules:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [{ role: "user", content: prompt }],
-          events: [],
+          events: [...countryEvents, ...nearbyEvents.slice(0, 3)],
           lang: isAr ? "ar" : "en",
         }),
         signal: abortController.signal,
@@ -412,7 +412,7 @@ Rules:
       setFullBrief(briefFallback());
     }
     setBriefLoading(false);
-  }, [selectedCountry, countryEvents, isAr, profile, countryName]);
+  }, [selectedCountry, countryEvents, nearbyEvents, isAr, profile, countryName]);
 
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();

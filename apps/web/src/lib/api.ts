@@ -303,6 +303,21 @@ export async function chatWithAtlas(
   return data.response;
 }
 
+// ─── Live News Feed ──────────────────────────────────────────────────
+
+export async function fetchNewsEvents(): Promise<ApiEvent[]> {
+  try {
+    const res = await fetch("/api/news", {
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.events || [];
+  } catch {
+    return [];
+  }
+}
+
 // ─── Health ──────────────────────────────────────────────────────────
 
 export async function healthCheck(): Promise<{ status: string; service: string; version: string }> {
