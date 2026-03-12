@@ -8,6 +8,7 @@ import { chatWithAtlas } from "@/lib/api";
 
 const STORAGE_KEY = "atlas-commander-history";
 const MAX_STORED_MESSAGES = 20;
+const LABEL_DISMISSED_KEY = "atlas-commander-label-dismissed";
 
 interface StoredMessage {
   id: string;
@@ -38,16 +39,11 @@ function saveMessages(msgs: StoredMessage[]) {
   }
 }
 
-/**
- * Try to extract a lat/lng from an assistant message by matching event titles
- * against the current event list.
- */
 function findEventMention(
   text: string,
   events: { title: string; latitude: number; longitude: number }[]
 ): { lat: number; lng: number; label: string } | null {
   for (const ev of events) {
-    // Check if significant words from the event title appear in the message
     const keywords = ev.title
       .split(/[\s,\-–—:]+/)
       .filter((w) => w.length > 3);
@@ -60,6 +56,67 @@ function findEventMention(
   }
   return null;
 }
+
+/* ─── Radar SVG Components ─────────────────────────────────── */
+
+/** Animated radar sweep SVG */
+function RadarIcon({ size = 40, sweepDuration = 3 }: { size?: number; sweepDuration?: number }) {
+  const id = `sweep-${size}-${sweepDuration}`;
+  return (
+    <svg viewBox="0 0 40 40" width={size} height={size} className="radar-icon">
+      <circle cx="20" cy="20" r="19" fill="#0a1628" />
+      {/* Range rings */}
+      <circle cx="20" cy="20" r="6" fill="none" stroke="#1e3a5f" strokeWidth="0.5" opacity="0.8" />
+      <circle cx="20" cy="20" r="11" fill="none" stroke="#1e3a5f" strokeWidth="0.5" opacity="0.6" />
+      <circle cx="20" cy="20" r="16" fill="none" stroke="#1e3a5f" strokeWidth="0.5" opacity="0.4" />
+      {/* Crosshairs */}
+      <line x1="20" y1="4" x2="20" y2="36" stroke="#1e3a5f" strokeWidth="0.4" opacity="0.5" />
+      <line x1="4" y1="20" x2="36" y2="20" stroke="#1e3a5f" strokeWidth="0.4" opacity="0.5" />
+      {/* Sweep */}
+      <g style={{ transformOrigin: "20px 20px", animation: `radarSweep ${sweepDuration}s linear infinite` }}>
+        <path d="M 20 20 L 20 4 A 16 16 0 0 1 23.5 4.3 Z" fill={`url(#${id})`} opacity="0.9" />
+        <line x1="20" y1="20" x2="20" y2="4" stroke="#3b82f6" strokeWidth="1.5" opacity="1" />
+      </g>
+      <defs>
+        <linearGradient id={id} x1="20" y1="20" x2="20" y2="4" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* Center dot */}
+      <circle cx="20" cy="20" r="1.5" fill="#3b82f6" />
+      {/* Contact blips */}
+      <circle cx="26" cy="13" r="1.5" fill="#3b82f6" opacity="0">
+        <animate attributeName="opacity" values="0;0;0.9;0.6;0;0;0" dur={`${sweepDuration}s`} begin="0.8s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="14" cy="25" r="1" fill="#60a5fa" opacity="0">
+        <animate attributeName="opacity" values="0;0;0;0.8;0.4;0;0" dur={`${sweepDuration}s`} begin="1.5s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="28" cy="24" r="1.2" fill="#3b82f6" opacity="0">
+        <animate attributeName="opacity" values="0;0;0;0;0.9;0.5;0" dur="6s" begin="2.1s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  );
+}
+
+/** Static mini radar for message labels (no animation for performance) */
+function RadarIconStatic({ size = 12 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 40 40" width={size} height={size}>
+      <circle cx="20" cy="20" r="19" fill="#0a1628" />
+      <circle cx="20" cy="20" r="6" fill="none" stroke="#1e3a5f" strokeWidth="0.5" opacity="0.8" />
+      <circle cx="20" cy="20" r="11" fill="none" stroke="#1e3a5f" strokeWidth="0.5" opacity="0.6" />
+      <circle cx="20" cy="20" r="16" fill="none" stroke="#1e3a5f" strokeWidth="0.5" opacity="0.4" />
+      <line x1="20" y1="4" x2="20" y2="36" stroke="#1e3a5f" strokeWidth="0.4" opacity="0.5" />
+      <line x1="4" y1="20" x2="36" y2="20" stroke="#1e3a5f" strokeWidth="0.4" opacity="0.5" />
+      <line x1="20" y1="20" x2="20" y2="4" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" />
+      <circle cx="20" cy="20" r="1.5" fill="#3b82f6" />
+      <circle cx="26" cy="13" r="1.5" fill="#3b82f6" opacity="0.6" />
+    </svg>
+  );
+}
+
+/* ─── Main Component ───────────────────────────────────────── */
 
 export function FloatingCommander() {
   const { t, lang } = useLanguage();
@@ -74,9 +131,10 @@ export function FloatingCommander() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [hasBeenOpened, setHasBeenOpened] = useState(false);
-  const [showLabel, setShowLabel] = useState(true);
+  const [showLabel, setShowLabel] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
 
-  // Chat state (local, persisted to localStorage)
+  // Chat state
   const [messages, setMessages] = useState<StoredMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,29 +148,32 @@ export function FloatingCommander() {
     setMessages(loadStoredMessages());
   }, []);
 
-  // Fade out the label after 5 seconds
+  // Show label pill on first load, fade after 4s, never show again in session
   useEffect(() => {
-    if (hasBeenOpened) {
+    if (hasBeenOpened) return;
+    const dismissed = sessionStorage.getItem(LABEL_DISMISSED_KEY);
+    if (dismissed) return;
+    const showTimer = setTimeout(() => setShowLabel(true), 1000);
+    const hideTimer = setTimeout(() => {
       setShowLabel(false);
-      return;
-    }
-    const timer = setTimeout(() => setShowLabel(false), 5000);
-    return () => clearTimeout(timer);
+      sessionStorage.setItem(LABEL_DISMISSED_KEY, "1");
+    }, 5000);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [hasBeenOpened]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Focus input when panel opens
   useEffect(() => {
     if (isOpen && !isMinimized) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, isMinimized]);
 
-  // Clear unread when panel is open
   useEffect(() => {
     if (isOpen && !isMinimized) setUnread(0);
   }, [isOpen, isMinimized]);
@@ -156,14 +217,11 @@ export function FloatingCommander() {
         ];
         const viewContext =
           situationView === "defense" ? "DEFENSE" : "INTELLIGENCE";
-
-        // Build enhanced system context
         const contextPrefix = `[CONTEXT: User is viewing the ${viewContext} view in Atlas Command Situation Room. Active events: ${events.length}. ${
           profile
             ? `User role: ${profile.role}, region: ${profile.region}.`
             : ""
         }]`;
-
         const augmentedHistory = [
           {
             role: "user" as const,
@@ -189,17 +247,7 @@ export function FloatingCommander() {
       }
       setLoading(false);
     },
-    [
-      input,
-      loading,
-      messages,
-      events,
-      lang,
-      profile,
-      activeSection,
-      addMessage,
-      isAr,
-    ]
+    [input, loading, messages, events, lang, profile, activeSection, addMessage, isAr, situationView]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -215,7 +263,10 @@ export function FloatingCommander() {
   };
 
   const handleFabClick = () => {
-    if (!hasBeenOpened) setHasBeenOpened(true);
+    if (!hasBeenOpened) {
+      setHasBeenOpened(true);
+      setShowLabel(false);
+    }
     if (isMinimized) {
       setIsMinimized(false);
       setUnread(0);
@@ -240,40 +291,81 @@ export function FloatingCommander() {
   ];
   const suggestedQuestions = isAr ? suggestedQuestionsAr : suggestedQuestionsEn;
 
-  // Only show on situation room (which includes both intelligence and defense views)
+  // Only show on situation room
   if (activeSection !== "situation") return null;
 
   return (
     <>
-      {/* Floating action button */}
+      {/* ─── CSS for radar animation ─── */}
+      <style jsx global>{`
+        @keyframes radarSweep {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .radar-fab { transition: all 0.2s ease; }
+        .radar-fab:hover {
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 30px rgba(59,130,246,0.5) !important;
+          transform: scale(1.05);
+        }
+        .radar-fab:hover .radar-icon g {
+          animation-duration: 2s !important;
+        }
+        .radar-fab:active { transform: scale(0.95); }
+        .radar-fab-open {
+          border-color: #3b82f6 !important;
+        }
+        .radar-label-pill {
+          animation: labelFadeIn 0.4s ease forwards;
+        }
+        @keyframes labelFadeIn {
+          from { opacity: 0; transform: translateX(8px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes labelFadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+      `}</style>
+
+      {/* ─── Floating Radar Button ─── */}
       {!isOpen && (
         <div className="fixed z-[1000]" style={{ bottom: 24, right: 24 }}>
           <div className="flex items-center gap-3">
-            {/* Label */}
-            <div
-              className={`font-mono text-[11px] tracking-wider transition-opacity duration-500 ${
-                showLabel ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
-              style={{ color: "#94a3b8" }}
-            >
-              {isAr ? "اسأل قائد أطلس ←" : "Ask Atlas Commander →"}
-            </div>
-            {/* FAB */}
+            {/* Label pill — shows once, fades after 4s */}
+            {showLabel && (
+              <div
+                className="radar-label-pill font-mono text-[10px] tracking-wider px-3 py-1.5"
+                style={{
+                  color: "#94a3b8",
+                  backgroundColor: "#0d1117",
+                  border: "1px solid #1e3a5f",
+                  borderRadius: "20px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {isAr ? "قائد أطلس — متصل" : "ATLAS COMMANDER ONLINE"}
+              </div>
+            )}
+            {/* Radar FAB */}
             <button
               onClick={handleFabClick}
-              className={`flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all hover:scale-105 active:scale-95 ${!hasBeenOpened ? "commander-pulse" : ""}`}
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+              className="radar-fab flex h-14 w-14 items-center justify-center rounded-full"
               style={{
-                backgroundColor: "#3b82f6",
-                boxShadow: "0 4px 24px rgba(59,130,246,0.4)",
+                backgroundColor: "#0a1628",
+                border: "1.5px solid #1e3a5f",
+                boxShadow: "0 0 20px rgba(59,130,246,0.3)",
               }}
             >
-              <span className="text-white text-xl font-bold">✦</span>
+              <RadarIcon size={40} sweepDuration={isHovering ? 2 : 3} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Minimized bar */}
+      {/* ─── Minimized bar ─── */}
       {isOpen && isMinimized && (
         <button
           onClick={() => {
@@ -290,10 +382,10 @@ export function FloatingCommander() {
             boxShadow: "0 -4px 24px rgba(0,0,0,0.4)",
           }}
         >
+          <RadarIcon size={16} sweepDuration={3} />
           <span className="font-mono text-[10px] tracking-widest text-blue-400">
             {isAr ? "قائد أطلس" : "ATLAS COMMANDER"}
           </span>
-          <span className="text-blue-400 text-xs">✦</span>
           {unread > 0 && (
             <span
               className="flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 font-mono text-[9px] font-bold text-white"
@@ -305,7 +397,7 @@ export function FloatingCommander() {
         </button>
       )}
 
-      {/* Chat panel */}
+      {/* ─── Chat Panel ─── */}
       {isOpen && !isMinimized && (
         <div
           className="fixed z-[999] flex flex-col animate-slide-up"
@@ -326,7 +418,7 @@ export function FloatingCommander() {
             style={{ borderBottom: "1px solid #1e2530" }}
           >
             <div className="flex items-center gap-2">
-              <span className="text-blue-400 text-sm">✦</span>
+              <RadarIcon size={20} sweepDuration={3} />
               <span className="font-mono text-[10px] tracking-[2px] text-blue-400 font-semibold">
                 {isAr ? "قائد أطلس" : "ATLAS COMMANDER"}
               </span>
@@ -360,16 +452,18 @@ export function FloatingCommander() {
             {messages.length === 0 && !loading ? (
               /* Empty state */
               <div className="flex flex-col items-center justify-center h-full">
-                <span className="text-3xl text-blue-400 mb-3">✦</span>
-                <div className="font-mono text-[12px] font-semibold text-slate-300 mb-1">
-                  {isAr ? "قائد أطلس" : "Atlas Commander"}
+                <div className="mb-4">
+                  <RadarIcon size={48} sweepDuration={4} />
+                </div>
+                <div className="font-mono text-[11px] tracking-[2px] text-blue-400 font-semibold mb-1">
+                  ATLAS COMMANDER
                 </div>
                 <div
-                  className={`font-mono text-[10px] text-slate-500 mb-5 text-center ${isAr ? "arabic-text" : ""}`}
+                  className={`font-mono text-[10px] text-slate-500 mb-5 text-center leading-relaxed ${isAr ? "arabic-text" : ""}`}
                 >
                   {isAr
-                    ? "اسألني أي شيء عن الوضع الراهن."
-                    : "Ask me anything about the current situation."}
+                    ? "عميل الاستخبارات متصل.\nيراقب جميع القنوات."
+                    : "Intel agent online.\nMonitoring all channels."}
                 </div>
                 <div className="w-full space-y-2">
                   {suggestedQuestions.map((q, i) => (
@@ -402,7 +496,6 @@ export function FloatingCommander() {
                   return (
                     <div key={msg.id}>
                       {msg.role === "user" ? (
-                        /* User message */
                         <div className="flex justify-end">
                           <div
                             className={`max-w-[80%] px-3 py-2.5 text-[13px] leading-relaxed text-white ${isAr ? "arabic-text" : ""}`}
@@ -415,22 +508,20 @@ export function FloatingCommander() {
                           </div>
                         </div>
                       ) : (
-                        /* Assistant message */
                         <div>
-                          <div className="font-mono text-[9px] tracking-[1.5px] text-blue-400 mb-1">
-                            {isAr ? "قائد أطلس" : "ATLAS COMMANDER"}
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <RadarIconStatic size={12} />
+                            <span className="font-mono text-[9px] tracking-[1.5px] text-blue-400">
+                              {isAr ? "قائد أطلس" : "ATLAS COMMANDER"}
+                            </span>
                           </div>
                           <div
                             className={`max-w-[85%] px-3 py-2.5 text-[13px] leading-relaxed ${isAr ? "arabic-text" : ""}`}
                             style={{
                               color: "#e5e7eb",
                               backgroundColor: "#0f172a",
-                              borderLeft: isAr
-                                ? "none"
-                                : "2px solid #3b82f6",
-                              borderRight: isAr
-                                ? "2px solid #3b82f6"
-                                : "none",
+                              borderLeft: isAr ? "none" : "2px solid #3b82f6",
+                              borderRight: isAr ? "2px solid #3b82f6" : "none",
                               borderRadius: isAr
                                 ? "12px 2px 12px 12px"
                                 : "2px 12px 12px 12px",
@@ -443,11 +534,7 @@ export function FloatingCommander() {
                           {eventRef && (
                             <button
                               onClick={() =>
-                                handleShowOnMap(
-                                  eventRef.lat,
-                                  eventRef.lng,
-                                  eventRef.label
-                                )
+                                handleShowOnMap(eventRef.lat, eventRef.lng, eventRef.label)
                               }
                               className="mt-1.5 flex items-center gap-1 px-2 py-1 font-mono text-[9px] tracking-wider text-blue-400 hover:text-blue-300 transition-colors"
                               style={{
@@ -456,8 +543,7 @@ export function FloatingCommander() {
                                 borderRadius: "4px",
                               }}
                             >
-                              📍{" "}
-                              {isAr ? "عرض على الخريطة" : "Show on map"}
+                              📍 {isAr ? "عرض على الخريطة" : "Show on map"}
                             </button>
                           )}
                         </div>
@@ -465,13 +551,17 @@ export function FloatingCommander() {
                     </div>
                   );
                 })}
+                {/* Loading state — fast radar sweep */}
                 {loading && (
                   <div>
-                    <div className="font-mono text-[9px] tracking-[1.5px] text-blue-400 mb-1">
-                      {isAr ? "قائد أطلس" : "ATLAS COMMANDER"}
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <RadarIconStatic size={12} />
+                      <span className="font-mono text-[9px] tracking-[1.5px] text-blue-400">
+                        {isAr ? "قائد أطلس" : "ATLAS COMMANDER"}
+                      </span>
                     </div>
                     <div
-                      className="max-w-[85%] px-3 py-3"
+                      className="max-w-[85%] px-3 py-3 flex flex-col items-center gap-2"
                       style={{
                         backgroundColor: "#0f172a",
                         borderLeft: isAr ? "none" : "2px solid #3b82f6",
@@ -481,19 +571,9 @@ export function FloatingCommander() {
                           : "2px 12px 12px 12px",
                       }}
                     >
-                      <span className="inline-flex gap-1">
-                        <span
-                          className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce"
-                          style={{ animationDelay: "0ms" }}
-                        />
-                        <span
-                          className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce"
-                          style={{ animationDelay: "150ms" }}
-                        />
-                        <span
-                          className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce"
-                          style={{ animationDelay: "300ms" }}
-                        />
+                      <RadarIcon size={28} sweepDuration={1} />
+                      <span className="font-mono text-[9px] text-slate-500">
+                        {isAr ? "جارٍ مسح القنوات..." : "Scanning intel channels..."}
                       </span>
                     </div>
                   </div>
@@ -542,22 +622,22 @@ export function FloatingCommander() {
         </div>
       )}
 
-      {/* Floating button (when panel is open, smaller position indicator) */}
+      {/* ─── Close button when panel is open ─── */}
       {isOpen && !isMinimized && (
         <button
           onClick={() => setIsOpen(false)}
-          className="fixed z-[1000] flex h-14 w-14 items-center justify-center rounded-full transition-all hover:scale-105"
+          className="radar-fab radar-fab-open fixed z-[1000] flex h-14 w-14 items-center justify-center rounded-full"
           style={{
             bottom: 24,
             right: 24,
-            backgroundColor: "#3b82f6",
-            boxShadow: "0 4px 24px rgba(59,130,246,0.4)",
+            backgroundColor: "#0a1628",
+            border: "1.5px solid #3b82f6",
+            boxShadow: "0 0 20px rgba(59,130,246,0.3)",
           }}
         >
-          <span className="text-white text-lg">×</span>
+          <RadarIcon size={40} sweepDuration={3} />
         </button>
       )}
-
     </>
   );
 }
