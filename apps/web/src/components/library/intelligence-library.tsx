@@ -1,303 +1,702 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useLanguage } from "@/lib/language";
+import {
+  LIBRARY_CATEGORIES,
+  LIBRARY_SOURCES,
+  FEED_ITEMS,
+  CATEGORY_BASELINES,
+  STATIC_ANOMALIES,
+  type LibraryCategory,
+  type LibrarySource,
+  type FeedItem,
+} from "@/data/library-sources";
 
-type SourceTier = "active" | "premium";
+// ─── Helpers ────────────────────────────────────────────────────
 
-interface IntelSource {
-  name: string;
-  type: string;
-  category: string;
-  frequency: string;
-  reliability: number;
-  description: string;
-  tier: SourceTier;
-  url?: string;
-  lastSynced?: string; // only for active
-  eventsToday?: number; // only for active
+function timeAgo(offsetMs: number): string {
+  const ms = Math.abs(offsetMs);
+  if (ms < 60000) return `${Math.round(ms / 1000)}s ago`;
+  if (ms < 3600000) return `${Math.round(ms / 60000)}m ago`;
+  if (ms < 86400000) return `${Math.round(ms / 3600000)}h ago`;
+  return `${Math.round(ms / 86400000)}d ago`;
 }
 
-// TIER 1 — ACTIVE INGESTION (free, no key or key in .env)
-const ACTIVE_SOURCES: IntelSource[] = [
-  { name: "USGS Earthquakes", type: "API", category: "conflict", frequency: "5 min", reliability: 99, description: "Real-time earthquake monitoring — magnitude, depth, location for all global seismic events", tier: "active", url: "earthquake.usgs.gov/fdsnws", lastSynced: "3 min ago", eventsToday: 12 },
-  { name: "GDELT Project", type: "API", category: "conflict", frequency: "15 min", reliability: 85, description: "Global Database of Events, Language, and Tone — monitors news media from every country in real-time", tier: "active", url: "api.gdeltproject.org", lastSynced: "8 min ago", eventsToday: 47 },
-  { name: "GDACS Disasters", type: "RSS", category: "conflict", frequency: "Real-time", reliability: 97, description: "UN Global Disaster Alert and Coordination System — validated natural disaster early warning", tier: "active", url: "gdacs.org/xml/rss.xml", lastSynced: "12 min ago", eventsToday: 3 },
-  { name: "NASA FIRMS", type: "API", category: "satellite", frequency: "6 hours", reliability: 92, description: "Fire Information for Resource Management — satellite thermal anomaly and fire detection via VIIRS/MODIS", tier: "active", url: "firms.modaps.eosdis.nasa.gov", lastSynced: "2h ago", eventsToday: 8 },
-  { name: "NASA EONET", type: "API", category: "satellite", frequency: "Hourly", reliability: 95, description: "Earth Observatory Natural Event Tracker — satellite-verified natural events including wildfires, storms, volcanic activity", tier: "active", url: "eonet.gsfc.nasa.gov", lastSynced: "45 min ago", eventsToday: 5 },
-  { name: "EIA Energy Data", type: "API", category: "energy", frequency: "Daily", reliability: 99, description: "US Energy Information Administration — oil production, storage, spot prices, petroleum data", tier: "active", url: "api.eia.gov/v2", lastSynced: "1h ago", eventsToday: 2 },
-  { name: "EMSC Earthquakes", type: "RSS", category: "conflict", frequency: "Real-time", reliability: 98, description: "European-Mediterranean Seismological Centre — real-time seismic monitoring with felt reports", tier: "active", url: "emsc-csem.org", lastSynced: "5 min ago", eventsToday: 9 },
-  { name: "WHO Disease Alerts", type: "RSS", category: "conflict", frequency: "Daily", reliability: 99, description: "World Health Organization Disease Outbreak News — official disease event notifications worldwide", tier: "active", url: "who.int/feeds", lastSynced: "3h ago", eventsToday: 1 },
-  { name: "OCHA ReliefWeb", type: "API", category: "conflict", frequency: "Hourly", reliability: 95, description: "UN OCHA humanitarian reports — crisis updates, situation reports, disaster assessments", tier: "active", url: "api.reliefweb.int/v1", lastSynced: "20 min ago", eventsToday: 6 },
-  { name: "UN Security Council", type: "RSS", category: "conflict", frequency: "Daily", reliability: 99, description: "UN Security Council press releases and meeting outcomes — resolutions, sanctions, peacekeeping updates", tier: "active", url: "un.org/press/en/feed", lastSynced: "4h ago", eventsToday: 0 },
-  { name: "US State Dept Advisories", type: "RSS", category: "conflict", frequency: "As needed", reliability: 99, description: "Travel advisories and worldwide caution alerts — official US government country risk assessments", tier: "active", url: "travel.state.gov", lastSynced: "6h ago", eventsToday: 1 },
-  { name: "CISA Cyber Alerts", type: "RSS", category: "cyber", frequency: "As needed", reliability: 99, description: "Cybersecurity & Infrastructure Security Agency — critical vulnerability and threat advisories", tier: "active", url: "us-cert.cisa.gov", lastSynced: "2h ago", eventsToday: 2 },
-  { name: "NetBlocks", type: "RSS", category: "cyber", frequency: "As needed", reliability: 94, description: "Internet freedom observatory — verified internet shutdowns, disruptions, and state-level restrictions", tier: "active", url: "netblocks.org/feed", lastSynced: "1h ago", eventsToday: 0 },
-  { name: "Reuters World", type: "RSS", category: "conflict", frequency: "Real-time", reliability: 98, description: "Tier 1 wire service — breaking news, geopolitical developments, financial market impact analysis", tier: "active", url: "feeds.reuters.com", lastSynced: "2 min ago", eventsToday: 23 },
-  { name: "BBC World", type: "RSS", category: "conflict", frequency: "Real-time", reliability: 97, description: "BBC World Service — global news coverage with strong Middle East and Africa bureaux", tier: "active", url: "feeds.bbci.co.uk", lastSynced: "4 min ago", eventsToday: 18 },
-  { name: "Al Jazeera English", type: "RSS", category: "conflict", frequency: "Real-time", reliability: 93, description: "Qatar-based — strongest MENA coverage, Gulf perspective, Arabic source network", tier: "active", url: "aljazeera.com/xml/rss", lastSynced: "6 min ago", eventsToday: 14 },
-  { name: "Middle East Eye", type: "RSS", category: "conflict", frequency: "Hourly", reliability: 88, description: "Regional news — focused on Middle East, North Africa, and Turkey with investigative reporting", tier: "active", url: "middleeasteye.net/rss", lastSynced: "15 min ago", eventsToday: 7 },
-  { name: "Anthropic Claude AI", type: "API", category: "intelligence", frequency: "Per event", reliability: 95, description: "AI enrichment engine — generates bilingual EN/AR intelligence analysis, consequence chains, and command recommendations for every ingested event", tier: "active", url: "api.anthropic.com", lastSynced: "1 min ago", eventsToday: 35 },
-];
+function timeAgoAr(offsetMs: number): string {
+  const ms = Math.abs(offsetMs);
+  if (ms < 60000) return `منذ ${Math.round(ms / 1000)} ث`;
+  if (ms < 3600000) return `منذ ${Math.round(ms / 60000)} د`;
+  if (ms < 86400000) return `منذ ${Math.round(ms / 3600000)} س`;
+  return `منذ ${Math.round(ms / 86400000)} ي`;
+}
 
-// TIER 2 — PREMIUM / COMING SOON
-const PREMIUM_SOURCES: IntelSource[] = [
-  { name: "ACLED", type: "API", category: "conflict", frequency: "Hourly", reliability: 92, description: "Armed Conflict Location & Event Data — tracks political violence and protests worldwide with sub-national precision", tier: "premium" },
-  { name: "MarineTraffic AIS", type: "API", category: "maritime", frequency: "Real-time", reliability: 95, description: "Full AIS vessel tracking — maritime domain awareness, port activity, and shipping route analysis", tier: "premium" },
-  { name: "FlightAware", type: "API", category: "aviation", frequency: "Real-time", reliability: 94, description: "Global flight tracking — military and civilian aviation monitoring, airspace closures", tier: "premium" },
-  { name: "Sentinel Hub", type: "Satellite", category: "satellite", frequency: "5 days", reliability: 94, description: "ESA Copernicus satellite data — change detection, infrastructure monitoring, environmental analysis", tier: "premium" },
-  { name: "Lloyd's List Intelligence", type: "API", category: "maritime", frequency: "Daily", reliability: 97, description: "Premium maritime intelligence — shipping risk, sanctions tracking, port security assessments", tier: "premium" },
-  { name: "Bloomberg Terminal", type: "API", category: "financial", frequency: "Real-time", reliability: 99, description: "Institutional-grade financial data — commodity prices, sovereign CDS, FX, geopolitical risk pricing", tier: "premium" },
-  { name: "ICIS Energy", type: "API", category: "energy", frequency: "Daily", reliability: 96, description: "Energy commodity intelligence — LNG, gas, power, carbon markets, supply/demand analysis", tier: "premium" },
-  { name: "S&P Global Platts", type: "API", category: "energy", frequency: "Real-time", reliability: 98, description: "Benchmark energy pricing — Brent, Dubai crude, LNG spot, refining margins", tier: "premium" },
-  { name: "OpenSky Network", type: "API", category: "aviation", frequency: "Real-time", reliability: 88, description: "ADS-B flight tracking — open airspace monitoring and anomaly detection", tier: "premium" },
-  { name: "LiveUAMap", type: "Scrape", category: "conflict", frequency: "Real-time", reliability: 80, description: "Crowd-sourced conflict mapping — geolocated military activity, incidents, and territorial control", tier: "premium" },
-  { name: "OPEC MOMR", type: "Report", category: "energy", frequency: "Monthly", reliability: 85, description: "Monthly Oil Market Report — production quotas, compliance, demand forecasts", tier: "premium" },
-  { name: "IEA Oil Market Report", type: "Report", category: "energy", frequency: "Monthly", reliability: 93, description: "International Energy Agency — supply/demand balance, strategic reserves, transition analysis", tier: "premium" },
-  { name: "Reuters Eikon", type: "API", category: "financial", frequency: "Real-time", reliability: 96, description: "Institutional financial and news data — energy trading, geopolitical risk pricing", tier: "premium" },
-  { name: "ICE Brent Futures", type: "API", category: "financial", frequency: "Real-time", reliability: 99, description: "Intercontinental Exchange — Brent crude oil futures and options, forward curves", tier: "premium" },
-  { name: "OpenSanctions", type: "API", category: "conflict", frequency: "Daily", reliability: 87, description: "Sanctions lists, PEPs, and entities of interest — compliance and entity tracking", tier: "premium" },
-  { name: "FlightRadar24", type: "API", category: "aviation", frequency: "Real-time", reliability: 89, description: "ADS-B flight tracking — military and civilian aviation monitoring", tier: "premium" },
-  { name: "Planet Labs", type: "API", category: "satellite", frequency: "Daily", reliability: 91, description: "High-resolution daily satellite imagery — infrastructure and activity monitoring", tier: "premium" },
-  { name: "OTX AlienVault", type: "API", category: "cyber", frequency: "Hourly", reliability: 82, description: "Open Threat Exchange — cyber threat indicators, malware, and vulnerability feeds", tier: "premium" },
-  { name: "UKMTO", type: "RSS", category: "maritime", frequency: "As needed", reliability: 97, description: "UK Maritime Trade Operations — shipping advisories and incident reports for Gulf/Red Sea", tier: "premium" },
-  { name: "Jane's Defence", type: "API", category: "conflict", frequency: "Daily", reliability: 96, description: "Military intelligence — order of battle, equipment, defence procurement, threat assessments", tier: "premium" },
-  { name: "Maxar Satellite", type: "API", category: "satellite", frequency: "Daily", reliability: 97, description: "High-resolution satellite imagery — military base monitoring, damage assessment, before/after analysis", tier: "premium" },
-  { name: "Recorded Future", type: "API", category: "cyber", frequency: "Real-time", reliability: 91, description: "Threat intelligence — dark web monitoring, vulnerability exploitation, nation-state actor tracking", tier: "premium" },
-  { name: "Palantir Gotham", type: "Platform", category: "intelligence", frequency: "Real-time", reliability: 93, description: "Intelligence fusion platform — entity resolution, network analysis, pattern detection", tier: "premium" },
-  // Defense & Military sources
-  { name: "Global Firepower Index", type: "Scrape", category: "defense", frequency: "Annual", reliability: 88, description: "145 countries, 60+ factors — comprehensive military strength ranking and capability assessment", tier: "active", url: "globalfirepower.com", lastSynced: "7d ago", eventsToday: 0 },
-  { name: "IISS Military Balance", type: "Report", category: "defense", frequency: "Annual", reliability: 97, description: "170 countries — the most authoritative assessment of global military capabilities and defense economics", tier: "premium" },
-  { name: "SIPRI Arms Transfers", type: "API", category: "defense", frequency: "Quarterly", reliability: 95, description: "Stockholm International Peace Research Institute — arms transfers, defense spending, military expenditure data", tier: "active", url: "sipri.org", lastSynced: "14d ago", eventsToday: 0 },
-  { name: "ACLED Military Activity", type: "API", category: "defense", frequency: "Daily", reliability: 92, description: "Conflict-related military events — geolocated armed engagement data, troop movements, military operations", tier: "premium" },
-  { name: "Heritage Military Index", type: "Report", category: "defense", frequency: "Annual", reliability: 85, description: "Index of US Military Strength — annual assessment of US and adversary capabilities, force readiness", tier: "premium" },
-  { name: "Jane's Defence", type: "API", category: "defense", frequency: "Daily", reliability: 96, description: "Most detailed military intelligence — order of battle, equipment databases, procurement, threat assessments", tier: "premium" },
-];
+// ─── Source helpers ─────────────────────────────────────────────
 
-const ALL_SOURCES = [...ACTIVE_SOURCES, ...PREMIUM_SOURCES];
+const sourcesByCategory = (cat: string) =>
+  LIBRARY_SOURCES.filter((s) => s.category === cat);
 
-const CATEGORIES = [
-  { key: "all", labelKey: "library.all" },
-  { key: "conflict", labelKey: "library.conflict" },
-  { key: "energy", labelKey: "library.energy" },
-  { key: "financial", labelKey: "library.financial" },
-  { key: "maritime", labelKey: "library.maritime" },
-  { key: "aviation", labelKey: "library.aviation" },
-  { key: "cyber", labelKey: "library.cyber" },
-  { key: "satellite", labelKey: "library.satellite" },
-  { key: "intelligence", label: "AI / INTEL" },
-  { key: "defense", labelKey: "defense.defenseCategory" },
-];
+const feedByCategory = (cat: string) =>
+  FEED_ITEMS.filter((f) => f.category === cat).sort(
+    (a, b) => b.timestamp - a.timestamp
+  );
 
-type TierFilter = "all" | "active" | "premium";
+const totalSourceCount = LIBRARY_SOURCES.length;
+
+const categoryCounts: Record<string, number> = {};
+for (const s of LIBRARY_SOURCES) {
+  categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
+}
+
+// ─── Component ──────────────────────────────────────────────────
 
 export function IntelligenceLibrary() {
   const { t, lang } = useLanguage();
-  const [category, setCategory] = useState("all");
-  const [tierFilter, setTierFilter] = useState<TierFilter>("all");
-  const [search, setSearch] = useState("");
   const isAr = lang === "ar";
 
-  const sources = tierFilter === "active" ? ACTIVE_SOURCES
-    : tierFilter === "premium" ? PREMIUM_SOURCES
-    : ALL_SOURCES;
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeSource, setActiveSource] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [expandedSections, setExpandedSections] = useState<
+    Record<string, boolean>
+  >(() => {
+    const initial: Record<string, boolean> = {};
+    LIBRARY_CATEGORIES.forEach((c) => (initial[c.key] = true));
+    return initial;
+  });
+  const [expandedFeeds, setExpandedFeeds] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [anomalyLoading, setAnomalyLoading] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [newItemFlash, setNewItemFlash] = useState<Record<string, boolean>>({});
 
-  const filtered = sources.filter(
-    (s) =>
-      (category === "all" || s.category === category) &&
-      (!search ||
-        s.name.toLowerCase().includes(search.toLowerCase()) ||
-        s.description.toLowerCase().includes(search.toLowerCase()))
+  const feedWallRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Simulate new item arrival every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const cats = LIBRARY_CATEGORIES;
+      const randomCat = cats[Math.floor(Math.random() * cats.length)];
+      setNewItemFlash((prev) => ({ ...prev, [randomCat.key]: true }));
+      setTimeout(() => {
+        setNewItemFlash((prev) => ({ ...prev, [randomCat.key]: false }));
+      }, 3000);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Scroll to category section
+  const scrollToCategory = useCallback(
+    (catKey: string) => {
+      setActiveCategory(catKey);
+      setActiveSource(null);
+      if (catKey === "all") return;
+      const el = sectionRefs.current[catKey];
+      if (el && feedWallRef.current) {
+        feedWallRef.current.scrollTo({
+          top: el.offsetTop - feedWallRef.current.offsetTop - 24,
+          behavior: "smooth",
+        });
+      }
+    },
+    []
   );
 
-  const reliabilityColor = (score: number) =>
-    score >= 95 ? "#22c55e" : score >= 85 ? "#eab308" : score >= 75 ? "#f97316" : "#ef4444";
+  // Filter by source
+  const filterBySource = useCallback((sourceId: string) => {
+    setActiveSource(sourceId);
+    setActiveCategory("all");
+  }, []);
+
+  const clearSourceFilter = useCallback(() => {
+    setActiveSource(null);
+  }, []);
+
+  // Toggle section
+  const toggleSection = useCallback((catKey: string) => {
+    setExpandedSections((prev) => ({ ...prev, [catKey]: !prev[catKey] }));
+  }, []);
+
+  // Toggle show more
+  const toggleShowMore = useCallback((catKey: string) => {
+    setExpandedFeeds((prev) => ({ ...prev, [catKey]: !prev[catKey] }));
+  }, []);
+
+  // Refresh anomaly
+  const refreshAnomaly = useCallback((catKey: string) => {
+    setAnomalyLoading((prev) => ({ ...prev, [catKey]: true }));
+    setTimeout(() => {
+      setAnomalyLoading((prev) => ({ ...prev, [catKey]: false }));
+    }, 2000);
+  }, []);
+
+  // Filtered sources for sidebar
+  const filteredSidebarSources = useMemo(() => {
+    let sources = LIBRARY_SOURCES;
+    if (search) {
+      const q = search.toLowerCase();
+      sources = sources.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q)
+      );
+    }
+    return sources;
+  }, [search]);
+
+  // Get feed items (optionally filtered by source)
+  const getVisibleFeed = useCallback(
+    (catKey: string) => {
+      let items = feedByCategory(catKey);
+      if (activeSource) {
+        items = items.filter((f) => f.sourceId === activeSource);
+      }
+      return items;
+    },
+    [activeSource]
+  );
+
+  // Active source object for filter display
+  const activeSourceObj = activeSource
+    ? LIBRARY_SOURCES.find((s) => s.id === activeSource)
+    : null;
+
+  // ─── Render ───────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Header */}
-      <div className="border-b border-white/[0.06] px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-mono text-sm font-semibold tracking-wider text-slate-200">
-              {t("library.title")}
-            </div>
-            <div className="font-mono text-[9px] tracking-widest text-slate-600">
-              {t("library.subtitle")} · {ALL_SOURCES.length} {t("library.sourcesCataloged")} · {ACTIVE_SOURCES.length} {t("library.activeNowLabel")}
-            </div>
+    <div
+      className="flex h-full w-full overflow-hidden"
+      dir={isAr ? "rtl" : "ltr"}
+    >
+      {/* ── LEFT SIDEBAR ─────────────────────────────────────── */}
+      <div
+        className="flex flex-col shrink-0 overflow-hidden md:w-[280px] w-full md:max-w-[280px]"
+        style={{
+          background: "#0a0e1a",
+          borderRight: isAr ? "none" : "1px solid #1e2530",
+          borderLeft: isAr ? "1px solid #1e2530" : "none",
+        }}
+      >
+        {/* Mobile: horizontal pills */}
+        <div className="md:hidden flex items-center gap-2 px-4 py-3 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => scrollToCategory("all")}
+            className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-mono tracking-wider transition-colors"
+            style={{
+              background:
+                activeCategory === "all" ? "#3b82f6" : "transparent",
+              color: activeCategory === "all" ? "white" : "#6b7280",
+              border: "1px solid #1e2530",
+            }}
+          >
+            {isAr ? "الكل" : "All"}
+          </button>
+          {LIBRARY_CATEGORIES.map((cat) => (
+            <button
+              key={cat.key}
+              onClick={() => scrollToCategory(cat.key)}
+              className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-mono tracking-wider transition-colors"
+              style={{
+                background:
+                  activeCategory === cat.key ? "#3b82f6" : "transparent",
+                color: activeCategory === cat.key ? "white" : "#6b7280",
+                border: "1px solid #1e2530",
+              }}
+            >
+              {isAr ? cat.labelAr : cat.label.split(" ")[0]}
+            </button>
+          ))}
+        </div>
+
+        {/* Desktop sidebar content */}
+        <div className="hidden md:flex flex-col flex-1 overflow-hidden p-4">
+          {/* Title */}
+          <div
+            className="font-mono text-[10px] tracking-[2px] mb-3"
+            style={{ color: "#3b82f6", fontFamily: "'IBM Plex Mono', monospace" }}
+          >
+            {isAr ? "مكتبة المعلومات" : "INTEL LIBRARY"}
           </div>
-          {/* Tier filter toggle */}
-          <div className="flex items-center gap-0.5 font-mono text-[10px]">
-            {([
-              { key: "all" as TierFilter, label: t("library.allSources"), count: ALL_SOURCES.length },
-              { key: "active" as TierFilter, label: t("library.activeNow"), count: ACTIVE_SOURCES.length },
-              { key: "premium" as TierFilter, label: t("library.premium"), count: PREMIUM_SOURCES.length },
-            ]).map((f) => (
+
+          {/* Search */}
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={isAr ? "ابحث في المصادر..." : "Search sources..."}
+            className="w-full mb-3 px-3 outline-none text-[11px] text-slate-300 placeholder-slate-600 font-mono"
+            style={{
+              background: "#0d1117",
+              border: "1px solid #1e2530",
+              height: 36,
+              borderRadius: 6,
+            }}
+          />
+
+          {/* Category list */}
+          <div className="flex flex-col gap-0.5 overflow-y-auto flex-1">
+            {/* All Sources row */}
+            <button
+              onClick={() => scrollToCategory("all")}
+              className="flex items-center justify-between px-3 py-2 rounded transition-colors text-left w-full"
+              style={{
+                background: activeCategory === "all" ? "rgba(59,130,246,0.15)" : "transparent",
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}
+            >
+              <span className="flex items-center gap-2 text-[11px]" style={{ color: activeCategory === "all" ? "white" : "#9ca3af" }}>
+                <span className="inline-block w-2 h-2 rounded-full bg-white" />
+                {isAr ? "جميع المصادر" : "All Sources"}
+              </span>
+              <span className="text-[10px]" style={{ color: "#6b7280" }}>
+                {totalSourceCount}
+              </span>
+            </button>
+
+            {LIBRARY_CATEGORIES.map((cat) => (
               <button
-                key={f.key}
-                onClick={() => setTierFilter(f.key)}
-                className={`px-3 py-1.5 tracking-wider transition-colors ${
-                  tierFilter === f.key
-                    ? f.key === "active"
-                      ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                      : f.key === "premium"
-                        ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                        : "bg-white/[0.06] text-slate-200 border border-white/[0.08]"
-                    : "text-slate-500 border border-transparent hover:text-slate-400"
-                }`}
+                key={cat.key}
+                onClick={() => scrollToCategory(cat.key)}
+                className="flex items-center justify-between px-3 py-2 rounded transition-colors text-left w-full group"
+                style={{
+                  background:
+                    activeCategory === cat.key
+                      ? "rgba(59,130,246,0.15)"
+                      : "transparent",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
               >
-                {f.label} ({f.count})
+                <span
+                  className="flex items-center gap-2 text-[11px]"
+                  style={{
+                    color:
+                      activeCategory === cat.key ? "white" : "#9ca3af",
+                  }}
+                >
+                  <span
+                    className="inline-block w-2 h-2 rounded-full shrink-0"
+                    style={{
+                      backgroundColor: cat.color,
+                      boxShadow: newItemFlash[cat.key]
+                        ? `0 0 8px ${cat.color}`
+                        : "none",
+                      transition: "box-shadow 0.3s",
+                    }}
+                  />
+                  <span className="truncate">
+                    {isAr ? cat.labelAr : cat.label}
+                  </span>
+                </span>
+                <span className="text-[10px]" style={{ color: "#6b7280" }}>
+                  {categoryCounts[cat.key] || 0}
+                </span>
               </button>
             ))}
+
+            {/* Divider */}
+            <div className="my-3" style={{ borderTop: "1px solid #1e2530" }} />
+
+            {/* Source cards */}
+            <div className="flex flex-col gap-1.5">
+              {filteredSidebarSources.map((src) => (
+                <button
+                  key={src.id}
+                  onClick={() => filterBySource(src.id)}
+                  className="text-left p-2.5 rounded transition-colors w-full"
+                  style={{
+                    background:
+                      activeSource === src.id ? "#111827" : "#0d1117",
+                    border: `1px solid ${
+                      activeSource === src.id ? "#3b82f6" : "#1e2530"
+                    }`,
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="flex items-center gap-1.5 text-[11px] text-slate-300 font-medium truncate">
+                      {src.tier === "active" ? (
+                        <span className="relative flex h-2 w-2 shrink-0">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-40" />
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-600">🔒</span>
+                      )}
+                      {src.name}
+                    </span>
+                    {src.tier === "active" && src.lastSynced && (
+                      <span
+                        className="text-[8px] font-mono tracking-wider px-1.5 py-0.5 rounded shrink-0"
+                        style={{
+                          background: "rgba(59,130,246,0.15)",
+                          color: "#60a5fa",
+                        }}
+                      >
+                        LIVE
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[9px] font-mono" style={{ color: "#6b7280" }}>
+                    {isAr
+                      ? LIBRARY_CATEGORIES.find((c) => c.key === src.category)
+                          ?.labelAr
+                      : LIBRARY_CATEGORIES.find((c) => c.key === src.category)
+                          ?.label}
+                  </div>
+                  {src.tier === "active" && src.lastSynced && (
+                    <div className="text-[8px] font-mono mt-0.5" style={{ color: "#4b5563" }}>
+                      {isAr ? "آخر مزامنة" : "Last sync"}: {src.lastSynced}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Category sidebar */}
-        <div className="w-48 shrink-0 border-r border-white/[0.06] p-3">
-          <div className="font-mono text-[9px] tracking-widest text-slate-600 mb-2">
-            {t("library.categories")}
+      {/* ── RIGHT FEED WALL ──────────────────────────────────── */}
+      <div
+        ref={feedWallRef}
+        className="flex-1 overflow-y-auto"
+        style={{ background: "#080b14", padding: 24 }}
+      >
+        {/* Source filter banner */}
+        {activeSourceObj && (
+          <div
+            className="flex items-center justify-between mb-4 px-4 py-3 rounded-lg"
+            style={{ background: "#0d1117", border: "1px solid #1e2530" }}
+          >
+            <span className="font-mono text-[11px] text-slate-300">
+              {isAr
+                ? `عرض: ${activeSourceObj.name}`
+                : `Showing: ${activeSourceObj.name}`}
+              {" "}
+              ({FEED_ITEMS.filter((f) => f.sourceId === activeSource).length}{" "}
+              {isAr ? "عنصر" : "items"})
+            </span>
+            <button
+              onClick={clearSourceFilter}
+              className="text-[11px] font-mono transition-colors hover:text-blue-400"
+              style={{ color: "#6b7280" }}
+            >
+              {isAr ? "إلغاء الفلتر ×" : "Clear filter ×"}
+            </button>
           </div>
-          <div className="space-y-0.5">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.key}
-                onClick={() => setCategory(cat.key)}
-                className={`w-full text-left px-3 py-1.5 font-mono text-[10px] tracking-wider transition-colors ${
-                  category === cat.key
-                    ? "bg-white/[0.06] text-slate-200"
-                    : "text-slate-500 hover:text-slate-400"
-                }`}
-              >
-                {cat.label || t(cat.labelKey as any)}
-              </button>
-            ))}
-          </div>
+        )}
 
-          {/* Active sources summary */}
-          <div className="mt-4 pt-4 border-t border-white/[0.06]">
-            <div className="font-mono text-[9px] tracking-widest text-slate-600 mb-2">
-              {t("library.ingestionSummary")}
-            </div>
-            <div className="space-y-1.5 font-mono text-[10px]">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">{t("library.active")}</span>
-                <span className="text-green-400">{ACTIVE_SOURCES.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">{t("library.premium")}</span>
-                <span className="text-purple-400">{PREMIUM_SOURCES.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">{t("library.eventsToday")}</span>
-                <span className="text-atlas-accent">
-                  {ACTIVE_SOURCES.reduce((sum, s) => sum + (s.eventsToday || 0), 0)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Category sections */}
+        <div className="flex flex-col gap-6">
+          {LIBRARY_CATEGORIES.map((cat) => {
+            const items = getVisibleFeed(cat.key);
+            const isExpanded = expandedSections[cat.key] !== false;
+            const showAll = expandedFeeds[cat.key] || false;
+            const displayItems = showAll ? items : items.slice(0, 5);
+            const remainingCount = items.length - 5;
+            const catSources = sourcesByCategory(cat.key);
+            const activeSources = catSources.filter(
+              (s) => s.tier === "active"
+            );
+            const anomaly = STATIC_ANOMALIES[cat.key];
+            const isLoading = anomalyLoading[cat.key];
+            const isDimmed =
+              activeCategory !== "all" && activeCategory !== cat.key;
 
-        {/* Source list */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Search */}
-          <div className="border-b border-white/[0.06] p-3">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("library.search")}
-              className="w-full max-w-md bg-white/[0.03] border border-white/[0.06] px-3 py-2 font-mono text-[11px] text-slate-300 placeholder-slate-600 outline-none focus:border-atlas-accent/30"
-            />
-          </div>
-
-          {/* Table header */}
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 font-mono text-[8px] tracking-widest text-slate-600 border-b border-white/[0.04]">
-            <div className="col-span-1">{t("library.status")}</div>
-            <div className="col-span-3">{t("library.name")}</div>
-            <div className="col-span-4">{t("library.description")}</div>
-            <div className="col-span-2">{t("library.frequency")}</div>
-            <div className="col-span-2">{t("library.reliability")}</div>
-          </div>
-
-          {/* Sources */}
-          <div className="divide-y divide-white/[0.03]">
-            {filtered.map((source) => (
+            return (
               <div
-                key={source.name}
-                className="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-white/[0.02] transition-colors items-center"
+                key={cat.key}
+                ref={(el) => {
+                  sectionRefs.current[cat.key] = el;
+                }}
+                className="transition-opacity duration-300"
+                style={{ opacity: isDimmed ? 0.4 : 1 }}
               >
-                {/* Status indicator */}
-                <div className="col-span-1">
-                  {source.tier === "active" ? (
-                    <div className="flex items-center gap-1">
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-[12px] text-slate-600">🔒</span>
-                  )}
-                </div>
-
-                {/* Name + sync info */}
-                <div className="col-span-3">
-                  <div className="text-[12px] font-medium text-slate-300">{source.name}</div>
-                  {source.tier === "active" ? (
-                    <div className="font-mono text-[8px] text-slate-600 mt-0.5">
-                      {t("library.lastSynced")}: {source.lastSynced} · {source.eventsToday || 0} {t("library.today")}
-                    </div>
-                  ) : (
-                    <div className="font-mono text-[8px] text-purple-400/60 mt-0.5">
-                      {t("library.enhancedTier")}
-                    </div>
-                  )}
-                </div>
-
-                {/* Description */}
-                <div className="col-span-4">
-                  <div className="text-[11px] text-slate-500 leading-relaxed">{source.description}</div>
-                </div>
-
-                {/* Frequency */}
-                <div className="col-span-2">
-                  <span className="font-mono text-[10px] text-slate-400">{source.frequency}</span>
-                </div>
-
-                {/* Reliability */}
-                <div className="col-span-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 flex-1 bg-white/[0.06]">
-                      <div
-                        className="h-full"
-                        style={{
-                          width: `${source.reliability}%`,
-                          backgroundColor: reliabilityColor(source.reliability),
-                          opacity: source.tier === "premium" ? 0.4 : 1,
-                        }}
-                      />
-                    </div>
+                {/* ── CATEGORY HEADER ──────────────────────── */}
+                <div
+                  className="flex items-center justify-between px-4"
+                  style={{
+                    background: "#0d1117",
+                    border: "1px solid #1e2530",
+                    borderRadius: "8px 8px 0 0",
+                    height: 40,
+                  }}
+                >
+                  <span
+                    className="flex items-center gap-2 text-[11px] tracking-[1.5px] text-white"
+                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                  >
                     <span
-                      className="font-mono text-[10px]"
-                      style={{
-                        color: reliabilityColor(source.reliability),
-                        opacity: source.tier === "premium" ? 0.5 : 1,
-                      }}
+                      className="inline-block w-2 h-2 rounded-full"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    {isAr
+                      ? cat.labelAr.toUpperCase()
+                      : cat.label.toUpperCase()}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    {activeSources.length > 0 && (
+                      <span
+                        className="text-[8px] font-mono tracking-wider px-1.5 py-0.5 rounded"
+                        style={{
+                          background: "rgba(34,197,94,0.15)",
+                          color: "#22c55e",
+                        }}
+                      >
+                        LIVE
+                      </span>
+                    )}
+                    <span
+                      className="text-[10px] font-mono"
+                      style={{ color: "#6b7280" }}
                     >
-                      {source.reliability}%
+                      {items.length} {isAr ? "عنصر" : "items"}
                     </span>
+                    <button
+                      onClick={() => refreshAnomaly(cat.key)}
+                      className="text-[12px] hover:text-blue-400 transition-colors"
+                      style={{ color: "#6b7280" }}
+                      title="Refresh"
+                    >
+                      ↻
+                    </button>
+                    <button
+                      onClick={() => toggleSection(cat.key)}
+                      className="text-[12px] hover:text-blue-400 transition-colors"
+                      style={{ color: "#6b7280" }}
+                    >
+                      {isExpanded ? "∧" : "∨"}
+                    </button>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
 
-          {/* Count footer */}
-          <div className="px-4 py-3 border-t border-white/[0.04] font-mono text-[9px] text-slate-600">
-            {t("library.showing", { filtered: String(filtered.length), total: String(sources.length) })}
-          </div>
+                {isExpanded && (
+                  <>
+                    {/* ── AI ANOMALY BAR ───────────────────── */}
+                    <div
+                      className="flex items-start gap-3 px-4 py-3"
+                      style={{
+                        background: "#0a0e1a",
+                        borderLeft: isAr
+                          ? "none"
+                          : `3px solid ${cat.color}`,
+                        borderRight: isAr
+                          ? `3px solid ${cat.color}`
+                          : "none",
+                        borderBottom: "1px solid #1e2530",
+                      }}
+                    >
+                      <span className="text-[14px] shrink-0 mt-0.5">🤖</span>
+                      <div className="flex-1 min-w-0">
+                        {isLoading ? (
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="text-[11px] font-mono animate-pulse"
+                              style={{ color: cat.color }}
+                            >
+                              {isAr
+                                ? "تحليل أنماط الإشارات..."
+                                : "Analyzing signal patterns..."}
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <p
+                              className="text-[11px] leading-relaxed"
+                              style={{
+                                color: "#d1d5db",
+                                fontFamily:
+                                  "'IBM Plex Mono', monospace",
+                              }}
+                            >
+                              {anomaly
+                                ? isAr
+                                  ? anomaly.ar
+                                  : anomaly.en
+                                : isAr
+                                  ? "لا توجد بيانات شذوذ متاحة."
+                                  : "No anomaly data available."}
+                            </p>
+                            <p
+                              className="text-[9px] font-mono mt-1"
+                              style={{ color: "#4b5563" }}
+                            >
+                              {isAr
+                                ? "تم التحديث منذ 3 د"
+                                : "Updated 3m ago"}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── FEED ITEMS ───────────────────────── */}
+                    {displayItems.length === 0 ? (
+                      <div
+                        className="px-4 py-6 text-center text-[11px] font-mono"
+                        style={{
+                          background: "#0d1117",
+                          border: "1px solid #1e2530",
+                          borderTop: "none",
+                          color: "#4b5563",
+                          borderRadius:
+                            remainingCount <= 0
+                              ? "0 0 8px 8px"
+                              : undefined,
+                        }}
+                      >
+                        {isAr
+                          ? "لا توجد عناصر في هذه الفئة"
+                          : "No items in this category"}
+                      </div>
+                    ) : (
+                      displayItems.map((item, idx) => {
+                        const isLast =
+                          idx === displayItems.length - 1 &&
+                          remainingCount <= 0;
+                        const isNew = newItemFlash[cat.key] && idx === 0;
+                        return (
+                          <a
+                            key={item.id}
+                            href={`https://${item.url}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-3 px-4 py-3 transition-colors group"
+                            style={{
+                              background: "#0d1117",
+                              borderLeft: isNew
+                                ? isAr
+                                  ? "none"
+                                  : "3px solid #3b82f6"
+                                : isAr
+                                  ? "none"
+                                  : "1px solid #1e2530",
+                              borderRight: isNew
+                                ? isAr
+                                  ? "3px solid #3b82f6"
+                                  : "1px solid #1e2530"
+                                : "1px solid #1e2530",
+                              borderBottom: "1px solid #1e2530",
+                              borderTop: "none",
+                              borderRadius: isLast
+                                ? "0 0 6px 6px"
+                                : undefined,
+                              textDecoration: "none",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.background =
+                                "#111827")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.background =
+                                "#0d1117")
+                            }
+                          >
+                            {/* Source favicon placeholder */}
+                            <div
+                              className="w-5 h-5 rounded shrink-0 flex items-center justify-center text-[8px] font-bold mt-0.5"
+                              style={{
+                                background: cat.color + "20",
+                                color: cat.color,
+                              }}
+                            >
+                              {item.source.charAt(0)}
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div
+                                className="text-[9px] uppercase tracking-wider mb-0.5"
+                                style={{
+                                  color: "#6b7280",
+                                  fontFamily:
+                                    "'IBM Plex Mono', monospace",
+                                }}
+                              >
+                                {item.source}
+                              </div>
+                              <div
+                                className="text-[13px] text-white leading-snug line-clamp-2"
+                                style={{
+                                  fontFamily:
+                                    "'IBM Plex Sans', sans-serif",
+                                }}
+                              >
+                                {isAr && item.headline_ar
+                                  ? item.headline_ar
+                                  : item.headline}
+                              </div>
+                              <span
+                                className="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] font-mono"
+                                style={{
+                                  background: cat.color + "15",
+                                  color: cat.color,
+                                }}
+                              >
+                                {isAr ? cat.labelAr : cat.label}
+                              </span>
+                            </div>
+
+                            {/* Time + link icon */}
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span
+                                className="text-[9px] font-mono"
+                                style={{ color: "#6b7280" }}
+                              >
+                                {isAr
+                                  ? timeAgoAr(item.timestamp)
+                                  : timeAgo(item.timestamp)}
+                              </span>
+                              <span
+                                className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                                style={{ color: "#6b7280" }}
+                              >
+                                ↗
+                              </span>
+                            </div>
+                          </a>
+                        );
+                      })
+                    )}
+
+                    {/* ── SHOW MORE ROW ───────────────────── */}
+                    {items.length > 5 && (
+                      <button
+                        onClick={() => toggleShowMore(cat.key)}
+                        className="w-full text-left px-4 py-2.5 font-mono text-[11px] transition-colors hover:text-blue-400"
+                        style={{
+                          background: "#0a0e1a",
+                          border: "1px solid #1e2530",
+                          borderTop: "none",
+                          borderRadius: "0 0 8px 8px",
+                          color: "#6b7280",
+                        }}
+                      >
+                        {showAll
+                          ? isAr
+                            ? "عرض أقل"
+                            : "Show less"
+                          : isAr
+                            ? `عرض ${remainingCount} عنصر إضافي ←`
+                            : `Show ${remainingCount} more items →`}
+                      </button>
+                    )}
+
+                    {/* Close border for sections with <=5 items and no show-more */}
+                    {items.length <= 5 && items.length > 0 && (
+                      <div
+                        style={{
+                          height: 0,
+                          borderBottom: "none",
+                        }}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

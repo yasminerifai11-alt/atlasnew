@@ -1,0 +1,356 @@
+// ─── Intel Library Data ─────────────────────────────────────────
+
+export interface LibraryCategory {
+  key: string;
+  label: string;
+  labelAr: string;
+  color: string;
+  icon: string;
+}
+
+export const LIBRARY_CATEGORIES: LibraryCategory[] = [
+  { key: "news", label: "News & Media", labelAr: "الأخبار والإعلام", color: "#60a5fa", icon: "📰" },
+  { key: "conflict", label: "Conflict & Security", labelAr: "النزاعات والأمن", color: "#ef4444", icon: "⚔" },
+  { key: "energy", label: "Energy & Commodities", labelAr: "الطاقة والسلع", color: "#f59e0b", icon: "⚡" },
+  { key: "maritime", label: "Maritime & Shipping", labelAr: "الشحن البحري", color: "#06b6d4", icon: "🚢" },
+  { key: "aviation", label: "Aviation", labelAr: "الطيران", color: "#818cf8", icon: "✈" },
+  { key: "satellite", label: "Satellite & Earth", labelAr: "الأقمار الصناعية", color: "#a3e635", icon: "🛰" },
+  { key: "seismic", label: "Seismic & Disasters", labelAr: "الزلازل والكوارث", color: "#f97316", icon: "🌍" },
+  { key: "cyber", label: "Cyber & Digital", labelAr: "الأمن الإلكتروني", color: "#a78bfa", icon: "🔒" },
+  { key: "financial", label: "Financial & Markets", labelAr: "المال والأسواق", color: "#34d399", icon: "📊" },
+  { key: "health", label: "Health & Humanitarian", labelAr: "الصحة والإنسانية", color: "#fb7185", icon: "🏥" },
+  { key: "space", label: "Space & Satellites", labelAr: "الفضاء", color: "#e879f9", icon: "🚀" },
+  { key: "government", label: "Government & Official", labelAr: "الحكومة والرسمي", color: "#94a3b8", icon: "🏛" },
+  { key: "defense", label: "Defense & Military", labelAr: "الدفاع والعسكري", color: "#dc2626", icon: "🛡" },
+];
+
+export interface LibrarySource {
+  id: string;
+  name: string;
+  category: string;
+  type: "API" | "RSS" | "Scrape" | "Satellite" | "Report" | "Platform";
+  tier: "active" | "premium";
+  reliability: number;
+  frequency: string;
+  description: string;
+  url?: string;
+  lastSynced?: string;
+  eventsToday?: number;
+}
+
+export const LIBRARY_SOURCES: LibrarySource[] = [
+  // ── News & Media (18) ──
+  { id: "reuters", name: "Reuters", category: "news", type: "RSS", tier: "active", reliability: 98, frequency: "Real-time", description: "Tier 1 wire service — breaking news, geopolitical developments", url: "feeds.reuters.com", lastSynced: "2m ago", eventsToday: 23 },
+  { id: "bbc", name: "BBC News", category: "news", type: "RSS", tier: "active", reliability: 97, frequency: "Real-time", description: "BBC World Service — global coverage with strong ME bureaux", url: "feeds.bbci.co.uk", lastSynced: "4m ago", eventsToday: 18 },
+  { id: "aljazeera", name: "Al Jazeera", category: "news", type: "RSS", tier: "active", reliability: 93, frequency: "Real-time", description: "Qatar-based — strongest MENA coverage, Arabic source network", url: "aljazeera.com", lastSynced: "6m ago", eventsToday: 14 },
+  { id: "mee", name: "Middle East Eye", category: "news", type: "RSS", tier: "active", reliability: 88, frequency: "Hourly", description: "Regional news focused on MENA and Turkey", url: "middleeasteye.net", lastSynced: "15m ago", eventsToday: 7 },
+  { id: "afp", name: "AFP", category: "news", type: "RSS", tier: "active", reliability: 96, frequency: "Real-time", description: "Agence France-Presse — global wire service", url: "afp.com", lastSynced: "3m ago", eventsToday: 19 },
+  { id: "apnews", name: "AP News", category: "news", type: "RSS", tier: "active", reliability: 97, frequency: "Real-time", description: "Associated Press — independent wire service", url: "apnews.com", lastSynced: "5m ago", eventsToday: 16 },
+  { id: "thenational", name: "The National", category: "news", type: "RSS", tier: "active", reliability: 85, frequency: "Hourly", description: "UAE-based — Gulf perspective, regional analysis", url: "thenationalnews.com", lastSynced: "22m ago", eventsToday: 9 },
+  { id: "arabnews", name: "Arab News", category: "news", type: "RSS", tier: "active", reliability: 84, frequency: "Hourly", description: "Saudi Arabia's first English-language daily", url: "arabnews.com", lastSynced: "18m ago", eventsToday: 8 },
+  { id: "alarabiya", name: "Al Arabiya", category: "news", type: "RSS", tier: "active", reliability: 89, frequency: "Real-time", description: "Saudi-owned — Arabic/English news network", url: "alarabiya.net", lastSynced: "8m ago", eventsToday: 12 },
+  { id: "cnn", name: "CNN", category: "news", type: "RSS", tier: "active", reliability: 90, frequency: "Real-time", description: "US cable news — breaking news and analysis", url: "cnn.com", lastSynced: "7m ago", eventsToday: 15 },
+  { id: "france24", name: "France 24", category: "news", type: "RSS", tier: "active", reliability: 91, frequency: "Real-time", description: "French international news — Francophone Africa, MENA", url: "france24.com", lastSynced: "10m ago", eventsToday: 11 },
+  { id: "dw", name: "DW News", category: "news", type: "RSS", tier: "active", reliability: 90, frequency: "Hourly", description: "Deutsche Welle — German international broadcaster", url: "dw.com", lastSynced: "14m ago", eventsToday: 6 },
+  { id: "asharq", name: "Asharq Al-Awsat", category: "news", type: "RSS", tier: "active", reliability: 86, frequency: "Hourly", description: "Pan-Arab daily — Saudi-owned, London-based", url: "aawsat.com", lastSynced: "20m ago", eventsToday: 5 },
+  { id: "skynews", name: "Sky News Arabia", category: "news", type: "RSS", tier: "active", reliability: 87, frequency: "Real-time", description: "Abu Dhabi-based Arabic news channel", url: "skynewsarabia.com", lastSynced: "9m ago", eventsToday: 10 },
+  { id: "cnbc", name: "CNBC", category: "news", type: "RSS", tier: "active", reliability: 92, frequency: "Real-time", description: "Business/financial news with markets focus", url: "cnbc.com", lastSynced: "6m ago", eventsToday: 13 },
+  { id: "ft", name: "Financial Times", category: "news", type: "RSS", tier: "premium", reliability: 97, frequency: "Hourly", description: "Premium business/financial journalism" },
+  { id: "guardian", name: "The Guardian", category: "news", type: "RSS", tier: "active", reliability: 91, frequency: "Hourly", description: "British daily — investigative reporting, global coverage", url: "theguardian.com", lastSynced: "12m ago", eventsToday: 8 },
+  { id: "wsj", name: "Wall Street Journal", category: "news", type: "RSS", tier: "premium", reliability: 96, frequency: "Hourly", description: "Premium financial/business journalism" },
+
+  // ── Conflict & Security (14) ──
+  { id: "gdelt", name: "GDELT Project", category: "conflict", type: "API", tier: "active", reliability: 85, frequency: "15 min", description: "Global events database — monitors news from every country in real-time", url: "api.gdeltproject.org", lastSynced: "8m ago", eventsToday: 47 },
+  { id: "acled", name: "ACLED", category: "conflict", type: "API", tier: "premium", reliability: 92, frequency: "Hourly", description: "Armed Conflict Location & Event Data — political violence tracking" },
+  { id: "liveuamap", name: "LiveUAMap", category: "conflict", type: "Scrape", tier: "premium", reliability: 80, frequency: "Real-time", description: "Crowd-sourced conflict mapping — geolocated military activity" },
+  { id: "opensanctions", name: "OpenSanctions", category: "conflict", type: "API", tier: "premium", reliability: 87, frequency: "Daily", description: "Sanctions lists, PEPs, and entities of interest" },
+  { id: "janes-conflict", name: "Jane's Intelligence", category: "conflict", type: "API", tier: "premium", reliability: 96, frequency: "Daily", description: "Military intelligence — threat assessments, order of battle" },
+  { id: "iiss-conflict", name: "IISS", category: "conflict", type: "Report", tier: "premium", reliability: 95, frequency: "Monthly", description: "Strategic assessments — armed conflict survey, strategic comments" },
+  { id: "crisisgroup", name: "Crisis Group", category: "conflict", type: "RSS", tier: "active", reliability: 94, frequency: "Weekly", description: "Conflict prevention — crisis alerts, watchlists, briefings", url: "crisisgroup.org", lastSynced: "1h ago", eventsToday: 2 },
+  { id: "sipri-conflict", name: "SIPRI Conflict Data", category: "conflict", type: "API", tier: "active", reliability: 93, frequency: "Quarterly", description: "Stockholm Peace Research Institute — conflict patterns", url: "sipri.org", lastSynced: "3d ago", eventsToday: 0 },
+  { id: "rand", name: "RAND Reports", category: "conflict", type: "RSS", tier: "premium", reliability: 91, frequency: "Weekly", description: "Policy research — security, defense, and foreign policy analysis" },
+  { id: "ucdp", name: "UCDP", category: "conflict", type: "API", tier: "active", reliability: 90, frequency: "Monthly", description: "Uppsala Conflict Data Program — organized violence datasets", url: "ucdp.uu.se", lastSynced: "5d ago", eventsToday: 0 },
+  { id: "gtd", name: "Global Terrorism Database", category: "conflict", type: "API", tier: "premium", reliability: 89, frequency: "Quarterly", description: "START — comprehensive terrorism event database" },
+  { id: "anthropic", name: "Anthropic Claude AI", category: "conflict", type: "API", tier: "active", reliability: 95, frequency: "Per event", description: "AI enrichment — bilingual analysis, consequence chains", url: "api.anthropic.com", lastSynced: "1m ago", eventsToday: 35 },
+  { id: "conflictalert", name: "Conflict Alert", category: "conflict", type: "RSS", tier: "active", reliability: 86, frequency: "Daily", description: "IEP — real-time conflict monitoring and peace metrics", url: "visionofhumanity.org", lastSynced: "4h ago", eventsToday: 1 },
+  { id: "csis", name: "CSIS Analysis", category: "conflict", type: "RSS", tier: "premium", reliability: 93, frequency: "Weekly", description: "Center for Strategic Studies — strategic and policy analysis" },
+
+  // ── Energy & Commodities (12) ──
+  { id: "eia", name: "EIA Energy Data", category: "energy", type: "API", tier: "active", reliability: 99, frequency: "Daily", description: "US Energy Information Administration — oil, gas, prices", url: "api.eia.gov", lastSynced: "1h ago", eventsToday: 2 },
+  { id: "icis", name: "ICIS Energy", category: "energy", type: "API", tier: "premium", reliability: 96, frequency: "Daily", description: "Energy commodity intelligence — LNG, gas, carbon" },
+  { id: "platts", name: "S&P Global Platts", category: "energy", type: "API", tier: "premium", reliability: 98, frequency: "Real-time", description: "Benchmark energy pricing — Brent, Dubai crude, LNG" },
+  { id: "opec", name: "OPEC MOMR", category: "energy", type: "Report", tier: "active", reliability: 85, frequency: "Monthly", description: "Monthly Oil Market Report — quotas, compliance", url: "opec.org", lastSynced: "5d ago", eventsToday: 0 },
+  { id: "iea", name: "IEA Oil Market Report", category: "energy", type: "Report", tier: "premium", reliability: 93, frequency: "Monthly", description: "Supply/demand balance, strategic reserves" },
+  { id: "argus", name: "Argus Media", category: "energy", type: "API", tier: "premium", reliability: 95, frequency: "Daily", description: "Energy and commodity price reporting" },
+  { id: "rystad", name: "Rystad Energy", category: "energy", type: "API", tier: "premium", reliability: 92, frequency: "Daily", description: "Oil & gas analytics — production forecasts, cost analysis" },
+  { id: "oilprice", name: "OilPrice.com", category: "energy", type: "RSS", tier: "active", reliability: 82, frequency: "Real-time", description: "Oil and energy news aggregation", url: "oilprice.com", lastSynced: "12m ago", eventsToday: 6 },
+  { id: "jodi", name: "JODI Oil Data", category: "energy", type: "API", tier: "active", reliability: 90, frequency: "Monthly", description: "Joint Organisations Data Initiative — oil statistics", url: "jodidata.org", lastSynced: "7d ago", eventsToday: 0 },
+  { id: "gecf", name: "GECF Gas Data", category: "energy", type: "Report", tier: "active", reliability: 88, frequency: "Monthly", description: "Gas Exporting Countries Forum — gas market outlook", url: "gecf.org", lastSynced: "14d ago", eventsToday: 0 },
+  { id: "woodmac", name: "Wood Mackenzie", category: "energy", type: "API", tier: "premium", reliability: 94, frequency: "Daily", description: "Energy research — upstream, downstream, power" },
+  { id: "kpler", name: "Kpler Cargo Tracking", category: "energy", type: "API", tier: "premium", reliability: 93, frequency: "Real-time", description: "Commodity cargo tracking — oil, LNG, dry bulk flows" },
+
+  // ── Maritime & Shipping (8) ──
+  { id: "marinetraffic", name: "MarineTraffic AIS", category: "maritime", type: "API", tier: "premium", reliability: 95, frequency: "Real-time", description: "Full AIS vessel tracking — maritime domain awareness" },
+  { id: "lloyds", name: "Lloyd's List Intelligence", category: "maritime", type: "API", tier: "premium", reliability: 97, frequency: "Daily", description: "Premium maritime intelligence — shipping risk, sanctions" },
+  { id: "ukmto", name: "UKMTO", category: "maritime", type: "RSS", tier: "active", reliability: 97, frequency: "As needed", description: "UK Maritime Trade Operations — Gulf/Red Sea advisories", url: "ukmto.org", lastSynced: "3h ago", eventsToday: 1 },
+  { id: "imb", name: "IMB Piracy Centre", category: "maritime", type: "RSS", tier: "active", reliability: 96, frequency: "Daily", description: "ICC — piracy attacks, boarding incidents, threat areas", url: "icc-ccs.org", lastSynced: "6h ago", eventsToday: 0 },
+  { id: "windward", name: "Windward", category: "maritime", type: "API", tier: "premium", reliability: 91, frequency: "Real-time", description: "AI maritime intelligence — dark activity detection" },
+  { id: "vesselfinder", name: "VesselFinder", category: "maritime", type: "API", tier: "active", reliability: 88, frequency: "Real-time", description: "Live vessel tracking — port calls, routes", url: "vesselfinder.com", lastSynced: "5m ago", eventsToday: 4 },
+  { id: "seaintel", name: "Sea-Intelligence", category: "maritime", type: "Report", tier: "premium", reliability: 90, frequency: "Weekly", description: "Container shipping analytics — schedule reliability" },
+  { id: "dryad", name: "Dryad Global", category: "maritime", type: "RSS", tier: "active", reliability: 92, frequency: "Daily", description: "Maritime security — threat assessments, risk ratings", url: "dryadglobal.com", lastSynced: "2h ago", eventsToday: 2 },
+
+  // ── Aviation (5) ──
+  { id: "flightaware", name: "FlightAware", category: "aviation", type: "API", tier: "premium", reliability: 94, frequency: "Real-time", description: "Global flight tracking — military and civilian aviation" },
+  { id: "flightradar24", name: "FlightRadar24", category: "aviation", type: "API", tier: "premium", reliability: 89, frequency: "Real-time", description: "ADS-B flight tracking and aviation data" },
+  { id: "opensky", name: "OpenSky Network", category: "aviation", type: "API", tier: "active", reliability: 88, frequency: "Real-time", description: "Open airspace monitoring and anomaly detection", url: "opensky-network.org", lastSynced: "10m ago", eventsToday: 3 },
+  { id: "iata", name: "IATA Alerts", category: "aviation", type: "RSS", tier: "active", reliability: 95, frequency: "Daily", description: "International Air Transport Association — safety, advisories", url: "iata.org", lastSynced: "4h ago", eventsToday: 1 },
+  { id: "eurocontrol", name: "Eurocontrol", category: "aviation", type: "API", tier: "premium", reliability: 93, frequency: "Real-time", description: "European air traffic management data" },
+
+  // ── Satellite & Earth (4) ──
+  { id: "nasafirms", name: "NASA FIRMS", category: "satellite", type: "API", tier: "active", reliability: 92, frequency: "6 hours", description: "Satellite fire detection via VIIRS/MODIS", url: "firms.modaps.eosdis.nasa.gov", lastSynced: "2h ago", eventsToday: 8 },
+  { id: "nasaeonet", name: "NASA EONET", category: "satellite", type: "API", tier: "active", reliability: 95, frequency: "Hourly", description: "Earth Observatory Natural Event Tracker", url: "eonet.gsfc.nasa.gov", lastSynced: "45m ago", eventsToday: 5 },
+  { id: "sentinel", name: "Sentinel Hub", category: "satellite", type: "Satellite", tier: "premium", reliability: 94, frequency: "5 days", description: "ESA Copernicus — change detection, monitoring" },
+  { id: "planetlabs", name: "Planet Labs", category: "satellite", type: "API", tier: "premium", reliability: 91, frequency: "Daily", description: "High-resolution daily satellite imagery" },
+
+  // ── Seismic & Disasters (4) ──
+  { id: "usgs", name: "USGS Earthquakes", category: "seismic", type: "API", tier: "active", reliability: 99, frequency: "5 min", description: "Real-time global seismic monitoring", url: "earthquake.usgs.gov", lastSynced: "3m ago", eventsToday: 12 },
+  { id: "emsc", name: "EMSC", category: "seismic", type: "RSS", tier: "active", reliability: 98, frequency: "Real-time", description: "European-Mediterranean seismic monitoring", url: "emsc-csem.org", lastSynced: "5m ago", eventsToday: 9 },
+  { id: "gdacs", name: "GDACS Disasters", category: "seismic", type: "RSS", tier: "active", reliability: 97, frequency: "Real-time", description: "UN disaster alert and coordination system", url: "gdacs.org", lastSynced: "12m ago", eventsToday: 3 },
+  { id: "ptwc", name: "Pacific Tsunami Warning", category: "seismic", type: "RSS", tier: "active", reliability: 99, frequency: "As needed", description: "NOAA — tsunami warnings and watches", url: "tsunami.gov", lastSynced: "1h ago", eventsToday: 0 },
+
+  // ── Cyber & Digital (6) ──
+  { id: "cisa", name: "CISA Alerts", category: "cyber", type: "RSS", tier: "active", reliability: 99, frequency: "As needed", description: "Critical vulnerability and threat advisories", url: "us-cert.cisa.gov", lastSynced: "2h ago", eventsToday: 2 },
+  { id: "netblocks", name: "NetBlocks", category: "cyber", type: "RSS", tier: "active", reliability: 94, frequency: "As needed", description: "Internet freedom — verified shutdowns and disruptions", url: "netblocks.org", lastSynced: "1h ago", eventsToday: 0 },
+  { id: "otx", name: "OTX AlienVault", category: "cyber", type: "API", tier: "premium", reliability: 82, frequency: "Hourly", description: "Open Threat Exchange — cyber threat indicators" },
+  { id: "recordedfuture", name: "Recorded Future", category: "cyber", type: "API", tier: "premium", reliability: 91, frequency: "Real-time", description: "Threat intelligence — dark web, nation-state actors" },
+  { id: "mandiant", name: "Mandiant", category: "cyber", type: "API", tier: "premium", reliability: 94, frequency: "Daily", description: "Google — threat intelligence, incident response" },
+  { id: "kaspersky", name: "Kaspersky Threat Intel", category: "cyber", type: "API", tier: "premium", reliability: 88, frequency: "Daily", description: "Threat data feeds — malware, APT tracking" },
+
+  // ── Financial & Markets (6) ──
+  { id: "bloomberg", name: "Bloomberg Terminal", category: "financial", type: "API", tier: "premium", reliability: 99, frequency: "Real-time", description: "Institutional financial data — commodities, CDS, FX" },
+  { id: "eikon", name: "Reuters Eikon", category: "financial", type: "API", tier: "premium", reliability: 96, frequency: "Real-time", description: "Financial and news data — energy trading, risk pricing" },
+  { id: "ice", name: "ICE Brent Futures", category: "financial", type: "API", tier: "active", reliability: 99, frequency: "Real-time", description: "Brent crude oil futures, forward curves", url: "theice.com", lastSynced: "1m ago", eventsToday: 8 },
+  { id: "refinitiv", name: "Refinitiv", category: "financial", type: "API", tier: "premium", reliability: 95, frequency: "Real-time", description: "LSEG — market data, news analytics" },
+  { id: "cme", name: "CME Group", category: "financial", type: "API", tier: "active", reliability: 98, frequency: "Real-time", description: "Futures and options — WTI, natgas, metals", url: "cmegroup.com", lastSynced: "2m ago", eventsToday: 5 },
+  { id: "gulfex", name: "Gulf Exchange Data", category: "financial", type: "API", tier: "active", reliability: 90, frequency: "Daily", description: "GCC stock exchange data — Tadawul, ADX, DFM", url: "gulfexchanges.com", lastSynced: "30m ago", eventsToday: 3 },
+
+  // ── Health & Humanitarian (3) ──
+  { id: "who", name: "WHO Disease Alerts", category: "health", type: "RSS", tier: "active", reliability: 99, frequency: "Daily", description: "Disease Outbreak News — official notifications worldwide", url: "who.int", lastSynced: "3h ago", eventsToday: 1 },
+  { id: "ocha", name: "OCHA ReliefWeb", category: "health", type: "API", tier: "active", reliability: 95, frequency: "Hourly", description: "UN humanitarian reports — crisis updates", url: "reliefweb.int", lastSynced: "20m ago", eventsToday: 6 },
+  { id: "unicef", name: "UNICEF Alerts", category: "health", type: "RSS", tier: "active", reliability: 96, frequency: "Daily", description: "Child welfare — emergency updates, humanitarian response", url: "unicef.org", lastSynced: "5h ago", eventsToday: 1 },
+
+  // ── Space & Satellites (2) ──
+  { id: "maxar", name: "Maxar Satellite", category: "space", type: "API", tier: "premium", reliability: 97, frequency: "Daily", description: "High-res imagery — base monitoring, damage assessment" },
+  { id: "planetsky", name: "Planet Labs SkySat", category: "space", type: "API", tier: "premium", reliability: 91, frequency: "Daily", description: "Sub-meter resolution — rapid revisit tasking" },
+
+  // ── Government & Official (4) ──
+  { id: "unsc", name: "UN Security Council", category: "government", type: "RSS", tier: "active", reliability: 99, frequency: "Daily", description: "Press releases, resolutions, sanctions", url: "un.org", lastSynced: "4h ago", eventsToday: 0 },
+  { id: "usstatedept", name: "US State Dept", category: "government", type: "RSS", tier: "active", reliability: 99, frequency: "As needed", description: "Travel advisories and worldwide caution alerts", url: "travel.state.gov", lastSynced: "6h ago", eventsToday: 1 },
+  { id: "eeas", name: "EU External Action", category: "government", type: "RSS", tier: "active", reliability: 94, frequency: "Daily", description: "EU foreign policy — sanctions, statements, missions", url: "eeas.europa.eu", lastSynced: "8h ago", eventsToday: 0 },
+  { id: "ukfcdo", name: "UK FCDO", category: "government", type: "RSS", tier: "active", reliability: 96, frequency: "As needed", description: "UK foreign affairs — travel advisories, policy", url: "gov.uk", lastSynced: "5h ago", eventsToday: 1 },
+
+  // ── Defense & Military (5) ──
+  { id: "gfp", name: "Global Firepower", category: "defense", type: "Scrape", tier: "active", reliability: 88, frequency: "Annual", description: "145 countries — military strength ranking", url: "globalfirepower.com", lastSynced: "7d ago", eventsToday: 0 },
+  { id: "iiss-defense", name: "IISS Military Balance", category: "defense", type: "Report", tier: "premium", reliability: 97, frequency: "Annual", description: "170 countries — authoritative military capabilities" },
+  { id: "sipri-arms", name: "SIPRI Arms Transfers", category: "defense", type: "API", tier: "active", reliability: 95, frequency: "Quarterly", description: "Arms transfers, defense spending data", url: "sipri.org", lastSynced: "14d ago", eventsToday: 0 },
+  { id: "acled-military", name: "ACLED Military Events", category: "defense", type: "API", tier: "premium", reliability: 92, frequency: "Daily", description: "Geolocated armed engagement data" },
+  { id: "heritage", name: "Heritage Military Index", category: "defense", type: "Report", tier: "premium", reliability: 85, frequency: "Annual", description: "US military strength — capabilities, force readiness" },
+];
+
+// ─── Feed Items ────────────────────────────────────────────────
+
+export interface FeedItem {
+  id: string;
+  source: string;
+  sourceId: string;
+  category: string;
+  headline: string;
+  headline_ar: string;
+  url: string;
+  timestamp: number; // ms offset from now (negative = past)
+}
+
+function hrs(h: number) { return -h * 3600000; }
+function mins(m: number) { return -m * 60000; }
+
+export const FEED_ITEMS: FeedItem[] = [
+  // ── News & Media ──
+  { id: "n1", source: "Reuters", sourceId: "reuters", category: "news", headline: "Iran warns of 'decisive response' to new US sanctions package", headline_ar: "إيران تحذر من 'رد حاسم' على حزمة العقوبات الأمريكية الجديدة", url: "reuters.com", timestamp: mins(12) },
+  { id: "n2", source: "BBC News", sourceId: "bbc", category: "news", headline: "Saudi Arabia announces $50bn green hydrogen investment plan", headline_ar: "السعودية تعلن خطة استثمارية بـ50 مليار دولار للهيدروجين الأخضر", url: "bbc.co.uk", timestamp: mins(28) },
+  { id: "n3", source: "Al Jazeera", sourceId: "aljazeera", category: "news", headline: "Red Sea shipping reroutes cost global trade $12bn in Q1", headline_ar: "تحويلات مسار الشحن في البحر الأحمر تكلف التجارة العالمية 12 مليار دولار", url: "aljazeera.com", timestamp: mins(45) },
+  { id: "n4", source: "AFP", sourceId: "afp", category: "news", headline: "Qatar mediates new round of hostage negotiations", headline_ar: "قطر تتوسط في جولة جديدة من مفاوضات الرهائن", url: "afp.com", timestamp: hrs(1.2) },
+  { id: "n5", source: "AP News", sourceId: "apnews", category: "news", headline: "UAE signs defense cooperation pact with South Korea", headline_ar: "الإمارات توقع اتفاقية تعاون دفاعي مع كوريا الجنوبية", url: "apnews.com", timestamp: hrs(1.5) },
+  { id: "n6", source: "Al Arabiya", sourceId: "alarabiya", category: "news", headline: "OPEC+ ministers to meet this week on production quotas", headline_ar: "وزراء أوبك+ يجتمعون هذا الأسبوع لبحث حصص الإنتاج", url: "alarabiya.net", timestamp: hrs(2) },
+  { id: "n7", source: "CNBC", sourceId: "cnbc", category: "news", headline: "Brent crude rises above $82 amid supply concerns", headline_ar: "خام برنت يرتفع فوق 82 دولاراً وسط مخاوف بشأن الإمدادات", url: "cnbc.com", timestamp: hrs(2.5) },
+  { id: "n8", source: "The National", sourceId: "thenational", category: "news", headline: "Abu Dhabi sovereign fund increases Asia tech allocation by 30%", headline_ar: "صندوق أبوظبي السيادي يزيد مخصصات التكنولوجيا الآسيوية بنسبة 30%", url: "thenationalnews.com", timestamp: hrs(3) },
+  { id: "n9", source: "CNN", sourceId: "cnn", category: "news", headline: "Pentagon confirms additional naval deployment to Gulf region", headline_ar: "البنتاغون يؤكد نشر بحري إضافي في منطقة الخليج", url: "cnn.com", timestamp: hrs(3.5) },
+  { id: "n10", source: "Middle East Eye", sourceId: "mee", category: "news", headline: "Iraq parliament debates new oil revenue sharing law", headline_ar: "البرلمان العراقي يناقش قانون جديد لتقاسم عائدات النفط", url: "middleeasteye.net", timestamp: hrs(4) },
+
+  // ── Conflict & Security ──
+  { id: "c1", source: "GDELT Project", sourceId: "gdelt", category: "conflict", headline: "Conflict tone index drops 14% across Levant region in 48 hours", headline_ar: "مؤشر حدة النزاع ينخفض 14% في منطقة الشام خلال 48 ساعة", url: "gdeltproject.org", timestamp: mins(18) },
+  { id: "c2", source: "Crisis Group", sourceId: "crisisgroup", category: "conflict", headline: "CrisisWatch Alert: Houthi escalation in Red Sea reaches new phase", headline_ar: "تنبيه CrisisWatch: تصعيد الحوثيين في البحر الأحمر يدخل مرحلة جديدة", url: "crisisgroup.org", timestamp: hrs(1) },
+  { id: "c3", source: "Anthropic Claude AI", sourceId: "anthropic", category: "conflict", headline: "AI Analysis: 73% probability of follow-on strikes within 72h window", headline_ar: "تحليل AI: احتمال 73% لضربات متتابعة خلال نافذة 72 ساعة", url: "atlascommand.ai", timestamp: mins(35) },
+  { id: "c4", source: "GDELT Project", sourceId: "gdelt", category: "conflict", headline: "Media attention on Iran nuclear program surges 340% this week", headline_ar: "اهتمام إعلامي بالبرنامج النووي الإيراني يقفز 340% هذا الأسبوع", url: "gdeltproject.org", timestamp: hrs(2) },
+  { id: "c5", source: "Conflict Alert", sourceId: "conflictalert", category: "conflict", headline: "Global Peace Index: MENA instability score worsens by 8 points", headline_ar: "مؤشر السلام العالمي: تدهور استقرار الشرق الأوسط بـ8 نقاط", url: "visionofhumanity.org", timestamp: hrs(4) },
+  { id: "c6", source: "SIPRI Conflict Data", sourceId: "sipri-conflict", category: "conflict", headline: "Arms imports to Gulf states increased 23% YoY — SIPRI report", headline_ar: "واردات الأسلحة لدول الخليج ترتفع 23% سنوياً — تقرير SIPRI", url: "sipri.org", timestamp: hrs(8) },
+  { id: "c7", source: "Anthropic Claude AI", sourceId: "anthropic", category: "conflict", headline: "Consequence chain: Red Sea disruption → Suez Canal revenues ↓18% → Egypt fiscal pressure", headline_ar: "سلسلة التداعيات: اضطراب البحر الأحمر → إيرادات قناة السويس ↓18% → ضغوط مالية على مصر", url: "atlascommand.ai", timestamp: hrs(1.5) },
+
+  // ── Energy & Commodities ──
+  { id: "e1", source: "EIA Energy Data", sourceId: "eia", category: "energy", headline: "US crude inventories fell 4.2M barrels — larger than expected", headline_ar: "مخزونات النفط الأمريكية تنخفض 4.2 مليون برميل — أكبر من المتوقع", url: "eia.gov", timestamp: mins(28) },
+  { id: "e2", source: "OilPrice.com", sourceId: "oilprice", category: "energy", headline: "Saudi Aramco cuts April OSP for Asian buyers by $0.50/bbl", headline_ar: "أرامكو السعودية تخفض سعر البيع الرسمي لآسيا بـ0.50 دولار للبرميل", url: "oilprice.com", timestamp: hrs(1) },
+  { id: "e3", source: "EIA Energy Data", sourceId: "eia", category: "energy", headline: "Natural gas spot prices spike 12% on cold weather forecast", headline_ar: "أسعار الغاز الطبيعي ترتفع 12% بسبب توقعات الطقس البارد", url: "eia.gov", timestamp: hrs(2) },
+  { id: "e4", source: "OPEC MOMR", sourceId: "opec", category: "energy", headline: "OPEC production compliance at 102% — voluntary cuts holding", headline_ar: "التزام أوبك بالإنتاج عند 102% — التخفيضات الطوعية مستمرة", url: "opec.org", timestamp: hrs(6) },
+  { id: "e5", source: "OilPrice.com", sourceId: "oilprice", category: "energy", headline: "Kuwait announces discovery of new light crude field in northern region", headline_ar: "الكويت تعلن اكتشاف حقل نفط خفيف جديد في المنطقة الشمالية", url: "oilprice.com", timestamp: hrs(8) },
+  { id: "e6", source: "JODI Oil Data", sourceId: "jodi", category: "energy", headline: "Global oil demand reaches 103.5 mb/d — new record", headline_ar: "الطلب العالمي على النفط يصل 103.5 مليون برميل يومياً — رقم قياسي", url: "jodidata.org", timestamp: hrs(12) },
+
+  // ── Maritime & Shipping ──
+  { id: "m1", source: "Dryad Global", sourceId: "dryad", category: "maritime", headline: "Threat level raised to HIGH for Bab el-Mandeb transit", headline_ar: "رفع مستوى التهديد إلى مرتفع لعبور باب المندب", url: "dryadglobal.com", timestamp: mins(42) },
+  { id: "m2", source: "UKMTO", sourceId: "ukmto", category: "maritime", headline: "UKMTO advisory: Unidentified drone activity reported near Strait of Hormuz", headline_ar: "تحذير UKMTO: رصد نشاط طائرات مسيّرة مجهولة قرب مضيق هرمز", url: "ukmto.org", timestamp: hrs(3) },
+  { id: "m3", source: "VesselFinder", sourceId: "vesselfinder", category: "maritime", headline: "12 tankers rerouting via Cape of Good Hope — up from 3 last month", headline_ar: "12 ناقلة تغير مسارها عبر رأس الرجاء الصالح — ارتفاع من 3 الشهر الماضي", url: "vesselfinder.com", timestamp: hrs(1.5) },
+  { id: "m4", source: "IMB Piracy Centre", sourceId: "imb", category: "maritime", headline: "IMB reports 2 attempted boardings in Gulf of Aden this week", headline_ar: "IMB تبلغ عن محاولتي صعود على متن سفن في خليج عدن هذا الأسبوع", url: "icc-ccs.org", timestamp: hrs(6) },
+  { id: "m5", source: "Dryad Global", sourceId: "dryad", category: "maritime", headline: "Insurance premiums for Red Sea transit up 300% since January", headline_ar: "أقساط التأمين لعبور البحر الأحمر ترتفع 300% منذ يناير", url: "dryadglobal.com", timestamp: hrs(10) },
+
+  // ── Aviation ──
+  { id: "a1", source: "OpenSky Network", sourceId: "opensky", category: "aviation", headline: "Anomalous military transponder activity detected over eastern Syria", headline_ar: "رصد نشاط عسكري غير اعتيادي للمستجيبات فوق شرق سوريا", url: "opensky-network.org", timestamp: hrs(1) },
+  { id: "a2", source: "IATA Alerts", sourceId: "iata", category: "aviation", headline: "NOTAM issued: Tehran FIR airspace restrictions extended 48 hours", headline_ar: "إشعار صدر: تمديد قيود المجال الجوي لطهران 48 ساعة", url: "iata.org", timestamp: hrs(4) },
+  { id: "a3", source: "OpenSky Network", sourceId: "opensky", category: "aviation", headline: "Commercial flight diversions around Iraq up 15% this month", headline_ar: "تحويلات الرحلات التجارية حول العراق ترتفع 15% هذا الشهر", url: "opensky-network.org", timestamp: hrs(8) },
+
+  // ── Satellite & Earth ──
+  { id: "s1", source: "NASA FIRMS", sourceId: "nasafirms", category: "satellite", headline: "Thermal anomaly detected near Kharg Island oil terminal — Iran", headline_ar: "رصد شذوذ حراري قرب محطة نفط جزيرة خارك — إيران", url: "firms.modaps.eosdis.nasa.gov", timestamp: hrs(2) },
+  { id: "s2", source: "NASA EONET", sourceId: "nasaeonet", category: "satellite", headline: "Dust storm tracking: Large plume moving from Iraq toward Kuwait/Saudi", headline_ar: "تتبع عاصفة رملية: سحابة كبيرة تتحرك من العراق نحو الكويت/السعودية", url: "eonet.gsfc.nasa.gov", timestamp: hrs(5) },
+  { id: "s3", source: "NASA FIRMS", sourceId: "nasafirms", category: "satellite", headline: "Wildfire cluster detected in southeastern Turkey — 3 hotspots", headline_ar: "رصد تجمع حرائق في جنوب شرق تركيا — 3 بؤر ساخنة", url: "firms.modaps.eosdis.nasa.gov", timestamp: hrs(8) },
+
+  // ── Seismic & Disasters ──
+  { id: "q1", source: "USGS Earthquakes", sourceId: "usgs", category: "seismic", headline: "M4.2 earthquake detected 47km NE of Bushehr, Iran — near nuclear facility", headline_ar: "زلزال بقوة 4.2 على بعد 47 كم شمال شرق بوشهر — قرب المنشأة النووية", url: "earthquake.usgs.gov", timestamp: mins(55) },
+  { id: "q2", source: "EMSC", sourceId: "emsc", category: "seismic", headline: "Seismic swarm: 6 events M2.5+ near Dead Sea Transform in 12 hours", headline_ar: "نشاط زلزالي: 6 أحداث بقوة 2.5+ قرب صدع البحر الميت خلال 12 ساعة", url: "emsc-csem.org", timestamp: hrs(2) },
+  { id: "q3", source: "GDACS Disasters", sourceId: "gdacs", category: "seismic", headline: "GDACS Green Alert: M5.1 earthquake in Hindu Kush, Afghanistan", headline_ar: "تنبيه أخضر GDACS: زلزال 5.1 في هندوكوش، أفغانستان", url: "gdacs.org", timestamp: hrs(6) },
+  { id: "q4", source: "USGS Earthquakes", sourceId: "usgs", category: "seismic", headline: "No tsunami threat: M6.0 Pacific event — standard monitoring continues", headline_ar: "لا خطر تسونامي: حدث بقوة 6.0 في المحيط الهادئ — المراقبة مستمرة", url: "earthquake.usgs.gov", timestamp: hrs(12) },
+
+  // ── Cyber & Digital ──
+  { id: "y1", source: "CISA Alerts", sourceId: "cisa", category: "cyber", headline: "CISA advisory: Critical vulnerability in industrial control systems — CVE-2026-1847", headline_ar: "تحذير CISA: ثغرة حرجة في أنظمة التحكم الصناعي — CVE-2026-1847", url: "us-cert.cisa.gov", timestamp: hrs(2) },
+  { id: "y2", source: "NetBlocks", sourceId: "netblocks", category: "cyber", headline: "Internet connectivity in western Iran dropped 40% — investigating cause", headline_ar: "انخفاض الاتصال بالإنترنت في غرب إيران 40% — جارٍ التحقيق", url: "netblocks.org", timestamp: hrs(4) },
+  { id: "y3", source: "CISA Alerts", sourceId: "cisa", category: "cyber", headline: "Joint advisory: APT group targeting GCC energy sector SCADA systems", headline_ar: "تحذير مشترك: مجموعة APT تستهدف أنظمة SCADA في قطاع الطاقة الخليجي", url: "us-cert.cisa.gov", timestamp: hrs(8) },
+
+  // ── Financial & Markets ──
+  { id: "f1", source: "ICE Brent Futures", sourceId: "ice", category: "financial", headline: "Brent front-month up $1.40 to $82.60 — backwardation steepening", headline_ar: "عقود برنت الآجلة ترتفع 1.40$ إلى 82.60$ — تعمق التراجع الزمني", url: "theice.com", timestamp: mins(15) },
+  { id: "f2", source: "CME Group", sourceId: "cme", category: "financial", headline: "WTI options volume surges 45% — unusual call activity at $85 strike", headline_ar: "حجم خيارات WTI يرتفع 45% — نشاط غير اعتيادي لعقود الشراء عند 85$", url: "cmegroup.com", timestamp: hrs(1) },
+  { id: "f3", source: "Gulf Exchange Data", sourceId: "gulfex", category: "financial", headline: "Tadawul up 1.2% led by Aramco — foreign inflows accelerate", headline_ar: "تداول يرتفع 1.2% بقيادة أرامكو — تسارع التدفقات الأجنبية", url: "gulfexchanges.com", timestamp: hrs(3) },
+  { id: "f4", source: "ICE Brent Futures", sourceId: "ice", category: "financial", headline: "Sovereign CDS spreads for Iraq widen 15bp on security concerns", headline_ar: "هوامش عقود التأمين السيادية للعراق تتسع 15 نقطة أساس", url: "theice.com", timestamp: hrs(5) },
+
+  // ── Health & Humanitarian ──
+  { id: "h1", source: "WHO Disease Alerts", sourceId: "who", category: "health", headline: "WHO monitoring: Respiratory illness cluster reported in southern Iraq", headline_ar: "مراقبة WHO: تجمع أمراض تنفسية في جنوب العراق", url: "who.int", timestamp: hrs(6) },
+  { id: "h2", source: "OCHA ReliefWeb", sourceId: "ocha", category: "health", headline: "Yemen humanitarian update: 4.5M people in acute food insecurity", headline_ar: "تحديث إنساني لليمن: 4.5 مليون شخص يعانون من انعدام أمن غذائي حاد", url: "reliefweb.int", timestamp: hrs(3) },
+  { id: "h3", source: "UNICEF Alerts", sourceId: "unicef", category: "health", headline: "UNICEF: Gaza water infrastructure operating at 12% capacity", headline_ar: "يونيسف: البنية التحتية للمياه في غزة تعمل بـ12% من طاقتها", url: "unicef.org", timestamp: hrs(8) },
+
+  // ── Space & Satellites ──
+  { id: "sp1", source: "Maxar Satellite", sourceId: "maxar", category: "space", headline: "Satellite imagery shows construction activity at Iranian missile site", headline_ar: "صور الأقمار الصناعية تظهر أعمال بناء في موقع صاروخي إيراني", url: "maxar.com", timestamp: hrs(4) },
+  { id: "sp2", source: "Planet Labs SkySat", sourceId: "planetsky", category: "space", headline: "Change detection: New military vehicle staging at base in eastern Syria", headline_ar: "كشف تغيرات: تمركز مركبات عسكرية جديدة في قاعدة شرق سوريا", url: "planet.com", timestamp: hrs(12) },
+
+  // ── Government & Official ──
+  { id: "g1", source: "US State Dept", sourceId: "usstatedept", category: "government", headline: "US State Department raises travel advisory for Lebanon to Level 4", headline_ar: "الخارجية الأمريكية ترفع تحذير السفر للبنان إلى المستوى الرابع", url: "travel.state.gov", timestamp: hrs(6) },
+  { id: "g2", source: "UN Security Council", sourceId: "unsc", category: "government", headline: "UNSC Resolution 2740: Extended arms embargo on Houthi forces", headline_ar: "قرار مجلس الأمن 2740: تمديد حظر الأسلحة على الحوثيين", url: "un.org", timestamp: hrs(10) },
+  { id: "g3", source: "EU External Action", sourceId: "eeas", category: "government", headline: "EU announces new sanctions package targeting Iranian drone components", headline_ar: "الاتحاد الأوروبي يعلن حزمة عقوبات جديدة تستهدف مكونات المسيّرات الإيرانية", url: "eeas.europa.eu", timestamp: hrs(14) },
+
+  // ── Defense & Military ──
+  { id: "d1", source: "Global Firepower", sourceId: "gfp", category: "defense", headline: "Saudi Arabia rises to #22 in Global Firepower Index — 3rd in MENA", headline_ar: "السعودية ترتفع إلى المركز 22 في مؤشر القوة النارية — الثالثة في الشرق الأوسط", url: "globalfirepower.com", timestamp: hrs(24) },
+  { id: "d2", source: "SIPRI Arms Transfers", sourceId: "sipri-arms", category: "defense", headline: "UAE defense procurement: $3.2B in new contracts signed Q1 2026", headline_ar: "مشتريات الإمارات الدفاعية: توقيع عقود بقيمة 3.2 مليار دولار في الربع الأول 2026", url: "sipri.org", timestamp: hrs(48) },
+  { id: "d3", source: "Global Firepower", sourceId: "gfp", category: "defense", headline: "Iran missile arsenal assessment: 3,000+ ballistic missiles in inventory", headline_ar: "تقييم الترسانة الصاروخية الإيرانية: أكثر من 3,000 صاروخ بالستي", url: "globalfirepower.com", timestamp: hrs(72) },
+];
+
+// ─── Baselines and Anomaly Data ────────────────────────────────
+
+export const CATEGORY_BASELINES: Record<string, number> = {
+  news: 35, conflict: 8, energy: 6, maritime: 4, aviation: 3,
+  satellite: 2, seismic: 5, cyber: 4, financial: 5, health: 2,
+  space: 1, government: 3, defense: 2,
+};
+
+export const STATIC_ANOMALIES: Record<string, { en: string; ar: string }> = {
+  news: {
+    en: "74 items in last hour — 2.1x normal volume. Reuters, BBC, Al Jazeera all publishing simultaneously on Iran sanctions story. Volume spike started 43 minutes ago.",
+    ar: "74 عنصراً في الساعة الأخيرة — 2.1 ضعف الحجم الطبيعي. رويترز وبي بي سي والجزيرة تنشر في وقت واحد عن قصة العقوبات الإيرانية. بدأ ارتفاع الحجم منذ 43 دقيقة.",
+  },
+  conflict: {
+    en: "Quiet period. 3 items in last hour, 0.4x normal. Last significant event: Houthi drone intercept 2h ago. GDELT conflict index stable.",
+    ar: "فترة هدوء. 3 عناصر في الساعة الأخيرة، 0.4 ضعف الطبيعي. آخر حدث مهم: اعتراض طائرة حوثية مسيّرة منذ ساعتين. مؤشر GDELT للنزاعات مستقر.",
+  },
+  energy: {
+    en: "EIA weekly data dropped 28 minutes ago — triggering spike to 8 items in 10 minutes. Brent price moved +1.8% simultaneously. Watch for follow-on analysis next 30 min.",
+    ar: "بيانات EIA الأسبوعية صدرت منذ 28 دقيقة — أثارت ارتفاعاً إلى 8 عناصر في 10 دقائق. سعر برنت تحرك +1.8% في نفس الوقت. راقب التحليلات التابعة خلال 30 دقيقة.",
+  },
+  maritime: {
+    en: "AIS data showing 3 vessels rerouting away from Red Sea in last 6 hours. MarineTraffic volume up 40%. Consistent with Houthi threat escalation pattern.",
+    ar: "بيانات AIS تظهر تحويل 3 سفن بعيداً عن البحر الأحمر في آخر 6 ساعات. حجم MarineTraffic ارتفع 40%. متسق مع نمط تصعيد تهديدات الحوثيين.",
+  },
+  aviation: {
+    en: "Normal volume. 3 items in last hour. NOTAM extensions over Tehran FIR noted. No anomalous military transponder activity in past 4 hours.",
+    ar: "حجم طبيعي. 3 عناصر في الساعة الأخيرة. تمديد إشعارات فوق إقليم طهران. لا نشاط عسكري شاذ في المستجيبات خلال 4 ساعات.",
+  },
+  satellite: {
+    en: "NASA FIRMS flagged thermal anomaly near Kharg Island 2h ago. EONET tracking dust storm from Iraq. Standard observation volume.",
+    ar: "NASA FIRMS رصد شذوذاً حرارياً قرب جزيرة خارك منذ ساعتين. EONET يتتبع عاصفة رملية من العراق. حجم مراقبة طبيعي.",
+  },
+  seismic: {
+    en: "USGS logged 4 events M3.0+ in last 24h. None in GCC region. One M4.2 near Bushehr Iran — flagged due to proximity to nuclear facility. Standard activity otherwise.",
+    ar: "USGS سجل 4 أحداث بقوة 3.0+ في آخر 24 ساعة. لا شيء في منطقة الخليج. حدث بقوة 4.2 قرب بوشهر — مؤشر بسبب القرب من المنشأة النووية. نشاط طبيعي فيما عدا ذلك.",
+  },
+  cyber: {
+    en: "CISA issued 2 advisories in last 4 hours — above average. Joint advisory on APT targeting GCC SCADA. NetBlocks showing 40% Iran connectivity drop.",
+    ar: "CISA أصدرت تحذيرين في آخر 4 ساعات — فوق المعدل. تحذير مشترك عن APT يستهدف SCADA الخليجي. NetBlocks يظهر انخفاض 40% في اتصال إيران.",
+  },
+  financial: {
+    en: "Normal volume. Markets open in London. Oil correlation with conflict events: strong (0.82). WTI options volume unusual — 45% above average at $85 strike.",
+    ar: "حجم طبيعي. الأسواق مفتوحة في لندن. ارتباط النفط بأحداث النزاع: قوي (0.82). حجم خيارات WTI غير اعتيادي — 45% فوق المعدل عند سعر 85$.",
+  },
+  health: {
+    en: "Low volume. WHO monitoring respiratory cluster in southern Iraq. OCHA reports 4.5M in acute food insecurity in Yemen. No pandemic-level signals.",
+    ar: "حجم منخفض. WHO تراقب تجمع أمراض تنفسية في جنوب العراق. OCHA تبلغ عن 4.5 مليون في انعدام أمن غذائي حاد باليمن. لا إشارات على مستوى وبائي.",
+  },
+  space: {
+    en: "2 imagery updates. Maxar detected construction at Iranian missile site. Planet Labs flagged vehicle staging in eastern Syria. Premium-only sources.",
+    ar: "تحديثان للصور. ماكسار رصد أعمال بناء في موقع صاروخي إيراني. Planet Labs رصد تمركز مركبات في شرق سوريا. مصادر متميزة فقط.",
+  },
+  government: {
+    en: "US State Dept raised Lebanon to Level 4. UNSC extended Houthi arms embargo. EU new sanctions on Iranian drone components. Standard diplomatic tempo.",
+    ar: "الخارجية الأمريكية رفعت لبنان للمستوى 4. مجلس الأمن مدد حظر أسلحة الحوثيين. عقوبات أوروبية جديدة على مكونات المسيّرات الإيرانية. إيقاع دبلوماسي طبيعي.",
+  },
+  defense: {
+    en: "Low frequency category. Saudi Arabia rose to #22 in GFP Index. UAE signed $3.2B Q1 defense contracts. Iran arsenal assessment updated.",
+    ar: "فئة منخفضة التكرار. السعودية ترتفع للمركز 22 في مؤشر GFP. الإمارات وقعت عقوداً دفاعية بـ3.2 مليار دولار. تقييم ترسانة إيران مُحدّث.",
+  },
+};
+
+export function buildAnomalyPrompt(
+  category: LibraryCategory,
+  itemCount: number,
+  baseline: number,
+  mostActiveSource: string,
+  recentHeadlines: string[],
+  isAr: boolean,
+): { system: string; user: string } {
+  const system = isAr
+    ? `أنت كاشف الإشارات لمكتبة Atlas Command الاستخباراتية.
+تحلل حجم التغذية والأنماط. لا تلخص الأخبار. تكشف الشذوذ.
+أخبر المستخدم إذا كان الحجم أعلى/أقل من الطبيعي، وأي المصادر الأكثر نشاطاً، وإذا كان هناك نمط غير عادي.
+كن محدداً بالأرقام. 2-4 جمل كحد أقصى. اكتب بالعربية.`
+    : `You are the signal detector for Atlas Command Intel Library.
+You analyze feed volume and patterns. You do NOT summarize news. You detect anomalies.
+Tell the user if volume is above/below normal, which sources are most active, and whether there is an unusual pattern worth noting.
+Be specific with numbers. 2-4 sentences maximum. Write in English.`;
+
+  const user = isAr
+    ? `الفئة: ${category.labelAr}
+عناصر الساعة الأخيرة: ${itemCount}
+خط الأساس الطبيعي: ${baseline}/ساعة
+أنشط مصدر: ${mostActiveSource}
+آخر العناوين: ${recentHeadlines.join(" | ")}
+اكشف الشذوذ وأنماط الإشارات.`
+    : `Category: ${category.label}
+Items in last hour: ${itemCount}
+Normal baseline: ${baseline}/hour
+Most active source: ${mostActiveSource}
+Recent items: ${recentHeadlines.join(" | ")}
+Detect anomalies and signal patterns.`;
+
+  return { system, user };
+}
