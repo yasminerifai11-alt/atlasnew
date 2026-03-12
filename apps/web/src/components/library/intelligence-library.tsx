@@ -50,10 +50,10 @@ for (const s of LIBRARY_SOURCES) {
 }
 
 // Stats
-const feedCount = LIBRARY_SOURCES.filter((s) => s.type === "RSS" || s.type === "API" || s.type === "Report").length;
-const socialCount = LIBRARY_SOURCES.filter((s) => s.type === "Platform").length;
-const webcamCount = LIBRARY_SOURCES.filter((s) => s.type === "Scrape" || s.type === "Satellite").length;
-const liveCount = LIBRARY_SOURCES.filter((s) => s.lastSynced != null).length;
+const feedCount = LIBRARY_SOURCES.filter((s) => s.type !== "social" && s.type !== "webcam").length;
+const socialCount = LIBRARY_SOURCES.filter((s) => s.type === "social").length;
+const webcamCount = LIBRARY_SOURCES.filter((s) => s.type === "webcam").length;
+const liveCount = LIBRARY_SOURCES.filter((s) => s.status === "LIVE").length;
 const premiumCount = LIBRARY_SOURCES.filter((s) => s.tier === "premium").length;
 
 // Badge helpers
@@ -67,7 +67,7 @@ function getSourceBadge(src: LibrarySource): { label: string; labelAr: string; c
   if (src.tier === "premium") {
     return { label: "PREMIUM", labelAr: "مميز", color: "#fbbf24", bg: "rgba(251,191,36,0.12)" };
   }
-  if (src.type === "Report") {
+  if (src.type === "official") {
     return { label: "OFFICIAL", labelAr: "رسمي", color: "#3b82f6", bg: "rgba(59,130,246,0.12)" };
   }
   return null;
@@ -172,7 +172,7 @@ export function IntelligenceLibrary() {
       sources = sources.filter(
         (s) =>
           s.name.toLowerCase().includes(q) ||
-          s.description.toLowerCase().includes(q)
+          (s.description?.toLowerCase().includes(q) ?? false)
       );
     }
     return sources;
@@ -334,7 +334,7 @@ export function IntelligenceLibrary() {
             <div className="flex flex-col gap-1.5">
               {filteredSidebarSources.map((src) => {
                 const badge = getSourceBadge(src);
-                const isSocial = src.type === "Platform";
+                const isSocial = src.type === "social";
                 return (
                   <button
                     key={src.id}
