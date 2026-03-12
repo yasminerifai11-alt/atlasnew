@@ -98,9 +98,11 @@ const STATIC_THREAT_LEVELS: Record<string, ThreatLevel> = {
   ET: "HIGH", NE: "HIGH", TD: "HIGH", CF: "HIGH",
   CD: "HIGH", UA: "HIGH", RU: "HIGH", PS: "HIGH",
   VE: "HIGH", MX: "HIGH",
+  // GCC elevated to HIGH due to missile attacks
+  SA: "HIGH", KW: "HIGH", AE: "HIGH", QA: "HIGH",
+  BH: "HIGH", OM: "HIGH",
   // ELEVATED
-  SA: "ELEVATED", KW: "ELEVATED", AE: "ELEVATED", QA: "ELEVATED",
-  BH: "ELEVATED", OM: "ELEVATED", JO: "ELEVATED", EG: "ELEVATED",
+  JO: "ELEVATED", EG: "ELEVATED",
   TR: "ELEVATED", AZ: "ELEVATED", AM: "ELEVATED", XK: "ELEVATED",
   RS: "ELEVATED", BA: "ELEVATED", BY: "ELEVATED", MD: "ELEVATED",
   NG: "ELEVATED", KE: "ELEVATED", MZ: "ELEVATED", CO: "ELEVATED",
