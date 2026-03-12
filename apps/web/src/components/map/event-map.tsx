@@ -97,7 +97,7 @@ const STATIC_THREAT_LEVELS: Record<string, ThreatLevel> = {
   IQ: "HIGH", LB: "HIGH", PK: "HIGH", AF: "HIGH",
   ET: "HIGH", NE: "HIGH", TD: "HIGH", CF: "HIGH",
   CD: "HIGH", UA: "HIGH", RU: "HIGH", PS: "HIGH",
-  PS: "HIGH", VE: "HIGH", MX: "HIGH",
+  VE: "HIGH", MX: "HIGH",
   // ELEVATED
   SA: "ELEVATED", KW: "ELEVATED", AE: "ELEVATED", QA: "ELEVATED",
   BH: "ELEVATED", OM: "ELEVATED", JO: "ELEVATED", EG: "ELEVATED",

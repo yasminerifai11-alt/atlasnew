@@ -37,6 +37,10 @@ export interface LibrarySource {
   url?: string;
   lastSynced?: string;
   eventsToday?: number;
+  note?: string;
+  platform?: string;
+  status?: string;
+  twitter?: string;
 }
 
 export const LIBRARY_SOURCES: LibrarySource[] = [
