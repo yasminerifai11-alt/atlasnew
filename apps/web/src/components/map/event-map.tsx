@@ -117,7 +117,7 @@ const THREAT_COLORS: Record<ThreatLevel, string> = {
   CRITICAL: "rgba(220,38,38,0.35)",
   HIGH: "rgba(234,88,12,0.30)",
   ELEVATED: "rgba(202,138,4,0.25)",
-  MONITORING: "rgba(37,99,235,0.08)",
+  MONITORING: "rgba(37,99,235,0.04)",
   STABLE: "rgba(0,0,0,0)",
 };
 
@@ -1212,10 +1212,12 @@ async function loadCountryBoundaries(map: any) {
     }
 
     // Static threat fill layer (below event-based risk)
+    // Only render countries that have a valid ISO-2 code to avoid broken polygons
     map.addLayer({
       id: "atlas-threat-fill",
       type: "fill",
       source: "atlas-countries",
+      filter: ["!=", ["get", "iso_a2"], ""],
       paint: {
         "fill-color": THREAT_COLORS.MONITORING,
         "fill-color-transition": { duration: 1000, delay: 0 },
@@ -1227,6 +1229,7 @@ async function loadCountryBoundaries(map: any) {
       id: "atlas-threat-border",
       type: "line",
       source: "atlas-countries",
+      filter: ["!=", ["get", "iso_a2"], ""],
       paint: {
         "line-color": "rgba(0,0,0,0)",
         "line-width": 1,
