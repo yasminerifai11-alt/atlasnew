@@ -40,9 +40,13 @@ interface ProfileState {
   profile: CommandProfile | null;
   promptDismissed: boolean;
   modalOpen: boolean;
+  /** Increments each time modal opens — used as React key to force fresh state */
+  modalGeneration: number;
   setProfile: (profile: CommandProfile) => void;
   clearProfile: () => void;
   dismissPrompt: () => void;
+  openModal: () => void;
+  closeModal: () => void;
   setModalOpen: (open: boolean) => void;
 }
 
@@ -68,10 +72,12 @@ export const useProfileStore = create<ProfileState>((set) => ({
   profile: loadProfile(),
   promptDismissed: loadDismissed(),
   modalOpen: false,
+  modalGeneration: 0,
 
+  // Save profile WITHOUT closing modal — modal controls its own lifecycle
   setProfile: (profile) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    set({ profile, modalOpen: false, promptDismissed: true });
+    set({ profile, promptDismissed: true });
   },
 
   clearProfile: () => {
@@ -84,5 +90,12 @@ export const useProfileStore = create<ProfileState>((set) => ({
     set({ promptDismissed: true });
   },
 
-  setModalOpen: (modalOpen) => set({ modalOpen }),
+  openModal: () => set((s) => ({ modalOpen: true, modalGeneration: s.modalGeneration + 1 })),
+  closeModal: () => set({ modalOpen: false }),
+
+  // Legacy compat — used by command-center.tsx escape handler
+  setModalOpen: (open) => set((s) => ({
+    modalOpen: open,
+    ...(open ? { modalGeneration: s.modalGeneration + 1 } : {}),
+  })),
 }));

@@ -62,7 +62,7 @@ export function RealtimeBrief() {
   const { t, lang } = useLanguage();
   const events = useCommandStore((s) => s.events);
   const profile = useProfileStore((s) => s.profile);
-  const setProfileModalOpen = useProfileStore((s) => s.setModalOpen);
+  const openProfileModal = useProfileStore((s) => s.openModal);
 
   const [briefData, setBriefData] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(false);

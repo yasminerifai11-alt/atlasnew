@@ -31,7 +31,7 @@ export function CommandCenter() {
   const selectedCountry = useCommandStore((s) => s.selectedCountry);
   const setSelectedCountry = useCommandStore((s) => s.setSelectedCountry);
   const setProfileModalOpen = useCommandStore((s) => s.setProfileModalOpen);
-  const setProfileModalOpen2 = useProfileStore((s) => s.setModalOpen);
+  const closeProfileModal = useProfileStore((s) => s.closeModal);
   const situationView = useCommandStore((s) => s.situationView);
   const setSituationView = useCommandStore((s) => s.setSituationView);
 
@@ -98,7 +98,7 @@ export function CommandCenter() {
           // Close modals and panels in priority order
           if (alertModalOpen) setAlertModalOpen(false);
           else if (profileModalOpen) setProfileModalOpen(false);
-          else if (profileModalOpen2) setProfileModalOpen2(false);
+          else if (profileModalOpen2) closeProfileModal();
           else if (selectedCountry) setSelectedCountry(null);
           else if (activeSection === "intel") {
             setSelectedEvent(null);
@@ -110,7 +110,7 @@ export function CommandCenter() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeSection, situationView, alertModalOpen, profileModalOpen, profileModalOpen2, selectedCountry, setActiveSection, setSituationView, setAlertModalOpen, setProfileModalOpen, setProfileModalOpen2, setSelectedEvent, setSelectedCountry]);
+  }, [activeSection, situationView, alertModalOpen, profileModalOpen, profileModalOpen2, selectedCountry, setActiveSection, setSituationView, setAlertModalOpen, setProfileModalOpen, closeProfileModal, setSelectedEvent, setSelectedCountry]);
 
   return (
     <div className="flex h-screen flex-col bg-atlas-bg text-slate-200 font-sans">

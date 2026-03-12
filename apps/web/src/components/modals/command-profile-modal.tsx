@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/lib/language";
 import {
   useProfileStore,
@@ -9,84 +9,124 @@ import {
   type ProfileRole,
 } from "@/stores/profile-store";
 
-const STEPS = [1, 2, 3] as const;
 const ROLES = Object.keys(ROLE_META) as ProfileRole[];
 
+/** Toast shown after save/reset */
+function showToast(message: string) {
+  const toast = document.createElement("div");
+  toast.style.cssText = `
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: #1e2530; border: 1px solid #3b82f6; padding: 12px 24px;
+    color: #e5e7eb; font-family: 'Space Mono', monospace; font-size: 13px;
+    z-index: 9999; opacity: 0; transition: opacity 0.3s ease;
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => { toast.style.opacity = "1"; });
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+/**
+ * Outer shell — always mounted.
+ * Renders the inner form keyed by modalGeneration so every open = fresh state.
+ */
 export function CommandProfileModal() {
-  const { lang, t } = useLanguage();
   const modalOpen = useProfileStore((s) => s.modalOpen);
-  const setModalOpen = useProfileStore((s) => s.setModalOpen);
+  const generation = useProfileStore((s) => s.modalGeneration);
+
+  if (!modalOpen) return null;
+
+  return <ProfileForm key={generation} />;
+}
+
+/** Inner form — remounts fresh each time modal opens */
+function ProfileForm() {
+  const { lang, t } = useLanguage();
+  const profile = useProfileStore((s) => s.profile);
   const setProfile = useProfileStore((s) => s.setProfile);
-  const existingProfile = useProfileStore((s) => s.profile);
-
-  const isEditing = !!existingProfile;
-
-  const [step, setStep] = useState(1);
-  const [role, setRole] = useState<ProfileRole | null>(null);
-  const [region, setRegion] = useState<string | null>(null);
-  const [watchlist, setWatchlist] = useState("");
-  const [complete, setComplete] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const closeModal = useProfileStore((s) => s.closeModal);
 
   const isAr = lang === "ar";
+  const isEditing = !!profile;
 
-  // Reset and pre-fill when modal opens
-  if (modalOpen && !initialized) {
-    setStep(1);
-    setComplete(false);
-    if (existingProfile) {
-      setRole(existingProfile.role);
-      setRegion(existingProfile.region);
-      setWatchlist(existingProfile.watchlist || "");
-    } else {
-      setRole(null);
-      setRegion(null);
-      setWatchlist("");
-    }
-    setInitialized(true);
-  }
-  if (!modalOpen && initialized) {
-    setInitialized(false);
-  }
+  // Fresh state every mount — pre-filled from existing profile if editing
+  const [step, setStep] = useState(1);
+  const [role, setRole] = useState<ProfileRole | null>(profile?.role ?? null);
+  const [region, setRegion] = useState<string | null>(profile?.region ?? null);
+  const [watchlist, setWatchlist] = useState(profile?.watchlist ?? "");
+  const [showComplete, setShowComplete] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  const handleFinish = () => {
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closeModal]);
+
+  const handleSave = useCallback(() => {
     if (!role || !region) return;
     setProfile({
       role,
       region,
       watchlist: watchlist.trim(),
-      createdAt: new Date().toISOString(),
+      createdAt: profile?.createdAt || new Date().toISOString(),
     });
-    setComplete(true);
-  };
+    setShowComplete(true);
+    showToast(isAr ? "تم حفظ الملف الشخصي" : "Profile saved");
+  }, [role, region, watchlist, profile, setProfile, isAr]);
 
-  const handleEnter = () => {
-    setComplete(false);
-    setStep(1);
-    setRole(null);
-    setRegion(null);
-    setWatchlist("");
-    setModalOpen(false);
-  };
+  const handleReset = useCallback(() => {
+    useProfileStore.getState().clearProfile();
+    showToast(isAr ? "تم إعادة ضبط الملف الشخصي" : "Profile reset. Showing general intelligence.");
+    closeModal();
+  }, [closeModal, isAr]);
 
-  if (!modalOpen) return null;
+  const handleClose = useCallback(() => {
+    closeModal();
+  }, [closeModal]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-xl border border-white/[0.08] bg-[#0c0f16] shadow-2xl">
-        {/* Close button */}
-        <div className="flex justify-end px-4 pt-3">
-          <button
-            onClick={handleEnter}
-            className="font-mono text-[10px] text-slate-600 hover:text-slate-400"
-          >
-            {t("common.close")} ×
-          </button>
+  // ─── Reset Confirmation ────────────────────────────
+  if (showResetConfirm) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="w-full max-w-sm border border-white/[0.08] bg-[#0c0f16] p-6 shadow-2xl">
+          <div className="font-mono text-sm font-semibold tracking-wider text-slate-200 mb-2">
+            {isAr ? "إعادة ضبط الملف الشخصي؟" : "Reset your Command Profile?"}
+          </div>
+          <div className="font-mono text-[11px] text-slate-500 mb-5">
+            {isAr ? "ستعود إلى العرض العام للاستخبارات." : "You will return to general intelligence view."}
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => setShowResetConfirm(false)}
+              className="px-4 py-2 font-mono text-[10px] tracking-wider text-slate-500 border border-white/[0.08] hover:text-slate-300 transition-colors"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              onClick={handleReset}
+              className="px-4 py-2 font-mono text-[10px] tracking-wider text-red-400 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            >
+              {isAr ? "إعادة الضبط" : "Reset Profile"}
+            </button>
+          </div>
         </div>
+      </div>
+    );
+  }
 
-        {complete ? (
-          /* ─── Completion Screen ─────────────────────────── */
-          <div className="flex flex-col items-center justify-center px-8 pb-10 pt-4">
+  // ─── Completion Screen ─────────────────────────────
+  if (showComplete) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="w-full max-w-xl border border-white/[0.08] bg-[#0c0f16] shadow-2xl">
+          <div className="flex flex-col items-center justify-center px-8 py-10">
             <div className="w-12 h-12 flex items-center justify-center mb-4 border border-green-500/30 bg-green-500/10">
               <span className="text-green-400 text-xl">✓</span>
             </div>
@@ -106,172 +146,191 @@ export function CommandProfileModal() {
               </span>
             </div>
             <button
-              onClick={handleEnter}
+              onClick={handleClose}
               className="px-6 py-2.5 font-mono text-[10px] tracking-wider text-slate-200 bg-atlas-accent/20 border border-atlas-accent/30 hover:bg-atlas-accent/30 transition-colors"
             >
               {t("profileModal.enter")}
             </button>
           </div>
-        ) : (
-          <>
-            {/* ─── Header ─────────────────────────────────── */}
-            <div className="px-8 pt-2 pb-4">
-              <div className="font-mono text-sm font-semibold tracking-wider text-slate-200 mb-1">
-                {t("profileModal.title")}
-              </div>
-              <div className="font-mono text-[10px] text-slate-600">
-                {t("profileModal.desc")}
-              </div>
-            </div>
+        </div>
+      </div>
+    );
+  }
 
-            {/* ─── Step indicator ─────────────────────────── */}
-            <div className="px-8 mb-5">
-              <div className="flex items-center gap-1">
-                {STEPS.map((s) => (
-                  <div key={s} className="flex items-center gap-1 flex-1">
-                    <div
-                      className={`h-0.5 flex-1 transition-colors ${
-                        s <= step ? "bg-atlas-accent" : "bg-white/[0.06]"
+  // ─── Main Form ─────────────────────────────────────
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="w-full max-w-xl border border-white/[0.08] bg-[#0c0f16] shadow-2xl">
+        {/* Header row with close + optional reset */}
+        <div className="flex items-center justify-between px-4 pt-3">
+          {isEditing ? (
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="font-mono text-[9px] tracking-wider text-red-400/70 hover:text-red-400 transition-colors"
+            >
+              ↺ {isAr ? "إعادة الضبط" : "Reset Profile"}
+            </button>
+          ) : (
+            <div />
+          )}
+          <button
+            onClick={handleClose}
+            className="font-mono text-[10px] text-slate-600 hover:text-slate-400"
+          >
+            {t("common.close")} ×
+          </button>
+        </div>
+
+        {/* Title */}
+        <div className="px-8 pt-2 pb-4">
+          <div className="font-mono text-sm font-semibold tracking-wider text-slate-200 mb-1">
+            {isEditing
+              ? (isAr ? "تعديل الملف الشخصي" : "Edit Command Profile")
+              : t("profileModal.title")}
+          </div>
+          <div className="font-mono text-[10px] text-slate-600">
+            {t("profileModal.desc")}
+          </div>
+        </div>
+
+        {/* Step indicator */}
+        <div className="px-8 mb-5">
+          <div className="flex items-center gap-1">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className="flex-1">
+                <div
+                  className={`h-0.5 transition-colors ${
+                    s <= step ? "bg-atlas-accent" : "bg-white/[0.06]"
+                  }`}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-1.5 font-mono text-[8px] tracking-wider text-slate-600">
+            <span className={step === 1 ? "text-atlas-accent" : ""}>{t("profileModal.role")}</span>
+            <span className={step === 2 ? "text-atlas-accent" : ""}>{t("profileModal.region")}</span>
+            <span className={step === 3 ? "text-atlas-accent" : ""}>{t("profileModal.watchlist")}</span>
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <div className="px-8 pb-6 min-h-[280px]">
+          {step === 1 && (
+            <div>
+              <div className="font-mono text-[11px] text-slate-400 mb-4">
+                {t("profileModal.howUse")}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {ROLES.map((r) => {
+                  const meta = ROLE_META[r];
+                  const selected = role === r;
+                  return (
+                    <button
+                      key={r}
+                      onClick={() => setRole(r)}
+                      className={`flex items-start gap-3 p-4 border transition-colors text-left ${
+                        selected
+                          ? "border-atlas-accent/40 bg-atlas-accent/[0.08]"
+                          : "border-white/[0.06] bg-white/[0.015] hover:border-white/[0.12] hover:bg-white/[0.03]"
                       }`}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between mt-1.5 font-mono text-[8px] tracking-wider text-slate-600">
-                <span className={step === 1 ? "text-atlas-accent" : ""}>
-                  {t("profileModal.role")}
-                </span>
-                <span className={step === 2 ? "text-atlas-accent" : ""}>
-                  {t("profileModal.region")}
-                </span>
-                <span className={step === 3 ? "text-atlas-accent" : ""}>
-                  {t("profileModal.watchlist")}
-                </span>
+                    >
+                      <span className="text-xl mt-0.5">{meta.icon}</span>
+                      <div>
+                        <div className={`text-[12px] font-medium ${selected ? "text-atlas-accent" : "text-slate-300"}`}>
+                          {isAr ? meta.labelAr : meta.label}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
+          )}
 
-            {/* ─── Step Content ───────────────────────────── */}
-            <div className="px-8 pb-6 min-h-[280px]">
-              {step === 1 && (
-                <div>
-                  <div className="font-mono text-[11px] text-slate-400 mb-4">
-                    {t("profileModal.howUse")}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {ROLES.map((r) => {
-                      const meta = ROLE_META[r];
-                      const selected = role === r;
-                      return (
-                        <button
-                          key={r}
-                          onClick={() => setRole(r)}
-                          className={`flex items-start gap-3 p-4 border transition-colors text-left ${
-                            selected
-                              ? "border-atlas-accent/40 bg-atlas-accent/[0.08]"
-                              : "border-white/[0.06] bg-white/[0.015] hover:border-white/[0.12] hover:bg-white/[0.03]"
-                          }`}
-                        >
-                          <span className="text-xl mt-0.5">{meta.icon}</span>
-                          <div>
-                            <div className={`text-[12px] font-medium ${selected ? "text-atlas-accent" : "text-slate-300"}`}>
-                              {isAr ? meta.labelAr : meta.label}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {step === 2 && (
-                <div>
-                  <div className="font-mono text-[11px] text-slate-400 mb-4">
-                    {t("profileModal.primaryRegion")}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {PROFILE_REGIONS.map((r) => {
-                      const selected = region === r.key;
-                      return (
-                        <button
-                          key={r.key}
-                          onClick={() => setRegion(r.key)}
-                          className={`px-4 py-2.5 font-mono text-[11px] tracking-wider border transition-colors ${
-                            selected
-                              ? "border-atlas-accent/40 bg-atlas-accent/[0.08] text-atlas-accent"
-                              : "border-white/[0.06] text-slate-400 hover:border-white/[0.12] hover:text-slate-300"
-                          }`}
-                        >
-                          {isAr ? r.labelAr : r.key}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {step === 3 && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-mono text-[11px] text-slate-400">
-                      {t("profileModal.anythingWatch")}
-                    </div>
-                    {watchlist && (
-                      <button
-                        onClick={() => setWatchlist("")}
-                        className="font-mono text-[9px] text-slate-600 hover:text-red-400 transition-colors"
-                      >
-                        {t("profileModal.clear")}
-                      </button>
-                    )}
-                  </div>
-                  <div className="font-mono text-[9px] text-slate-600 mb-4">
-                    {t("profileModal.optional")}
-                  </div>
-                  <textarea
-                    value={watchlist}
-                    onChange={(e) => setWatchlist(e.target.value)}
-                    placeholder={t("profileModal.placeholder")}
-                    rows={4}
-                    className="w-full bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-[13px] text-slate-300 placeholder-slate-600 outline-none focus:border-atlas-accent/30 resize-none font-mono"
-                  />
-                </div>
-              )}
+          {step === 2 && (
+            <div>
+              <div className="font-mono text-[11px] text-slate-400 mb-4">
+                {t("profileModal.primaryRegion")}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {PROFILE_REGIONS.map((r) => {
+                  const selected = region === r.key;
+                  return (
+                    <button
+                      key={r.key}
+                      onClick={() => setRegion(r.key)}
+                      className={`px-4 py-2.5 font-mono text-[11px] tracking-wider border transition-colors ${
+                        selected
+                          ? "border-atlas-accent/40 bg-atlas-accent/[0.08] text-atlas-accent"
+                          : "border-white/[0.06] text-slate-400 hover:border-white/[0.12] hover:text-slate-300"
+                      }`}
+                    >
+                      {isAr ? r.labelAr : r.key}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          )}
 
-            {/* ─── Navigation Buttons ─────────────────────── */}
-            <div className="flex items-center justify-between border-t border-white/[0.06] px-8 py-4">
-              <button
-                onClick={() => setStep(Math.max(1, step - 1) as 1 | 2 | 3)}
-                className={`font-mono text-[10px] tracking-wider text-slate-500 hover:text-slate-300 ${
-                  step === 1 ? "invisible" : ""
-                }`}
-              >
-                ← {t("profileModal.back")}
-              </button>
-
-              {step < 3 ? (
-                <button
-                  onClick={() => setStep((step + 1) as 1 | 2 | 3)}
-                  disabled={(step === 1 && !role) || (step === 2 && !region)}
-                  className="px-5 py-2 font-mono text-[10px] tracking-wider text-atlas-accent border border-atlas-accent/30 hover:bg-atlas-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  {t("profileModal.next")}
-                </button>
-              ) : (
-                <button
-                  onClick={handleFinish}
-                  disabled={!role || !region}
-                  className="px-5 py-2 font-mono text-[10px] tracking-wider text-slate-200 bg-atlas-accent/20 border border-atlas-accent/30 hover:bg-atlas-accent/30 disabled:opacity-30 transition-colors"
-                >
-                  {isEditing
-                    ? t("profileModal.update")
-                    : t("profileModal.activate")}
-                </button>
-              )}
+          {step === 3 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-mono text-[11px] text-slate-400">
+                  {t("profileModal.anythingWatch")}
+                </div>
+                {watchlist && (
+                  <button
+                    onClick={() => setWatchlist("")}
+                    className="font-mono text-[9px] text-slate-600 hover:text-red-400 transition-colors"
+                  >
+                    {t("profileModal.clear")}
+                  </button>
+                )}
+              </div>
+              <div className="font-mono text-[9px] text-slate-600 mb-4">
+                {t("profileModal.optional")}
+              </div>
+              <textarea
+                value={watchlist}
+                onChange={(e) => setWatchlist(e.target.value)}
+                placeholder={t("profileModal.placeholder")}
+                rows={4}
+                className="w-full bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-[13px] text-slate-300 placeholder-slate-600 outline-none focus:border-atlas-accent/30 resize-none font-mono"
+              />
             </div>
-          </>
-        )}
+          )}
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex items-center justify-between border-t border-white/[0.06] px-8 py-4">
+          <button
+            onClick={() => setStep(Math.max(1, step - 1) as 1 | 2 | 3)}
+            className={`font-mono text-[10px] tracking-wider text-slate-500 hover:text-slate-300 ${
+              step === 1 ? "invisible" : ""
+            }`}
+          >
+            ← {t("profileModal.back")}
+          </button>
+
+          {step < 3 ? (
+            <button
+              onClick={() => setStep((step + 1) as 1 | 2 | 3)}
+              disabled={(step === 1 && !role) || (step === 2 && !region)}
+              className="px-5 py-2 font-mono text-[10px] tracking-wider text-atlas-accent border border-atlas-accent/30 hover:bg-atlas-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              {t("profileModal.next")}
+            </button>
+          ) : (
+            <button
+              onClick={handleSave}
+              disabled={!role || !region}
+              className="px-5 py-2 font-mono text-[10px] tracking-wider text-slate-200 bg-atlas-accent/20 border border-atlas-accent/30 hover:bg-atlas-accent/30 disabled:opacity-30 transition-colors"
+            >
+              {isEditing ? t("profileModal.update") : t("profileModal.activate")}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
