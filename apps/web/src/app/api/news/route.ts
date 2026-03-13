@@ -16,54 +16,33 @@ interface FeedConfig {
 }
 
 const NEWS_FEEDS: FeedConfig[] = [
-  {
-    name: "Al Jazeera",
-    url: "https://www.aljazeera.com/xml/rss/all.xml",
-    region: "Middle East",
-    reliability: 90,
-  },
-  {
-    name: "BBC Middle East",
-    url: "http://feeds.bbci.co.uk/news/world/middle_east/rss.xml",
-    region: "Middle East",
-    reliability: 95,
-  },
-  {
-    name: "Reuters",
-    url: "https://feeds.reuters.com/reuters/worldNews",
-    region: "Global",
-    reliability: 96,
-  },
-  {
-    name: "France 24",
-    url: "https://www.france24.com/en/rss",
-    region: "Global",
-    reliability: 91,
-  },
-  {
-    name: "USGS Earthquakes",
-    url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson",
-    region: "Global",
-    reliability: 99,
-    type: "json",
-    parser: "usgs",
-  },
-  {
-    name: "NASA EONET",
-    url: "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=30",
-    region: "Global",
-    reliability: 95,
-    type: "json",
-    parser: "eonet",
-  },
-  {
-    name: "GDELT",
-    url: "https://api.gdeltproject.org/api/v2/doc/doc?query=war+attack+strike+missile+conflict+explosion&mode=artlist&maxrecords=25&format=json&timespan=24h",
-    region: "Global",
-    reliability: 85,
-    type: "json",
-    parser: "gdelt",
-  },
+  // TIER 1 — Most reliable, update every few minutes
+  { name: "BBC Middle East", url: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml", region: "Middle East", reliability: 95 },
+  { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", region: "Global", reliability: 95 },
+  { name: "Reuters World", url: "https://feeds.reuters.com/reuters/worldNews", region: "Global", reliability: 96 },
+  { name: "Reuters Top", url: "https://feeds.reuters.com/reuters/topNews", region: "Global", reliability: 96 },
+  { name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", region: "Middle East", reliability: 90 },
+  { name: "France 24", url: "https://rss.france24.com/rss/en", region: "Global", reliability: 91 },
+  { name: "Sky News World", url: "https://feeds.skynews.com/feeds/rss/world.xml", region: "Global", reliability: 85 },
+  { name: "The Guardian World", url: "https://www.theguardian.com/world/rss", region: "Global", reliability: 90 },
+  { name: "DW News", url: "https://rss.dw.com/rss/en-all", region: "Global", reliability: 85 },
+  // TIER 2 — Regional focus
+  { name: "Arab News", url: "https://www.arabnews.com/rss.xml", region: "Middle East", reliability: 80 },
+  { name: "Al Arabiya", url: "https://english.alarabiya.net/rss.xml", region: "Middle East", reliability: 82 },
+  { name: "Middle East Eye", url: "https://www.middleeasteye.net/rss", region: "Middle East", reliability: 80 },
+  { name: "Rudaw", url: "https://rudaw.net/english/rss", region: "Middle East", reliability: 75 },
+  // TIER 3 — Defense/Security
+  { name: "Defense News", url: "https://www.defensenews.com/rss/", region: "Global", reliability: 85 },
+  { name: "Breaking Defense", url: "https://breakingdefense.com/feed/", region: "Global", reliability: 82 },
+  { name: "USNI News", url: "https://news.usni.org/feed", region: "Global", reliability: 85 },
+  // TIER 4 — Energy
+  { name: "OilPrice", url: "https://oilprice.com/rss/main", region: "Global", reliability: 78 },
+  // TIER 5 — Wire services
+  { name: "GlobalSecurity", url: "https://www.globalsecurity.org/rss/news.rss", region: "Global", reliability: 75 },
+  // JSON feeds
+  { name: "USGS Earthquakes", url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson", region: "Global", reliability: 99, type: "json", parser: "usgs" },
+  { name: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=50", region: "Global", reliability: 95, type: "json", parser: "eonet" },
+  { name: "GDELT", url: "https://api.gdeltproject.org/api/v2/doc/doc?query=war+attack+strike+missile+conflict+explosion&mode=artlist&maxrecords=25&format=json&timespan=24h", region: "Global", reliability: 85, type: "json", parser: "gdelt" },
 ];
 
 /* ─── Country Detection ───────────────────────────────── */
@@ -442,7 +421,7 @@ function parseGDELT(data: any): NormalizedEvent[] {
 
 let cachedEvents: NormalizedEvent[] = [];
 let cacheTimestamp = 0;
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /* ─── Main handler ────────────────────────────────────── */
 
@@ -504,13 +483,27 @@ export async function GET() {
     }
   }
 
-  // Deduplicate by title similarity (simple exact match on normalized title)
-  const seen = new Set<string>();
-  const deduped = allEvents.filter((e) => {
-    const key = e.title.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 50);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
+  // Deduplicate by first 6 words of title
+  const seenMap = new Map<string, NormalizedEvent>();
+  for (const e of allEvents) {
+    const key = e.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(" ").slice(0, 6).join(" ");
+    const existing = seenMap.get(key);
+    if (!existing || e.confidence_score > existing.confidence_score) {
+      seenMap.set(key, e);
+    }
+  }
+  let deduped = Array.from(seenMap.values());
+
+  // Age filter: 24h for regular, 72h for critical/ongoing
+  const ONGOING_KEYWORDS = ["war", "conflict", "nuclear", "blockade", "occupation", "sanctions", "crisis", "ongoing", "continues"];
+  const h24 = 24 * 60 * 60 * 1000;
+  const h72 = 72 * 60 * 60 * 1000;
+  deduped = deduped.filter((e) => {
+    const age = now - new Date(e.event_time).getTime();
+    if (isNaN(age) || age < 0) return true;
+    if (e.severity === "CRITICAL") return age < h72;
+    if (ONGOING_KEYWORDS.some((k) => e.title.toLowerCase().includes(k))) return age < h72;
+    return age < h24;
   });
 
   // Sort by risk score desc, then by time desc

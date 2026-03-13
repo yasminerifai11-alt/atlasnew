@@ -77,6 +77,14 @@ export function StatusStrip() {
       ) : (
         /* Intelligence view header (original) */
         <>
+          {/* LIVE indicator */}
+          <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-wider text-green-400 font-semibold">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+            </span>
+            LIVE
+          </span>
           <span className="font-mono text-[10px] font-semibold tracking-wider">
             ▲ {t("posture.label")}: {t(`posture.${posture}` as any)}
           </span>
@@ -89,7 +97,7 @@ export function StatusStrip() {
                 {t("status.lastSync")}: {syncInfo.lastSync || "—"} · {events.length} {t("status.eventsMonitored")} · {syncInfo.activeSourceCount} {t("status.sourcesActive")}
               </>
             ) : (
-              <>{t("status.unavailable")}</>
+              <>21 SOURCES · {events.length} EVENTS MONITORED</>
             )}
           </span>
         </>
