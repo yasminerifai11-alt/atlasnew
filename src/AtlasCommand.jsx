@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
-import { EVENTS, COUNTRIES, getCountryEvents } from "./data/events";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { COUNTRIES } from "./data/events";
 import { useTheme } from "./context/ThemeContext";
 import { useNotifications } from "./context/NotificationContext";
 import { useSoundAlert } from "./hooks/useSoundAlert";
+import { useEvents } from "./hooks/useEvents";
 import TopBar from "./components/TopBar";
 import StatusStrip from "./components/StatusStrip";
 import CountryBriefBanner from "./components/Country/CountryBriefBanner";
@@ -17,7 +18,7 @@ import LeaderRecommendations from "./components/CommandCenter/LeaderRecommendati
 export default function AtlasCommand() {
   const { theme } = useTheme();
   const [countries, setCountries] = useState(["ALL"]);
-  const [selected, setSelected] = useState(EVENTS[0]);
+  const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState("none");
@@ -28,6 +29,21 @@ export default function AtlasCommand() {
   const [viewMode, setViewMode] = useState("command"); // "command" | "leader"
   const { addNotification } = useNotifications();
   const playAlert = useSoundAlert();
+  const notifiedNewEvents = useRef(false);
+
+  // ═══════════════════════════════════════
+  // LIVE EVENT PIPELINE
+  // ═══════════════════════════════════════
+  const {
+    events: liveEvents,
+    loading: eventsLoading,
+    lastUpdated,
+    sourceCount,
+    newEventCount,
+    clearNewCount,
+    forceRefresh,
+    fingerprint,
+  } = useEvents();
 
   // Handle country change — single select replaces, or toggle for multi
   const handleCountryChange = useCallback((code, multi = false) => {
@@ -45,8 +61,13 @@ export default function AtlasCommand() {
     });
   }, []);
 
-  // Get events scoped to selected countries
-  const countryEvents = getCountryEvents(countries);
+  // Filter events by selected countries
+  const countryEvents = countries.includes("ALL")
+    ? liveEvents.map(e => ({ ...e, relevance: "global", spillover_reason: null }))
+    : liveEvents.filter(e => {
+        if (!e.country) return false;
+        return countries.includes(e.country);
+      }).map(e => ({ ...e, relevance: "direct" }));
 
   // Apply risk level + search filters on top
   const filtered = countryEvents
@@ -57,16 +78,37 @@ export default function AtlasCommand() {
       return e.title.toLowerCase().includes(q)
         || e.region.toLowerCase().includes(q)
         || e.sector.toLowerCase().includes(q)
-        || e.what_is_happening.toLowerCase().includes(q);
+        || (e.what_is_happening || "").toLowerCase().includes(q);
     });
 
-  // When country changes, auto-select the first relevant event
+  // Auto-select first event when events load or country changes
   useEffect(() => {
-    const evts = getCountryEvents(countries);
-    if (evts.length > 0 && !evts.find(e => e.id === selected?.id)) {
-      setSelected(evts[0]);
+    if (filtered.length > 0 && (!selected || !filtered.find(e => e.id === selected?.id))) {
+      setSelected(filtered[0]);
     }
-  }, [countries]);
+  }, [countries, filtered.length > 0, fingerprint]);
+
+  // Notify on new events
+  useEffect(() => {
+    if (newEventCount > 0) {
+      addNotification(`${newEventCount} new event${newEventCount > 1 ? "s" : ""} detected`, "INFO", 5000);
+      clearNewCount();
+    }
+  }, [newEventCount]);
+
+  // Startup notifications for critical events
+  useEffect(() => {
+    if (liveEvents.length > 0 && !notifiedNewEvents.current) {
+      notifiedNewEvents.current = true;
+      const criticals = liveEvents.filter(e => e.risk_level === "CRITICAL").slice(0, 3);
+      criticals.forEach((e, i) => {
+        setTimeout(() => {
+          addNotification(`${e.title} — ${e.region}`, "CRITICAL", 8000);
+          if (soundEnabled) playAlert("CRITICAL");
+        }, 1000 + i * 1500);
+      });
+    }
+  }, [liveEvents.length > 0]);
 
   // Ctrl+K to open quick switcher
   useEffect(() => {
@@ -81,17 +123,6 @@ export default function AtlasCommand() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  // Startup notifications for critical events
-  useEffect(() => {
-    const criticals = EVENTS.filter(e => e.risk_level === "CRITICAL");
-    criticals.forEach((e, i) => {
-      setTimeout(() => {
-        addNotification(`${e.title} — ${e.region}`, "CRITICAL", 8000);
-        if (soundEnabled) playAlert("CRITICAL");
-      }, 1000 + i * 1500);
-    });
   }, []);
 
   // Compute map center from selected countries
@@ -118,8 +149,8 @@ export default function AtlasCommand() {
         <LeaderRecommendations events={filtered} onBack={() => setViewMode("command")} />
       ) : (
         <>
-          <StatusStrip events={filtered} />
-          <CountryBriefBanner countryCodes={countries} />
+          <StatusStrip events={filtered} lastUpdated={lastUpdated} sourceCount={sourceCount} loading={eventsLoading} onRefresh={forceRefresh} />
+          <CountryBriefBanner countryCodes={countries} events={filtered} />
           <DashboardStats events={filtered} />
           <EventTimeline events={filtered} selected={selected} onSelect={setSelected} />
 

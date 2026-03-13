@@ -1,11 +1,11 @@
-import { COUNTRIES, getCountryEvents, RISK_COLORS } from "../../data/events";
+import { COUNTRIES, RISK_COLORS } from "../../data/events";
 import { useTheme } from "../../context/ThemeContext";
 
-export default function CountryBriefBanner({ countryCodes }) {
+export default function CountryBriefBanner({ countryCodes, events: passedEvents }) {
   const { theme } = useTheme();
   if (!countryCodes || countryCodes.includes("ALL")) return null;
 
-  const events = getCountryEvents(countryCodes);
+  const events = passedEvents || [];
   const directEvents = events.filter(e => e.relevance === "direct");
   const spilloverEvents = events.filter(e => e.relevance === "spillover");
   const maxRisk = events.length > 0 ? Math.max(...events.map(e => e.risk_score)) : 0;

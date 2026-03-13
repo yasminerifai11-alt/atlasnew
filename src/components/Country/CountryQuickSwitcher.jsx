@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { COUNTRIES, getCountryEvents } from "../../data/events";
+import { COUNTRIES } from "../../data/events";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function CountryQuickSwitcher({ countries, onSelect, onClose }) {
@@ -89,11 +89,7 @@ export default function CountryQuickSwitcher({ countries, onSelect, onClose }) {
           {entries.map(([code, c], idx) => {
             const isActive = countries.includes(code);
             const isHighlighted = idx === highlightIdx;
-            const evts = code === "ALL" ? [] : getCountryEvents(code);
-            const directCount = evts.filter(e => e.relevance === "direct").length;
-            const spillCount = evts.filter(e => e.relevance === "spillover").length;
-            const maxRisk = evts.length > 0 ? Math.max(...evts.map(e => e.risk_score)) : 0;
-            const riskColor = maxRisk >= 75 ? "#ef4444" : maxRisk >= 50 ? "#f97316" : maxRisk >= 25 ? "#eab308" : "#22c55e";
+            const riskColor = "#64748b";
 
             return (
               <div
@@ -119,18 +115,10 @@ export default function CountryQuickSwitcher({ countries, onSelect, onClose }) {
                   </div>
                   {code !== "ALL" && (
                     <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: theme.textDim, marginTop: 2 }}>
-                      {directCount} direct · {spillCount} spillover
+                      {code}
                     </div>
                   )}
                 </div>
-                {code !== "ALL" && (
-                  <div style={{
-                    fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700,
-                    color: riskColor, minWidth: 20, textAlign: "right",
-                  }}>
-                    {maxRisk}
-                  </div>
-                )}
               </div>
             );
           })}

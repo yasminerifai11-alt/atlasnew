@@ -93,7 +93,7 @@ export default function Sidebar({ events, selected, onSelect, filter, setFilter,
         {groupBy === "none" ? (
           <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px" }}>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: theme.textDim, letterSpacing: "0.12em", marginBottom: 10 }}>
-              ACTIVE EVENTS ({events.length})
+              ACTIVE EVENTS ({events.length}) — LIVE
             </div>
             {events.length === 0 && (
               <div style={{ fontSize: 12, color: theme.textFaint, fontStyle: "italic", padding: "20px 0" }}>
