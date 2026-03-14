@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 /* ═══════════════════════════════════════════════════════════════════
    PEOPLE FIRST — Workforce Intelligence Dashboard
@@ -211,6 +211,121 @@ function ProgressBar({ value, max = 100, color = CYAN }: { value: number; max?: 
   );
 }
 
+/* ─── Layoff Map (MapLibre GL) ────────────────────────── */
+
+function LayoffMap({ events }: { events: LayoffEvent[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<unknown>(null);
+  const markersRef = useRef<unknown[]>([]);
+
+  // Initialize map
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    let cancelled = false;
+
+    import("maplibre-gl").then((maplibregl) => {
+      if (cancelled || !containerRef.current) return;
+
+      const map = new maplibregl.Map({
+        container: containerRef.current,
+        style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+        center: [10, 30],
+        zoom: 1.3,
+        attributionControl: false,
+        interactive: true,
+      });
+
+      mapRef.current = map;
+
+      map.on("load", () => {
+        // Add layoff markers
+        updateMarkers(events, map, maplibregl);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      if (mapRef.current) {
+        (mapRef.current as { remove: () => void }).remove();
+        mapRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Update markers when events change
+  useEffect(() => {
+    const map = mapRef.current as { loaded?: () => boolean } | null;
+    if (!map || !map.loaded?.()) return;
+
+    import("maplibre-gl").then((maplibregl) => {
+      updateMarkers(events, mapRef.current, maplibregl);
+    });
+  }, [events]);
+
+  function updateMarkers(
+    evts: LayoffEvent[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    map: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    maplibregl: any,
+  ) {
+    // Clear old markers
+    markersRef.current.forEach((m) => (m as { remove: () => void }).remove());
+    markersRef.current = [];
+
+    evts.forEach((e) => {
+      const size = Math.max(10, Math.min(28, e.count / 1500));
+
+      // Outer pulse ring
+      const el = document.createElement("div");
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+      el.style.borderRadius = "50%";
+      el.style.background = "rgba(255,51,102,0.6)";
+      el.style.border = "2px solid rgba(255,51,102,0.8)";
+      el.style.boxShadow = "0 0 12px rgba(255,51,102,0.5)";
+      el.style.cursor = "pointer";
+      el.style.transition = "transform 0.2s";
+      el.addEventListener("mouseenter", () => { el.style.transform = "scale(1.4)"; });
+      el.addEventListener("mouseleave", () => { el.style.transform = "scale(1)"; });
+
+      const popup = new maplibregl.Popup({
+        offset: 12,
+        closeButton: false,
+        maxWidth: "220px",
+      }).setHTML(`
+        <div style="font-family:'Space Grotesk',sans-serif;padding:4px 0;">
+          <div style="font-size:13px;font-weight:700;color:#FF3366;margin-bottom:2px;">${e.company}</div>
+          <div style="font-size:20px;font-weight:800;color:#fff;">${e.count.toLocaleString()}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px;">${e.sector} · ${e.date}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:4px;">${e.reason}</div>
+        </div>
+      `);
+
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([e.lng, e.lat])
+        .setPopup(popup)
+        .addTo(map);
+
+      markersRef.current.push(marker);
+    });
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: 320,
+        borderRadius: 8,
+        border: `1px solid ${BORDER}`,
+        overflow: "hidden",
+      }}
+    />
+  );
+}
+
 /* ─── Tab 1: What's Happening ────────────────────────── */
 
 function TabHappening() {
@@ -230,48 +345,12 @@ function TabHappening() {
         <StatCard label="Travel Ban Countries" value="39" sub="+ 75 visa freeze" color="#FF3366" />
       </div>
 
-      {/* Interactive world map placeholder + events */}
+      {/* Interactive world map + events */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         {/* Map area */}
         <div>
           <SectionTitle>Global Layoff & Visa Ban Map</SectionTitle>
-          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 8, height: 320, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-            {/* Simplified dot map */}
-            <svg viewBox="0 0 800 400" style={{ width: "100%", height: "100%", opacity: 0.3 }}>
-              <rect width="800" height="400" fill="transparent" />
-              {/* Continental outlines simplified */}
-              <ellipse cx="200" cy="170" rx="120" ry="80" fill="none" stroke={CYAN} strokeWidth="0.5" opacity="0.3" />
-              <ellipse cx="450" cy="160" rx="100" ry="90" fill="none" stroke={CYAN} strokeWidth="0.5" opacity="0.3" />
-              <ellipse cx="620" cy="180" rx="80" ry="70" fill="none" stroke={CYAN} strokeWidth="0.5" opacity="0.3" />
-            </svg>
-            {/* Event dots */}
-            {LAYOFF_EVENTS.map((e, i) => {
-              const x = ((e.lng + 180) / 360) * 100;
-              const y = ((90 - e.lat) / 180) * 100;
-              return (
-                <div
-                  key={i}
-                  title={`${e.company}: ${e.count.toLocaleString()} layoffs`}
-                  style={{
-                    position: "absolute",
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    width: Math.max(6, Math.min(16, e.count / 2000)),
-                    height: Math.max(6, Math.min(16, e.count / 2000)),
-                    borderRadius: "50%",
-                    background: "#FF3366",
-                    border: "1px solid rgba(255,51,102,0.5)",
-                    boxShadow: "0 0 8px rgba(255,51,102,0.4)",
-                    cursor: "pointer",
-                    transform: "translate(-50%, -50%)",
-                  }}
-                />
-              );
-            })}
-            <div style={{ position: "absolute", bottom: 8, left: 12, fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>
-              Interactive map — hover for details
-            </div>
-          </div>
+          <LayoffMap events={filtered} />
         </div>
 
         {/* Events list */}
