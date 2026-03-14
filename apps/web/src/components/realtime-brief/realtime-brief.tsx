@@ -98,6 +98,27 @@ const TIMING_COLORS: Record<string, string> = {
   STRATEGIC: "#3b82f6",
 };
 
+const TIMING_BG: Record<string, string> = {
+  IMMEDIATE: "rgba(220,38,38,0.2)",
+  TODAY: "rgba(234,88,12,0.2)",
+  "THIS WEEK": "rgba(202,138,4,0.2)",
+  STRATEGIC: "rgba(37,99,235,0.2)",
+};
+
+const TIMING_BORDER: Record<string, string> = {
+  IMMEDIATE: "rgba(220,38,38,0.3)",
+  TODAY: "rgba(234,88,12,0.3)",
+  "THIS WEEK": "rgba(202,138,4,0.3)",
+  STRATEGIC: "rgba(37,99,235,0.3)",
+};
+
+const TIMING_TEXT: Record<string, string> = {
+  IMMEDIATE: "#f87171",
+  TODAY: "#fb923c",
+  "THIS WEEK": "#fbbf24",
+  STRATEGIC: "#60a5fa",
+};
+
 const INFRA_STATUS_COLORS: Record<string, string> = {
   CRITICAL: "#ef4444",
   "AT RISK": "#f97316",
@@ -213,6 +234,21 @@ function parseJSONArray(text: string): any[] | null {
   try { return JSON.parse(match[0]); } catch { return null; }
 }
 
+/** Strip HTML tags and decode entities from a string */
+function stripHTML(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    Skeleton Loader
    ═══════════════════════════════════════════════════════════════════ */
@@ -251,6 +287,32 @@ function SkeletonBox({ height = 120 }: { height?: number }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Section Header — blue left accent, uppercase, scannable
+   ═══════════════════════════════════════════════════════════════════ */
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.15em",
+        color: "#60a5fa",
+        textTransform: "uppercase" as const,
+        paddingBottom: 8,
+        borderBottom: "1px solid rgba(96,165,250,0.2)",
+        marginBottom: 16,
+        borderLeft: "2px solid #60a5fa",
+        paddingLeft: 8,
+        fontFamily: "'IBM Plex Mono', monospace",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Collapsible Section
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -272,8 +334,11 @@ function CollapsibleSection({
       <button
         onClick={() => onToggle(sectionKey)}
         className="w-full flex items-center justify-between px-6 py-3 font-mono text-[10px] tracking-wider text-slate-400 hover:text-slate-200 hover:bg-white/[0.02] transition-colors"
+        style={{ letterSpacing: "0.15em" }}
       >
-        <span>{expanded ? "▼" : "▶"} {title}</span>
+        <span style={{ borderLeft: "2px solid #60a5fa", paddingLeft: 8, color: expanded ? "#60a5fa" : undefined }}>
+          {expanded ? "▼" : "▶"} {title}
+        </span>
       </button>
       {expanded && (
         <div className="px-6 pb-4 animate-slide-up">{children}</div>
@@ -317,6 +382,7 @@ export function RealtimeBrief() {
   const [isCached, setIsCached] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
+  const [btnLabel, setBtnLabel] = useState<"idle" | "loading" | "done">("idle");
 
   const generationRef = useRef(0);
 
@@ -414,6 +480,7 @@ export function RealtimeBrief() {
     }
 
     setIsCached(false);
+    setBtnLabel("loading");
     setLoadingSituation(true);
     setLoadingMeans(true);
     setLoadingForecast(true);
@@ -611,6 +678,8 @@ Return ONLY valid JSON.${langSuffix}`;
 
     const now = new Date().toISOString();
     setLastGenerated(now);
+    setBtnLabel("done");
+    setTimeout(() => setBtnLabel("idle"), 3000);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredEvents, events, selectedCountry, selectedSectors, isAr, profileCtx, lang]);
 
@@ -757,8 +826,8 @@ Return ONLY valid JSON.${langSuffix}`;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Shimmer keyframes */}
-      <style dangerouslySetInnerHTML={{ __html: `@keyframes shimmer{0%{opacity:.4}50%{opacity:.8}100%{opacity:.4}}` }} />
+      {/* Shimmer + pulse keyframes */}
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes shimmer{0%{opacity:.4}50%{opacity:.8}100%{opacity:.4}}@keyframes pulse-glow{0%,100%{opacity:.6}50%{opacity:1}}` }} />
 
       <div className="flex-1 overflow-y-auto">
 
@@ -797,10 +866,20 @@ Return ONLY valid JSON.${langSuffix}`;
               <button
                 onClick={() => { briefCache.delete(cacheKey(selectedCountry, Array.from(selectedSectors), lang)); generateBrief(); }}
                 disabled={isLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] tracking-wider text-green-400 border border-green-500/30 hover:bg-green-500/10 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] tracking-wider border disabled:opacity-50 transition-colors"
+                style={{
+                  color: btnLabel === "done" ? "#22c55e" : btnLabel === "loading" ? "#60a5fa" : "#22c55e",
+                  borderColor: btnLabel === "done" ? "rgba(34,197,94,0.3)" : btnLabel === "loading" ? "rgba(96,165,250,0.3)" : "rgba(34,197,94,0.3)",
+                  animation: btnLabel === "loading" ? "pulse-glow 1.5s infinite" : undefined,
+                }}
               >
-                <span className={isLoading ? "animate-spin" : ""}>{isLoading ? "⟳" : "▶"}</span>
-                {isLoading ? (isAr ? "جارٍ التحليل..." : "Generating...") : (isAr ? "إنشاء" : "Generate")}
+                {btnLabel === "loading" ? "◌" : btnLabel === "done" ? "✓" : "↻"}
+                {" "}
+                {btnLabel === "loading"
+                  ? (isAr ? "جارٍ التحليل..." : "Generating...")
+                  : btnLabel === "done"
+                  ? (isAr ? "تم التحديث" : "Updated just now")
+                  : (isAr ? "إنشاء" : "Generate")}
               </button>
             </div>
           </div>
@@ -843,77 +922,82 @@ Return ONLY valid JSON.${langSuffix}`;
 
         {/* ═══ SECTION 3 — TWO COLUMN ROW ═══ */}
         <div
-          className="px-6 py-5 border-b border-white/[0.06]"
           style={{
             display: "grid",
-            gridTemplateColumns: "60fr 40fr",
-            gap: "24px",
+            gridTemplateColumns: "55fr 45fr",
             alignItems: "start",
             background: "#080d1a",
+            maxWidth: 1400,
+            margin: "0 auto",
+            padding: "0 24px",
           }}
         >
           {/* LEFT COLUMN: Situation + Metrics */}
-          <div>
-            <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-3">
+          <div style={{ paddingRight: 24, paddingTop: 32, paddingBottom: 32, borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+            <SectionHeader>
               {isAr ? "الموقف الآن" : "THE SITUATION NOW"}
-            </div>
+            </SectionHeader>
             {loadingSituation ? (
               <Skeleton lines={4} />
             ) : situation ? (
               <div
-                className={`text-[14px] leading-[1.9] text-white/90 ${arText}`}
-                style={{ fontFamily: isAr ? "'Noto Sans Arabic', 'IBM Plex Sans', sans-serif" : "'IBM Plex Sans', sans-serif" }}
+                className={arText}
+                style={{
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  fontWeight: 400,
+                  color: "rgba(255,255,255,0.85)",
+                  fontFamily: isAr ? "'Noto Sans Arabic', 'IBM Plex Sans', sans-serif" : "'IBM Plex Sans', sans-serif",
+                }}
               >
                 {situation}
               </div>
             ) : (
-              <div className="font-mono text-[11px] text-slate-600">
-                {isAr ? "لا توجد بيانات. اضغط إنشاء." : "No data. Click Generate."}
-              </div>
+              <Skeleton lines={4} />
             )}
 
             {/* Three metric tiles */}
             <div className="grid grid-cols-3 gap-3 mt-5">
               {/* THREAT POSTURE */}
-              <div className="border border-white/[0.06] bg-white/[0.02] p-3">
-                <div className="font-mono text-[8px] tracking-wider text-slate-600 mb-1">{isAr ? "مستوى التهديد" : "THREAT POSTURE"}</div>
-                <div className="font-mono text-[14px] font-bold" style={{ color: postureColor }}>
+              <div className="border border-white/[0.06] bg-white/[0.02]" style={{ padding: 12 }}>
+                <div className="font-mono tracking-wider text-slate-600 mb-1" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em" }}>{isAr ? "مستوى التهديد" : "THREAT POSTURE"}</div>
+                <div className="font-mono font-bold" style={{ fontSize: 20, color: postureColor }}>
                   {isAr ? translateRiskLevel(posture, "ar") : posture}
                 </div>
               </div>
               {/* ACTIVE EVENTS */}
-              <div className="border border-white/[0.06] bg-white/[0.02] p-3">
-                <div className="font-mono text-[8px] tracking-wider text-slate-600 mb-1">{isAr ? "أحداث نشطة" : "ACTIVE EVENTS"}</div>
-                <div className="font-mono text-[14px] font-bold text-white">
+              <div className="border border-white/[0.06] bg-white/[0.02]" style={{ padding: 12 }}>
+                <div className="font-mono tracking-wider text-slate-600 mb-1" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em" }}>{isAr ? "أحداث نشطة" : "ACTIVE EVENTS"}</div>
+                <div className="font-mono font-bold text-white" style={{ fontSize: 20 }}>
                   {filteredEvents.length}
                   {criticalCount > 0 && (
-                    <span className="text-[10px] font-normal text-red-400 ml-2">{criticalCount} {isAr ? "حرج" : "CRIT"}</span>
+                    <span className="font-normal text-red-400 ml-2" style={{ fontSize: 11 }}>{criticalCount} {isAr ? "حرج" : "CRIT"}</span>
                   )}
                 </div>
               </div>
               {/* TOP SECTOR */}
-              <div className="border border-white/[0.06] bg-white/[0.02] p-3">
-                <div className="font-mono text-[8px] tracking-wider text-slate-600 mb-1">{isAr ? "أبرز قطاع" : "TOP SECTOR"}</div>
-                <div className="font-mono text-[14px] font-bold text-blue-400">
+              <div className="border border-white/[0.06] bg-white/[0.02]" style={{ padding: 12 }}>
+                <div className="font-mono tracking-wider text-slate-600 mb-1" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em" }}>{isAr ? "أبرز قطاع" : "TOP SECTOR"}</div>
+                <div className="font-mono font-bold text-blue-400" style={{ fontSize: 20 }}>
                   {isAr ? (SECTOR_AR[topSectorName] || topSectorName) : topSectorName}
-                  <span className="text-[10px] font-normal text-slate-500 ml-2">{topSectorPct}%</span>
+                  <span className="font-normal text-slate-500 ml-2" style={{ fontSize: 11 }}>{topSectorPct}%</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN: Top Events */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="font-mono text-[10px] tracking-[3px] text-blue-500">
-                {isAr ? "أبرز الأحداث الآن" : "TOP EVENTS RIGHT NOW"}
+          <div style={{ paddingLeft: 24, paddingTop: 32, paddingBottom: 32 }}>
+            <SectionHeader>
+              <div className="flex items-center justify-between">
+                <span>{isAr ? "أبرز الأحداث الآن" : "TOP EVENTS RIGHT NOW"}</span>
+                <span className="font-mono text-slate-600" style={{ fontSize: 9, letterSpacing: "0.05em" }}>
+                  {filteredEvents.length} {isAr ? "حدث" : "events"}
+                </span>
               </div>
-              <span className="font-mono text-[9px] text-slate-600">
-                {filteredEvents.length} {isAr ? "حدث" : "events"}
-              </span>
-            </div>
+            </SectionHeader>
 
-            <div className="space-y-2">
+            <div style={{ maxHeight: 420, overflowY: "auto", scrollbarWidth: "thin", scrollbarColor: "rgba(96,165,250,0.3) transparent" }} className="space-y-2">
               {topEvents.length === 0 ? (
                 <div className="py-8 text-center font-mono text-[11px] text-slate-600">
                   {isAr ? "لا توجد أحداث مطابقة" : "No matching events"}
@@ -921,17 +1005,19 @@ Return ONLY valid JSON.${langSuffix}`;
               ) : (
                 topEvents.map((ev) => {
                   const color = RISK_COLORS[ev.risk_level] || "#64748b";
-                  const title = getLocalizedField(ev, "title", lang) || ev.title;
-                  const sit = isAr && ev.situation_ar ? ev.situation_ar : ev.situation_en;
-                  const desc = typeof sit === "string" ? sit.slice(0, 100) : (ev.description || "").slice(0, 100);
+                  const rawTitle = getLocalizedField(ev, "title", lang) || ev.title;
+                  const title = stripHTML(rawTitle);
+                  const rawSit = isAr && ev.situation_ar ? ev.situation_ar : ev.situation_en;
+                  const cleanSit = stripHTML(typeof rawSit === "string" ? rawSit : (ev.description || ""));
+                  const desc = cleanSit.length < 20 ? title : cleanSit.slice(0, 100);
                   const ago = timeAgo(ev.event_time, isAr);
                   const isExpanded = expandedEvents.has(ev.id);
 
                   return (
                     <div
                       key={ev.id}
-                      className="border border-white/[0.04] bg-white/[0.015] p-3 hover:bg-white/[0.03] transition-colors"
-                      style={{ borderLeftWidth: 3, borderLeftColor: color }}
+                      className="border border-white/[0.04] bg-white/[0.015] hover:bg-white/[0.03] transition-colors"
+                      style={{ borderLeftWidth: 3, borderLeftColor: color, padding: 14 }}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="flex h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
@@ -941,7 +1027,7 @@ Return ONLY valid JSON.${langSuffix}`;
                       </div>
                       <div className={`text-[12px] font-medium text-slate-200 mb-1 ${arText}`}>{title}</div>
                       <div className={`text-[10px] leading-relaxed text-slate-500 mb-2 ${arText}`}>
-                        {isExpanded ? sit : desc}{!isExpanded && desc.length >= 100 ? "..." : ""}
+                        {isExpanded ? cleanSit : desc}{!isExpanded && desc.length >= 100 ? "..." : ""}
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 font-mono text-[9px] text-slate-600">
@@ -996,12 +1082,14 @@ Return ONLY valid JSON.${langSuffix}`;
           </div>
         </div>
 
+        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }} />
+
         {/* ═══ SECTION 4 — WHAT THIS MEANS (specific country only) ═══ */}
         {isSpecificCountry && (
-          <div className="px-6 py-5 border-b border-white/[0.06]" style={{ background: "#0c1426" }}>
-            <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-4">
+          <div style={{ background: "#0c1426", maxWidth: 1400, margin: "0 auto", padding: "32px 24px" }}>
+            <SectionHeader>
               {isAr ? `ماذا يعني هذا لـ${countryLabel}` : `WHAT THIS MEANS FOR ${countryLabel.toUpperCase()}`}
-            </div>
+            </SectionHeader>
             {loadingMeans ? (
               <Skeleton lines={5} />
             ) : means && means.length > 0 ? (
@@ -1026,17 +1114,19 @@ Return ONLY valid JSON.${langSuffix}`;
           </div>
         )}
 
+        {isSpecificCountry && <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }} />}
+
         {/* ═══ SECTION 5 — WHAT WE ANTICIPATE ═══ */}
-        <div className="px-6 py-5 border-b border-white/[0.06]" style={{ background: "#080d1a" }}>
-          <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-4">
+        <div style={{ background: "#080d1a", maxWidth: 1400, margin: "0 auto", padding: "32px 24px" }}>
+          <SectionHeader>
             {isAr ? "ما نتوقعه" : "WHAT WE ANTICIPATE"}
-          </div>
+          </SectionHeader>
           {loadingForecast ? (
-            <div className="grid grid-cols-4 gap-3">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
               {[1, 2, 3, 4].map((i) => <SkeletonBox key={i} height={140} />)}
             </div>
           ) : forecast ? (
-            <div className="grid grid-cols-4 gap-3">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
               {([
                 { key: "h24" as const, label: isAr ? "خلال ٢٤ ساعة" : "NEXT 24H" },
                 { key: "h48" as const, label: isAr ? "خلال ٤٨ ساعة" : "NEXT 48H" },
@@ -1049,29 +1139,38 @@ Return ONLY valid JSON.${langSuffix}`;
                 return (
                   <div
                     key={key}
-                    className={`border p-4 ${key === "wildcard" ? "border-red-500/20 bg-red-500/[0.03]" : "border-white/[0.06] bg-white/[0.02]"}`}
+                    style={{
+                      padding: 16,
+                      background: key === "wildcard" ? "rgba(239,68,68,0.03)" : "rgba(255,255,255,0.04)",
+                      border: key === "wildcard" ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: 6,
+                    }}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`font-mono text-[9px] tracking-wider ${key === "wildcard" ? "text-red-400" : "text-blue-400"}`}>{label}</span>
+                      <span className={`font-mono text-[9px] tracking-wider font-semibold ${key === "wildcard" ? "text-red-400" : "text-blue-400"}`}>{label}</span>
                       <span className="font-mono text-[11px] font-bold" style={{ color: barColor }}>{item.probability}%</span>
                     </div>
+                    <div style={{ height: 1, background: "rgba(255,255,255,0.08)", marginBottom: 8 }} />
                     <div className={`text-[11px] leading-relaxed text-slate-400 mb-3 ${arText}`}>{item.text}</div>
-                    <div className="h-1 w-full bg-white/[0.06]">
-                      <div className="h-full transition-all duration-700" style={{ width: `${item.probability}%`, backgroundColor: barColor }} />
+                    <div className="h-1.5 w-full rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${item.probability}%`, backgroundColor: barColor }} />
                     </div>
+                    <div className="font-mono text-right mt-1" style={{ fontSize: 9, color: barColor }}>{item.probability}%</div>
                   </div>
                 );
               })}
             </div>
-          ) : null}
+          ) : <Skeleton lines={3} />}
         </div>
 
+        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }} />
+
         {/* ═══ SECTION 6 — COMMAND ACTIONS ═══ */}
-        <div className="px-6 py-5 border-b border-white/[0.06]" style={{ background: "#0c1426" }}>
-          <div className="font-mono text-[10px] tracking-[3px] text-blue-500 mb-1">
+        <div style={{ background: "#0c1426", maxWidth: 1400, margin: "0 auto", padding: "32px 24px" }}>
+          <SectionHeader>
             {isAr ? "إجراءات القيادة" : "COMMAND ACTIONS"}
-          </div>
-          <div className="font-mono text-[9px] text-slate-600 mb-4">
+          </SectionHeader>
+          <div className="font-mono text-slate-600" style={{ fontSize: 9, marginBottom: 16, marginTop: -8 }}>
             {isAr
               ? `بناءً على الاستخبارات الحالية — ${countryLabel} · ${sectorsLabel}`
               : `Based on current intelligence — ${countryLabel} · ${sectorsLabel}`}
@@ -1086,33 +1185,47 @@ Return ONLY valid JSON.${langSuffix}`;
               ))}
             </div>
           ) : actions && actions.length > 0 ? (
-            <div className="space-y-3">
-              {actions.map((a, i) => (
-                <div key={i} className="flex items-start gap-4 border border-white/[0.04] bg-white/[0.015] p-4">
-                  <div className="shrink-0 text-center">
-                    <div className="font-mono text-[14px] font-bold text-blue-500">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {actions.map((a, i) => {
+                const timingColor = TIMING_TEXT[a.timing] || "#60a5fa";
+                const timingBg = TIMING_BG[a.timing] || "rgba(37,99,235,0.2)";
+                const timingBorder = TIMING_BORDER[a.timing] || "rgba(37,99,235,0.3)";
+                return (
+                  <div key={i} className="flex items-start gap-4" style={{ border: "1px solid rgba(255,255,255,0.04)", background: "rgba(255,255,255,0.015)", padding: 14, borderRadius: 4 }}>
+                    <div className="shrink-0 font-mono font-bold text-blue-500" style={{ fontSize: 14, minWidth: 28 }}>
                       {a.number || String(i + 1).padStart(2, "0")}
                     </div>
                     <div
-                      className="font-mono text-[8px] tracking-wider font-semibold px-1.5 py-0.5 mt-1"
-                      style={{ color: TIMING_COLORS[a.timing] || "#3b82f6", backgroundColor: (TIMING_COLORS[a.timing] || "#3b82f6") + "15" }}
+                      className="shrink-0 font-mono font-semibold"
+                      style={{
+                        fontSize: 9,
+                        letterSpacing: "0.1em",
+                        color: timingColor,
+                        background: timingBg,
+                        border: `1px solid ${timingBorder}`,
+                        padding: "2px 8px",
+                        borderRadius: 3,
+                        marginTop: 2,
+                      }}
                     >
                       {a.timing}
                     </div>
+                    <div className="flex-1">
+                      <div className={`text-[12px] leading-relaxed text-slate-200 ${arText}`}>{a.action}</div>
+                      <div className={`text-slate-500 mt-1 ${arText}`} style={{ fontSize: 11 }}>
+                        {isAr ? "المحرك" : "Driver"}: {a.reason}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <div className={`text-[12px] leading-relaxed text-slate-200 ${arText}`}>{a.action}</div>
-                    <div className={`text-[11px] text-slate-500 mt-1 ${arText}`}>{a.reason}</div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <div className="font-mono text-[11px] text-slate-600">
-              {isAr ? "لا توجد إجراءات. اضغط إنشاء." : "No actions generated. Click Generate."}
-            </div>
+            <Skeleton lines={4} />
           )}
         </div>
+
+        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }} />
 
         {/* ═══ SECTION 7 — FULL INTELLIGENCE DETAIL ═══ */}
         <div style={{ background: "#080d1a" }}>

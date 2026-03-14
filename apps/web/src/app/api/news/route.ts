@@ -211,6 +211,23 @@ function hashCode(str: string): number {
   return Math.abs(hash);
 }
 
+/* ─── HTML Stripper ──────────────────────────────────── */
+
+function stripHTML(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+}
+
 /* ─── RSS Parser (no dependency) ──────────────────────── */
 
 function parseRSSItems(xml: string): Array<{ title: string; description: string; link: string; pubDate: string }> {
@@ -226,9 +243,14 @@ function parseRSSItems(xml: string): Array<{ title: string; description: string;
     const link = block.match(/<link[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i)?.[1]?.trim() || "";
     const pubDate = block.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i)?.[1]?.trim() || "";
 
-    // Strip HTML tags from description
-    const cleanDesc = desc.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").slice(0, 300);
-    const cleanTitle = title.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    // Strip ALL HTML from both title and description
+    const cleanTitle = stripHTML(title);
+    let cleanDesc = stripHTML(desc);
+
+    // If description after stripping is too short, use the title
+    if (cleanDesc.length < 20) {
+      cleanDesc = cleanTitle;
+    }
 
     if (cleanTitle) {
       items.push({ title: cleanTitle, description: cleanDesc, link, pubDate });
