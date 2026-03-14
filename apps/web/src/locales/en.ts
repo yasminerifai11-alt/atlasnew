@@ -9,6 +9,7 @@ export const en = {
   "nav.commander": "ATLAS COMMANDER",
   "nav.morning": "INTELLIGENCE BRIEF",
   "nav.library": "INTEL LIBRARY",
+  "nav.peopleFirst": "PEOPLE FIRST",
   "nav.defense": "DEFENSE INTEL",
   "nav.live": "LIVE",
   "nav.alerts": "ALERTS",

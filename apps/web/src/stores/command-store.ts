@@ -5,7 +5,8 @@ export type Section =
   | "situation"
   | "intel"
   | "realtime-brief"
-  | "library";
+  | "library"
+  | "people-first";
 
 export type SituationView = "intelligence" | "defense";
 

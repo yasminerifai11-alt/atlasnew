@@ -10,6 +10,7 @@ const SECTIONS: { key: Section; labelKey: string }[] = [
   { key: "situation", labelKey: "nav.situation" },
   { key: "realtime-brief", labelKey: "nav.morning" },
   { key: "library", labelKey: "nav.library" },
+  { key: "people-first", labelKey: "nav.peopleFirst" },
 ];
 
 export function TopBar() {

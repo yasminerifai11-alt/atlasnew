@@ -9,6 +9,7 @@ export const ar = {
   "nav.commander": "قائد أطلس",
   "nav.morning": "النشرة الاستخباراتية",
   "nav.library": "مكتبة المعلومات",
+  "nav.peopleFirst": "الإنسان أولاً",
   "nav.defense": "الاستخبارات الدفاعية",
   "nav.live": "مباشر",
   "nav.alerts": "التنبيهات",

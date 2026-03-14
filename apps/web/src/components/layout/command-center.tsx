@@ -12,6 +12,7 @@ import { DefenseSidebar } from "@/components/defense/defense-sidebar";
 import { DetailPanel } from "@/components/detail/detail-panel";
 import { RealtimeBrief } from "@/components/realtime-brief/realtime-brief";
 import { IntelligenceLibrary } from "@/components/library/intelligence-library";
+import { PeopleFirst } from "@/components/people-first/people-first";
 import { CountryIntelPanel } from "@/components/country/country-intel-panel";
 import { FloatingCommander } from "@/components/commander/floating-commander";
 import { AlertModal } from "@/components/modals/alert-modal";
@@ -106,6 +107,11 @@ export function CommandCenter() {
           e.preventDefault();
           setActiveSection("library");
           break;
+        case "p":
+        case "P":
+          e.preventDefault();
+          setActiveSection("people-first");
+          break;
         case "a":
         case "A":
           e.preventDefault();
@@ -138,6 +144,7 @@ export function CommandCenter() {
       {activeSection === "intel" && <IntelBriefView />}
       {activeSection === "realtime-brief" && <RealtimeBrief />}
       {activeSection === "library" && <IntelligenceLibrary />}
+      {activeSection === "people-first" && <PeopleFirst />}
 
       {/* Floating Atlas Commander chat — visible on situation room (both views) */}
       <FloatingCommander />
